@@ -57,7 +57,6 @@ public class Stats : MonoBehaviour
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
-    public int Armor_shield;
 
     [Header("Zdolności")]
     public bool Ambidextrous; // Oburęczność
@@ -164,7 +163,7 @@ public class Stats : MonoBehaviour
         int primaryStatsSum = maxWWorUS + minWWorUS;
 
         // Sumowanie zbroi i wytrzymałości
-        int totalArmor = Armor_head + Armor_arms + Armor_torso + Armor_legs + Armor_shield + (Wt / 10 * 4);
+        int totalArmor = Armor_head + Armor_arms + Armor_torso + Armor_legs + (Wt / 10 * 4);
 
         int weaponPower = 0;
 

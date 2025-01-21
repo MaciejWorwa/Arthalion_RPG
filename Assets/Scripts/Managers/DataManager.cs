@@ -605,7 +605,6 @@ public class StatsData
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
-    public int Armor_shield;
     public bool Ambidextrous; // Oburęczność
     public bool ArmouredCasting; // Pancerz Wiary
     public bool DaemonicAura; // Demoniczna aura
