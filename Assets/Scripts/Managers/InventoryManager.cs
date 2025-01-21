@@ -266,7 +266,7 @@ public class InventoryManager : MonoBehaviour
             if(!unit.GetComponent<Stats>().QuickDraw && !GameManager.IsAutoCombatMode && !SaveAndLoadManager.Instance.IsLoading)
             {
                 bool canDoAction = true;
-                canDoAction = RoundsManager.Instance.DoHalfAction(unit.GetComponent<Unit>());
+                canDoAction = RoundsManager.Instance.DoAction(unit.GetComponent<Unit>());
                 if (!canDoAction) return;
             }
 

@@ -35,7 +35,6 @@ public class RoundsManager : MonoBehaviour
     public static int RoundNumber;
     [SerializeField] private TMP_Text _roundNumberDisplay;
     public Button NextRoundButton;
-    public Dictionary <Unit, int> UnitsWithActionsLeft = new Dictionary<Unit, int>();
     [SerializeField] private Slider _actionsLeftSlider;
     [SerializeField] private GameObject _useFortunePointsButton;
     private bool _isFortunePointSpent; //informacja o tym, że punkt szczęścia został zużyty, aby nie można było ponownie go użyć do wczytania tego samego autozapisu
@@ -59,76 +58,89 @@ public class RoundsManager : MonoBehaviour
         Debug.Log($"<color=#4dd2ff>--------------------------------------------- RUNDA {RoundNumber} ---------------------------------------------</color>");
 
         //Resetuje ilość dostępnych akcji dla wszystkich jednostek
-        foreach (var key in UnitsWithActionsLeft.Keys.ToList())
+        foreach (Unit unit in UnitsManager.Instance.AllUnits)
         {
-            if(key == null) continue;
+            if(unit == null) continue;
 
             //Stosuje zdolności specjalne różnych jednostek (np. regeneracja żywotności trolla)
-            key.GetComponent<Stats>().CheckForSpecialRaceAbilities();
+            unit.GetComponent<Stats>().CheckForSpecialRaceAbilities();
 
-            UnitsWithActionsLeft[key] = 2;
+            unit.IsTurnFinished = false;
+            unit.CanParry = true;
+            if(unit.GetComponent<Stats>().Dodge > 0) unit.CanDodge = true;
+            unit.CanDoAction = true;
+            unit.CanAttack = true;
+            unit.CanMove = true;
+            unit.GuardedAttackBonus = 0;
 
-            key.IsTurnFinished = false;
-            key.CanParry = true;
-            if(key.GetComponent<Stats>().Dodge > 0) key.CanDodge = true;
-            if(key.GetComponent<Stats>().Mag > 0) key.CanCastSpell = true;
-            key.CanAttack = true;
-            key.GuardedAttackBonus = 0;
-
-            if (key.StunDuration > 0)
+            if (unit.StunDuration > 0)
             {
-                UnitsWithActionsLeft[key] = 0;
-                key.StunDuration--;
+                unit.CanDoAction = false;
+                unit.CanMove = false;
+                unit.StunDuration--;
 
-                if(key.StunDuration == 0) UnitsWithActionsLeft[key] = 2;
-            }
-            if (key.HelplessDuration > 0)
-            {
-                UnitsWithActionsLeft[key] = 0;
-                key.HelplessDuration--;
-
-                if(key.HelplessDuration == 0) UnitsWithActionsLeft[key] = 2;
-            }
-            if (key.SpellDuration > 0)
-            {
-                key.SpellDuration--;
-
-                if (key.SpellDuration == 0)
+                if(unit.StunDuration == 0)
                 {
-                    MagicManager.Instance.ResetSpellEffect(key);
+                    unit.CanDoAction = true;
+                    unit.CanMove = true;
+                }
+                    
+            }
+            if (unit.HelplessDuration > 0)
+            {
+                unit.CanDoAction = false;
+                unit.CanMove = false;
+                unit.HelplessDuration--;
+
+                if(unit.HelplessDuration == 0)
+                {
+                    unit.CanDoAction = true;
+                    unit.CanMove = true;
                 }
             }
-            if(key.Trapped)
+            if (unit.SpellDuration > 0)
             {
-                UnitsWithActionsLeft[key] = 0;
-                CombatManager.Instance.EscapeFromTheSnare(key);
+                unit.SpellDuration--;
+
+                if (unit.SpellDuration == 0)
+                {
+                    MagicManager.Instance.ResetSpellEffect(unit);
+                }
             }
-            if(key.IsScared)
+            if(unit.Trapped)
             {
-                UnitsWithActionsLeft[key] = 0;
+                unit.CanDoAction = false;
+                unit.CanMove = false;
+                CombatManager.Instance.EscapeFromTheSnare(unit);
+            }
+            if(unit.IsScared)
+            {
+                unit.CanDoAction = false;
+                unit.CanMove = false;
             }
 
-            if (key.TrappedUnitId != 0)
+            if (unit.TrappedUnitId != 0)
             {
                 bool trappedUnitExist = false;
 
-                foreach (var unit in UnitsManager.Instance.AllUnits)
+                foreach (var u in UnitsManager.Instance.AllUnits)
                 {
-                    if(unit.UnitId == key.TrappedUnitId && unit.Trapped == true)
+                    if(u.UnitId == unit.TrappedUnitId && unit.Trapped == true)
                     {
-                        UnitsWithActionsLeft[key] = 0;
+                        u.CanDoAction = false;
+                        u.CanMove = false;
                         trappedUnitExist = true;
                     }
                 }
 
                 if (!trappedUnitExist)
                 {
-                    key.TrappedUnitId = 0;
+                    unit.TrappedUnitId = 0;
                 }
             }
 
             //Aktualizuje osiągnięcia
-            key.GetComponent<Stats>().RoundsPlayed ++;
+            unit.GetComponent<Stats>().RoundsPlayed ++;
         }
 
         //Wykonuje testy grozy i strachu jeśli na polu bitwy są jednostki straszne lub przerażające
@@ -177,45 +189,16 @@ public class RoundsManager : MonoBehaviour
             }
             else continue;
 
-            if(!UnitsWithActionsLeft.ContainsKey(unit)) continue;
-
             // Jeśli jednostka to PlayerUnit i gramy w trybie ukrywania statystyk wrogów
             if (unit.CompareTag("PlayerUnit") && GameManager.IsStatsHidingMode)
             {
                 // Czeka aż jednostka zakończy swoją turę (UnitsWithActionsLeft[unit] == 0 lub unit.IsTurnFinished)
-                yield return new WaitUntil(() => (!UnitsWithActionsLeft.ContainsKey(unit) || UnitsWithActionsLeft[unit] == 0 && CombatManager.Instance.AvailableAttacks == 0) || unit.IsTurnFinished);
+                yield return new WaitUntil(() => (unit.CanDoAction == false && unit.CanMove == false) || unit.IsTurnFinished);
                 yield return new WaitForSeconds(0.5f);
             }
             else // Jednostki wrogów lub wszystkie jednostki, jeśli nie ukrywamy ich statystyk
             {
-                //TYMCZASOWE - test algorytmów gentycznych
-                if(ReinforcementLearningManager.Instance.IsLearning)
-                //if (ReinforcementLearningManager.Instance.IsRaceTrained(unit.GetComponent<Stats>().Race))
-                {
-                    if(unit.CompareTag("PlayerUnit"))
-                    {
-                        AutoCombatManager.Instance.Act(unit);
-                    }
-                    else
-                    {
-                        int iterationCount = 0;
-
-                        while (UnitsWithActionsLeft.ContainsKey(unit) && UnitsWithActionsLeft[unit] > 0 && iterationCount < 5)
-                        {
-                            ReinforcementLearningManager.Instance.SimulateUnit(unit);
-                            iterationCount++;
-                        }
-                        if(iterationCount >= 5 && UnitsWithActionsLeft.ContainsKey(unit) && UnitsWithActionsLeft[unit] > 0)
-                        {
-                            FinishTurn();
-                        }
-                    }
-                }
-                else
-                {
-                    //ReinforcementLearningManager.Instance.SimulateUnit(unit);
-                    AutoCombatManager.Instance.Act(unit);
-                }
+                AutoCombatManager.Instance.Act(unit);
 
                 // Czeka, aż jednostka zakończy ruch, zanim wybierze kolejną jednostkę
                 yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
@@ -225,41 +208,15 @@ public class RoundsManager : MonoBehaviour
 
         NextRoundButton.gameObject.SetActive(true);
         _useFortunePointsButton.SetActive(true);
-
-        //DO SZKOLENIA AI
-        if(ReinforcementLearningManager.Instance.IsLearning)
-        {
-            if(ReinforcementLearningManager.Instance.BothTeamsExist() == false || RoundNumber > 50)
-            {
-                // Iteruj po wszystkich jednostkach, które jeszcze żyją i są częścią drużyny Enemy
-                foreach (Unit unit in UnitsManager.Instance.AllUnits)
-                {
-                    if(unit != null && unit.CompareTag("EnemyUnit") && unit.GetComponent<Stats>().TempHealth > 0)
-                    {
-                        ReinforcementLearningManager.Instance.AddTeamWinRewardForUnit(unit);
-                    }
-                }
-
-                ReinforcementLearningManager.Instance.UpdateTeamWins();
-
-                SaveAndLoadManager.Instance.SetLoadingType(true);
-                SaveAndLoadManager.Instance.LoadGame("AIlearning");
-            }
-
-            yield return new WaitUntil(() => SaveAndLoadManager.Instance.IsLoading == false);
-
-            GridManager.Instance.CheckTileOccupancy();
-            NextRound();
-        }
     }
 
     #region Units actions
-    public bool DoHalfAction(Unit unit)
+    public bool DoAction(Unit unit)
     {
         //Zapobiega zużywaniu akcji przed rozpoczęciem bitwy
         if(RoundNumber == 0) return true;
 
-        if (UnitsWithActionsLeft.ContainsKey(unit) && UnitsWithActionsLeft[unit] >= 1)
+        if (unit.CanDoAction)
         {
             // Automatyczny zapis, aby możliwe było użycie punktów szczęścia. Jeżeli jednostka ich nie posiada to zapis nie jest wykonywany
             if(unit.Stats.PS > 0 && !GameManager.IsAutoCombatMode)
@@ -268,23 +225,20 @@ public class RoundsManager : MonoBehaviour
                 _isFortunePointSpent = false;
             }
 
-            UnitsWithActionsLeft[unit]--;
+            unit.CanDoAction = false;
             DisplayActionsLeft();
 
-            Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a akcję pojedynczą. </color>");
+            Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a akcję. </color>");
 
             //Zresetowanie szarży lub biegu, jeśli były aktywne (po zużyciu jednej akcji szarża i bieg nie mogą być możliwe)
             MovementManager.Instance.UpdateMovementRange(1);
 
-            //Aktualizuje aktywną postać na kolejce inicjatywy, gdy obecna postać wykona wszystkie akcje w tej rundzie. 
-            if(UnitsWithActionsLeft[unit] == 0)
+            //W przypadku ręcznego zadawania obrażeń, czekamy na wpisanie wartości obrażeń przed zmianą jednostki (jednostka jest wtedy zmieniana w funkcji ExecuteAttack w CombatManager)
+            if (!CombatManager.Instance.IsManualPlayerAttack)
             {
-                //W przypadku ręcznego zadawania obrażeń, czekamy na wpisanie wartości obrażeń przed zmianą jednostki (jednostka jest wtedy zmieniana w funkcji ExecuteAttack w CombatManager)
-                if (!CombatManager.Instance.IsManualPlayerAttack)
-                {
-                    InitiativeQueueManager.Instance.SelectUnitByQueue();
-                }
+                InitiativeQueueManager.Instance.SelectUnitByQueue();
             }
+
             return true;
         }
         else
@@ -294,47 +248,9 @@ public class RoundsManager : MonoBehaviour
         }
     }
 
-    public bool DoFullAction(Unit unit)
-    {
-        //Zapobiega zużywaniu akcji przed rozpoczęciem bitwy
-        if(RoundNumber == 0) return true;
-
-        if (UnitsWithActionsLeft.ContainsKey(unit) && UnitsWithActionsLeft[unit] == 2)
-        {
-            // Automatyczny zapis, aby możliwe było użycie punktów szczęścia. Jeżeli jednostka ich nie posiada to zapis nie jest wykonywany. W przypadku szarży gra jest zapisywana przed wykonaniem ruchu (w klasie CombatManager), a nie w momencie zużywania akcji
-            if (unit.Stats.PS > 0 && !CombatManager.Instance.AttackTypes["Charge"] == true && !GameManager.IsAutoCombatMode)
-            {
-                SaveAndLoadManager.Instance.SaveUnits(UnitsManager.Instance.AllUnits, "autosave");
-                _isFortunePointSpent = false;
-            }
-
-            UnitsWithActionsLeft[unit] -= 2;
-            DisplayActionsLeft();
-
-            Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a akcję podwójną. </color>");
-
-            //Aktualizuje aktywną postać na kolejce inicjatywy, bo obecna postać wykonała wszystkie akcje w tej rundzie. Wyjątkiem jest atak wielokrotny
-            if (!CombatManager.Instance.AttackTypes["SwiftAttack"])
-            {
-                //W przypadku ręcznego zadawania obrażeń, czekamy na wpisanie wartości obrażeń przed zmianą jednostki (jednostka jest wtedy zmieniana w funkcji ExecuteAttack w CombatManager)
-                if (!CombatManager.Instance.IsManualPlayerAttack)
-                {
-                    InitiativeQueueManager.Instance.SelectUnitByQueue();
-                }
-            }    
-
-            return true;
-        }
-        else
-        {
-            Debug.Log("Ta jednostka nie może w tej rundzie wykonać akcji podwójnej.");
-            return false;
-        }     
-    }
-
     public void DisplayActionsLeft()
     {
-        if (Unit.SelectedUnit != null && !UnitsWithActionsLeft.ContainsKey(Unit.SelectedUnit.GetComponent<Unit>())) return;
+        if (Unit.SelectedUnit != null) return;
 
         if(Unit.SelectedUnit == null)
         {
@@ -344,31 +260,31 @@ public class RoundsManager : MonoBehaviour
         {
             Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
 
-            _actionsLeftSlider.value = UnitsWithActionsLeft[unit];
+            _actionsLeftSlider.value = unit.CanDoAction ? 1 : 0;
 
-            if (_isFortunePointSpent != true && UnitsWithActionsLeft[unit] != 2 && !GameManager.IsAutoCombatMode)
+            if (_isFortunePointSpent != true && !unit.CanDoAction && !GameManager.IsAutoCombatMode)
             {
                 _useFortunePointsButton.SetActive(true);
             }
         }
     }
 
-    public void ChangeActionsLeft(int value)
-    {
-        if (Unit.SelectedUnit == null) return;
+    // public void ChangeActionsLeft(int value)
+    // {
+    //     if (Unit.SelectedUnit == null) return;
 
-        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
+    //     Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
  
-        if (!UnitsWithActionsLeft.ContainsKey(unit)) return;
+    //     if (!UnitsWithActionsLeft.ContainsKey(unit)) return;
 
-        UnitsWithActionsLeft[unit] += value;
+    //     UnitsWithActionsLeft[unit] += value;
 
-        //Limitem dolnym jest 0, a górnym 2
-        if (UnitsWithActionsLeft[unit] < 0) UnitsWithActionsLeft[unit] = 0;
-        else if (UnitsWithActionsLeft[unit] > 2) UnitsWithActionsLeft[unit] = 2;
+    //     //Limitem dolnym jest 0, a górnym 2
+    //     if (UnitsWithActionsLeft[unit] < 0) UnitsWithActionsLeft[unit] = 0;
+    //     else if (UnitsWithActionsLeft[unit] > 2) UnitsWithActionsLeft[unit] = 2;
 
-        DisplayActionsLeft();
-    }
+    //     DisplayActionsLeft();
+    // }
 
     public void UseFortunePoint()
     {
@@ -377,7 +293,7 @@ public class RoundsManager : MonoBehaviour
         Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
         Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
 
-        if (UnitsWithActionsLeft[unit] == 2)
+        if (unit.CanDoAction)
         {
             if (Unit.LastSelectedUnit == null) return;
             stats = Unit.LastSelectedUnit.GetComponent<Stats>();
@@ -425,15 +341,15 @@ public class RoundsManager : MonoBehaviour
 
         // UnitsWithActionsLeft.Clear(); // Czyści słownik przed uzupełnieniem nowymi danymi
 
-        foreach (var entry in data.Entries)
-        {
-            GameObject unitObject = GameObject.Find(entry.UnitName);
+        // foreach (var entry in data.Entries)
+        // {
+        //     GameObject unitObject = GameObject.Find(entry.UnitName);
 
-            if (unitObject != null)
-            {
-                Unit matchedUnit = unitObject.GetComponent<Unit>();
-                UnitsWithActionsLeft[matchedUnit] = entry.ActionsLeft;
-            }
-        }
+        //     if (unitObject != null)
+        //     {
+        //         Unit matchedUnit = unitObject.GetComponent<Unit>();
+        //         matchedUnit.CanDoAction = entry.ActionsLeft > 0 ? true : false;
+        //     }
+        // }
     }
 }

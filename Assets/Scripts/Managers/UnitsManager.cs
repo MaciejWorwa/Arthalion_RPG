@@ -362,7 +362,7 @@ public class UnitsManager : MonoBehaviour
             }
 
             //Ustala początkową inicjatywę i dodaje jednostkę do kolejki inicjatywy
-            newUnit.GetComponent<Stats>().Initiative = newUnit.GetComponent<Stats>().Zr + UnityEngine.Random.Range(1, 11);
+            newUnit.GetComponent<Stats>().Initiative = newUnit.GetComponent<Stats>().I + UnityEngine.Random.Range(1, 11);
 
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(newUnit.GetComponent<Unit>());
         }
@@ -529,7 +529,8 @@ public class UnitsManager : MonoBehaviour
 
         _unitStateDurationInputField.text = "";
 
-        RoundsManager.Instance.UnitsWithActionsLeft[unit] = 0;
+        unit.CanDoAction = false;
+        unit.CanMove = false;
 
         UpdateUnitPanel(Unit.SelectedUnit);
     }
@@ -559,7 +560,7 @@ public class UnitsManager : MonoBehaviour
             }
         } 
 
-        RoundsManager.Instance.UnitsWithActionsLeft[unit] = 2;
+        unit.CanDoAction = true;
 
         UpdateUnitPanel(Unit.SelectedUnit);
     }
@@ -708,15 +709,12 @@ public class UnitsManager : MonoBehaviour
                 stats.RollForBaseStats();
                 unit.GetComponent<Unit>().DisplayUnitHealthPoints();
             }
-
-            //Aktualizuje siłę i wytrzymałość
-            unit.GetComponent<Unit>().CalculateStrengthAndToughness();
-
+            
             //Aktualizuje aktualną żywotność
             stats.TempHealth = stats.MaxHealth;
 
             //Ustala inicjatywę i aktualizuje kolejkę inicjatywy
-            stats.Initiative = stats.Zr + UnityEngine.Random.Range(1, 11);
+            stats.Initiative = stats.I + UnityEngine.Random.Range(1, 11);
             InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(unit.GetComponent<Unit>());
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit.GetComponent<Unit>());
             InitiativeQueueManager.Instance.UpdateInitiativeQueue();
@@ -750,7 +748,7 @@ public class UnitsManager : MonoBehaviour
         Stats stats = unit.GetComponent<Stats>();
 
         //Ustala nową inicjatywę
-        stats.Initiative = stats.Zr + UnityEngine.Random.Range(1, 11);
+        stats.Initiative = stats.I + UnityEngine.Random.Range(1, 11);
 
         //Uwzględnienie kary do Zręczności za pancerz
         if(stats.Armor_head >= 3 || stats.Armor_torso >= 3 || stats.Armor_arms >= 3 || stats.Armor_legs >= 3)
@@ -759,7 +757,7 @@ public class UnitsManager : MonoBehaviour
         }
 
         //Aktualizuje kolejkę inicjatywy
-        InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] = stats.Initiative;
+        InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] = stats.I;
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
         UpdateUnitPanel(unit);
@@ -816,10 +814,6 @@ public class UnitsManager : MonoBehaviour
             unit.GetComponent<Stats>().TempHealth = unit.GetComponent<Stats>().MaxHealth;
 
             unit.GetComponent<Unit>().DisplayUnitHealthPoints();
-        }
-        else if(attributeName == "K" || attributeName == "Odp")
-        {
-            unit.GetComponent<Unit>().CalculateStrengthAndToughness();
         }
         else if(attributeName == "Name")
         {
@@ -933,22 +927,22 @@ public class UnitsManager : MonoBehaviour
 
         Stats stats = unit.GetComponent<Stats>();
 
-        if (stats.Mag > 0)
-        {
-            _spellbookButton.SetActive(true);
-            DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć, które może rzucić jednostka
-            unit.GetComponent<Unit>().CanCastSpell = true;
+        // if (stats.Mag > 0)
+        // {
+        //     _spellbookButton.SetActive(true);
+        //     DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć, które może rzucić jednostka
+        //     unit.GetComponent<Unit>().CanCastSpell = true;
 
-            if(unit.GetComponent<Spell>() == null)
-            {
-                unit.AddComponent<Spell>();
-            }
-        }
-        else
-        {
-            _spellbookButton.SetActive(false);
-            _spellListPanel.SetActive(false);
-        }
+        //     if(unit.GetComponent<Spell>() == null)
+        //     {
+        //         unit.AddComponent<Spell>();
+        //     }
+        // }
+        // else
+        // {
+        //     _spellbookButton.SetActive(false);
+        //     _spellListPanel.SetActive(false);
+        // }
 
         //_nameDisplay.text = stats.Name;
         _raceDisplay.text = stats.Race;
@@ -1100,7 +1094,7 @@ public class UnitsManager : MonoBehaviour
     #endregion
 
 
-    #region Attributes tests
+    #region Attributes and skills tests
     public void TestAttribute(string attributeName)
     {
         if(Unit.SelectedUnit == null) return;
@@ -1153,6 +1147,40 @@ public class UnitsManager : MonoBehaviour
         }
 
         Debug.Log($"{stats.Name} wykonał test {attributeName}. Wynik rzutu: {rollResult} Wartość cechy: {value}{luckOrMisfortune} Modyfikator: {modifier}. {resultString} {successLevel}");
+    }
+
+    public int TestSkill(string skillName, string skillAttribute, Stats stats, int modifier = 0)
+    {
+        int rollResult = UnityEngine.Random.Range(1, 101);
+
+        // Pobieranie wartości umiejętności na podstawie nazwy
+        int skillValue = 0;
+        var field = typeof(Stats).GetField(skillName);
+        if (field != null)
+        {
+            skillValue = (int)field.GetValue(stats);
+        }
+
+        // Pobieranie wartości atrybutu na podstawie nazwy
+        int attributeValue = 0;
+        var attributeField = typeof(Stats).GetField(skillAttribute);
+        if (attributeField != null)
+        {
+            attributeValue = (int)attributeField.GetValue(stats);
+        }
+
+        int successLevel = (skillValue + attributeValue + modifier) / 10 - rollResult / 10;
+
+        if(modifier != 0)
+        {
+            Debug.Log($"Rzut na {skillName}: {rollResult} Wartość umiejętności: {skillValue + attributeValue} Modifikator: {modifier} Poziomy sukcesu: {successLevel}");
+        }
+        else
+        {
+            Debug.Log($"Rzut na {skillName}: {rollResult} Wartość umiejętności: {skillValue + attributeValue} Poziomy sukcesu: {successLevel}");
+        }
+
+        return successLevel;
     }
     #endregion
 
@@ -1244,7 +1272,7 @@ public class UnitsManager : MonoBehaviour
 
         if (rollResult <= (unitStats.SW + rollModifier))
         {
-            RoundsManager.Instance.UnitsWithActionsLeft[unit] = 2;
+            unit.CanDoAction = true;
             unit.IsScared = false;
             unit.IsFearTestPassed = true;
 
@@ -1252,7 +1280,7 @@ public class UnitsManager : MonoBehaviour
         }
         else
         {
-            RoundsManager.Instance.UnitsWithActionsLeft[unit] = 0;
+            unit.CanDoAction = false;
             unit.IsScared = true;
 
             stringResult = $"<color=red>{unitStats.Name} nie zdał testu strachu. Wynik rzutu: {rollResult}. Wartość cechy: {unitStats.SW}.";
@@ -1294,16 +1322,16 @@ public class UnitsManager : MonoBehaviour
 
         if (rollResult <= unitStats.SW)
         {
-            RoundsManager.Instance.UnitsWithActionsLeft[unit] = 2;
+            unit.CanDoAction = true;
             unit.IsScared = false;
             unit.IsFearTestPassed = true;
             Debug.Log($"<color=green> {unitStats.Name} zdał test grozy. Wynik rzutu: {rollResult} </color>");
         }
         else
         {
-            RoundsManager.Instance.UnitsWithActionsLeft[unit] = 0;
+            unit.CanDoAction = false;
             unit.IsScared = true;
-            unitStats.PO ++;
+            unitStats.CorruptionPoints ++;
 
             Debug.Log($"<color=red> {unitStats.Name} nie zdał testu grozy. Wynik rzutu: {rollResult} </color>");
         }

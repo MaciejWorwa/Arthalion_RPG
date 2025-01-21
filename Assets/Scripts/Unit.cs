@@ -16,11 +16,14 @@ public class Unit : MonoBehaviour
     public string TokenFilePath;
     public Color DefaultColor;
     public Color HighlightColor;
+
     public bool IsSelected = false;
     public bool IsTurnFinished; // Określa, czy postać zakończyła swoją turę (bo mogła to zrobić, np. zostawiając jedną akcję)
     public bool IsRunning; // Biegnie
     public bool IsCharging; // Szarżuje
     public bool IsRetreating; // Wycofuje się
+
+    [Header("Stany")]
     public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
     public bool IsScared; // Jest przestraszony
     public bool IsFearTestPassed; // Zdał test strachu
@@ -29,15 +32,22 @@ public class Unit : MonoBehaviour
     public bool Trapped; // Unieruchomiony
     public int TrappedUnitId; // Cel unieruchomienia
     //public int TrappedDuration; // Czas unieruchomienia (podany w rundach). Wartość 0 oznacza, że postać nie jest unieruchomiona
+
+    [Header("Modyfikatory")]
     public int AimingBonus;
     public int CastingNumberBonus;
     public int DefensiveBonus;
     public int GuardedAttackBonus; //Modyfikator do uników i parowania za ostrożny atak
+
+    [Header("Dostępne działania")]
     public bool CanAttack = true;
+    public bool CanMove = true;
+    public bool CanDoAction = true;
     public bool CanCastSpell = false;
     public bool Feinted = false; // Określa, czy postać wykonała w poprzedniej akcji udaną fintę
     public bool CanParry = true;
     public bool CanDodge = false;
+
     public Stats Stats;
     public TMP_Text NameDisplay;
     public TMP_Text HealthDisplay;
@@ -56,8 +66,6 @@ public class Unit : MonoBehaviour
         {
             Stats.TempHealth = Stats.MaxHealth;
         }
-
-        CalculateStrengthAndToughness(); // Liczy siłę i wytrzymałość
 
         DisplayUnitHealthPoints();
 
@@ -239,11 +247,5 @@ public class Unit : MonoBehaviour
         transform.Find("Canvas/Dead_image").gameObject.SetActive(false);
         transform.Find("Canvas/Heavy_wounded_image").gameObject.SetActive(false);
         transform.Find("Canvas/Wounded_image").gameObject.SetActive(false);
-    }
-
-    public void CalculateStrengthAndToughness()
-    {
-        Stats.S = Mathf.RoundToInt(Stats.K / 10);
-        Stats.Wt = Mathf.RoundToInt(Stats.Odp / 10);
     }
 }

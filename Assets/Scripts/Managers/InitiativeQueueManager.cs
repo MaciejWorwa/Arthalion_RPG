@@ -49,10 +49,6 @@ public class InitiativeQueueManager : MonoBehaviour
         if(collider.CompareTag("TileCover")) return;
 
         InitiativeQueue.Add(unit, unit.GetComponent<Stats>().Initiative);
-        if(!RoundsManager.Instance.UnitsWithActionsLeft.ContainsKey(unit))
-        {
-            RoundsManager.Instance.UnitsWithActionsLeft.Add(unit, 2);
-        }
 
         //Aktualizuje pasek przewagi w bitwie
         unit.GetComponent<Stats>().Overall = unit.GetComponent<Stats>().CalculateOverall();
@@ -63,7 +59,6 @@ public class InitiativeQueueManager : MonoBehaviour
     public void RemoveUnitFromInitiativeQueue(Unit unit)
     {
         InitiativeQueue.Remove(unit);
-        RoundsManager.Instance.UnitsWithActionsLeft.Remove(unit);
 
         //Aktualizuje pasek przewagi w bitwie
         unit.GetComponent<Stats>().Overall = unit.GetComponent<Stats>().CalculateOverall();
@@ -96,7 +91,7 @@ public class InitiativeQueueManager : MonoBehaviour
             GameObject playersOptionObj = CreateInitiativeOption(pair, PlayersCamera_InitiativeScrollViewContent, true);
 
             // Sprawdza, czy jest aktywna tura dla tej jednostki
-            if (RoundsManager.Instance.UnitsWithActionsLeft[pair.Key] > 0 && ActiveUnit == null && pair.Key.IsTurnFinished != true)
+            if ((pair.Key.CanDoAction || pair.Key.CanMove) && ActiveUnit == null && pair.Key.IsTurnFinished != true)
             {
                 ActiveUnit = pair.Key;
                 SetOptionColor(optionObj, _activeColor);

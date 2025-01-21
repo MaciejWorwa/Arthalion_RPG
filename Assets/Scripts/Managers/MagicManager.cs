@@ -82,7 +82,7 @@ public class MagicManager : MonoBehaviour
         }
 
         // Wykonanie akcji
-        bool canDoAction = RoundsManager.Instance.DoHalfAction(Unit.SelectedUnit.GetComponent<Unit>());
+        bool canDoAction = RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
         if(!canDoAction) return;   
 
         StartCoroutine(ChannelingMagicCoroutine());
@@ -118,7 +118,7 @@ public class MagicManager : MonoBehaviour
 
             if (stats.SW + modifier >= rollResult)
             {
-                Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus += stats.Mag;
+                // Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus += stats.Mag;
                 Debug.Log($"{message} Splatanie magii zakończone sukcesem.");
             }
             else
@@ -133,11 +133,11 @@ public class MagicManager : MonoBehaviour
     {
         if(Unit.SelectedUnit == null) return;
 
-        if(Unit.SelectedUnit.GetComponent<Stats>().Mag == 0)
-        {
-            Debug.Log("Wybrana jednostka nie może rzucać zaklęć.");
-            return;
-        }
+        // if(Unit.SelectedUnit.GetComponent<Stats>().Mag == 0)
+        // {
+        //     Debug.Log("Wybrana jednostka nie może rzucać zaklęć.");
+        //     return;
+        // }
         
         if(!Unit.SelectedUnit.GetComponent<Unit>().CanCastSpell)
         {
@@ -219,29 +219,29 @@ public class MagicManager : MonoBehaviour
             return;
         }
 
-        // W przypadku zaklęć, które atakują wiele celów naraz pozwala na wybranie kilku celów zanim zacznie rzucać zaklęcie
-        if (spell.Type.Contains("multiple-targets") && spell.Type.Contains("magic-level-related") && _targetsStats.Count < spellcasterStats.Mag)
-        {
-            _targetsStats.Add(allTargets[0].GetComponent<Stats>());
+        // // W przypadku zaklęć, które atakują wiele celów naraz pozwala na wybranie kilku celów zanim zacznie rzucać zaklęcie
+        // if (spell.Type.Contains("multiple-targets") && spell.Type.Contains("magic-level-related") && _targetsStats.Count < spellcasterStats.Mag)
+        // {
+        //     _targetsStats.Add(allTargets[0].GetComponent<Stats>());
 
-            if (_targetsStats.Count < spellcasterStats.Mag)
-            {
-                Debug.Log("Wskaż prawym przyciskiem myszy kolejny cel. Możesz wskakać kilkukrotnie tę samą jednostkę.");
-                return;
-            }
-        }
+        //     if (_targetsStats.Count < spellcasterStats.Mag)
+        //     {
+        //         Debug.Log("Wskaż prawym przyciskiem myszy kolejny cel. Możesz wskakać kilkukrotnie tę samą jednostkę.");
+        //         return;
+        //     }
+        // }
 
         //Wykonuje akcję
-        if (spell.CastingTimeLeft >= 2 && RoundsManager.Instance.UnitsWithActionsLeft[spellcasterUnit] == 2)
+        if (spell.CastingTimeLeft >= 2 && spellcasterUnit.CanDoAction == true)
         {
-            bool canDoAction = RoundsManager.Instance.DoFullAction(spellcasterUnit);
+            bool canDoAction = RoundsManager.Instance.DoAction(spellcasterUnit);
 
             if (canDoAction) spell.CastingTimeLeft -= 2;
             else return;
         }
-        else if (spell.CastingTimeLeft == 1 || (spell.CastingTimeLeft >= 2 && RoundsManager.Instance.UnitsWithActionsLeft[spellcasterUnit] == 1))
+        else if (spell.CastingTimeLeft == 1 || (spell.CastingTimeLeft >= 2 && spellcasterUnit.CanDoAction == true))
         {
-            bool canDoAction = RoundsManager.Instance.DoHalfAction(spellcasterUnit);
+            bool canDoAction = RoundsManager.Instance.DoAction(spellcasterUnit);
 
             if (canDoAction) spell.CastingTimeLeft--;
             else return;
@@ -308,7 +308,7 @@ public class MagicManager : MonoBehaviour
                 CombatManager.Instance.IsManualPlayerAttack = false;
 
                 //Aktualizuje aktywną postać na kolejce inicjatywy, jeśli atakujący nie ma już dostępnych akcji. Ta funkcja jest tu wywołana, dlatego że chcemy zastosować opóźnienie i poczekać ze zmianą jednostki do momentu wpisania wartości rzutów
-                if(RoundsManager.Instance.UnitsWithActionsLeft[spellcasterUnit] == 0)
+                if(!spellcasterUnit.CanDoAction == true)
                 {
                     InitiativeQueueManager.Instance.SelectUnitByQueue();
                 }
@@ -397,15 +397,15 @@ public class MagicManager : MonoBehaviour
 
         string resultString = "Wynik rzutu na poziom mocy - ";
 
-        // Rzuty na poziom mocy w zależności od wartości Magii
-        for (int i = 0; i < stats.Mag; i++)
-        {
-            int rollResult = UnityEngine.Random.Range(1, 11);
-            allRollResults.Add(rollResult);
-            castingNumber += rollResult;
+        // // Rzuty na poziom mocy w zależności od wartości Magii
+        // for (int i = 0; i < stats.Mag; i++)
+        // {
+        //     int rollResult = UnityEngine.Random.Range(1, 11);
+        //     allRollResults.Add(rollResult);
+        //     castingNumber += rollResult;
 
-            resultString += $"kość {i+1}: <color=#4dd2ff>{rollResult}</color> ";
-        }
+        //     resultString += $"kość {i+1}: <color=#4dd2ff>{rollResult}</color> ";
+        // }
 
         int modifier = CalculateCastingNumberModifier();
         castingNumber += modifier;
@@ -591,10 +591,10 @@ public class MagicManager : MonoBehaviour
 
                 int value = spell.Strength;
 
-                if (spell.Type.Contains("magic-level-related"))
-                {
-                    value += spellcasterStats.Mag;
-                }
+                // if (spell.Type.Contains("magic-level-related"))
+                // {
+                //     value += spellcasterStats.Mag;
+                // }
 
                 // Zaklęcia leczące
                 if (spell.Attribute[0] == "TempHealth")
@@ -633,9 +633,9 @@ public class MagicManager : MonoBehaviour
                 initialDuration = duration; // Aktualizuje, jeśli jest losowa długość
             }
 
-            if (RoundsManager.Instance.UnitsWithActionsLeft[targetUnit] > 0)
+            if (targetUnit.CanDoAction == true)
             {
-                RoundsManager.Instance.UnitsWithActionsLeft[targetUnit] = 0;
+                targetUnit.CanDoAction = false;
                 duration--; // Zapobiega temu, żeby cel zaklęcia stracił dodatkową rundę, jeśli jego inicjatywa jest mniejsza niż rzucającego zaklęcie
             }
 

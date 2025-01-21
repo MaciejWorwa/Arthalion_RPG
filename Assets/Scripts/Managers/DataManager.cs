@@ -416,8 +416,8 @@ public class DataManager : MonoBehaviour
             //Filtrowanie listy zaklęć wg wybranej tradycji
             if (spell.Lore != selectedLore && selectedLore != "Wszystkie zaklęcia") continue;
 
-            // Filtrowanie zaklęć, których Poziom Mocy jest poza możliwościami aktualnej jednostki
-            if (Unit.SelectedUnit != null && spell.CastingNumber > Unit.SelectedUnit.GetComponent<Stats>().Mag * 11) continue;
+            // // Filtrowanie zaklęć, których Poziom Mocy jest poza możliwościami aktualnej jednostki
+            // if (Unit.SelectedUnit != null && spell.CastingNumber > Unit.SelectedUnit.GetComponent<Stats>().Mag * 11) continue;
 
             //Dodaje zaklęcie do ScrollViewContent w postaci buttona
             GameObject buttonObj = Instantiate(_buttonPrefab, _spellbookScrollViewContent);
@@ -577,31 +577,35 @@ public class StatsData
     public int Exp; // Punkty doświadczenia
     public string Name;
     public string Race;
+    public string Size;
     public List<int> PrimaryWeaponIds = new List<int>(); // Zmienione na listę
     public int WW;
     public int US;
-    public int K;
-    public int Odp;
+    public int S;
+    public int Wt;
+    public int I;
+    public int Zw;
     public int Zr;
     public int Int;
     public int SW;
     public int Ogd;
-    public int A;
-    public int S;
-    public int Wt;
     public int Sz;
     public int TempSz;
-    public int Mag;
     public int MaxHealth;
     public int TempHealth;
-    public int PO;
+    public int CorruptionPoints; // Punkty Zepsucia
     public int PP;
     public int PS;
+    public int Resolve; // Punkty Determinacji
+    public int Resilience; // Punkty Bohatera
+    public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
+    public int Advantage; // Przewaga
+    public int Initiative;
     public int Armor_head;
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
-    public int Initiative;
+    public int Armor_shield;
     public bool Ambidextrous; // Oburęczność
     public bool ArmouredCasting; // Pancerz Wiary
     public bool DaemonicAura; // Demoniczna aura
@@ -628,6 +632,7 @@ public class StatsData
     public bool Terryfying; // Przerażający (test Terror)
     public bool QuickDraw; // Szybkie wyciągnięcie
     public bool WillOfIron; // Żelazna wola
+    public int Athletics; // Atletyka
     public int Channeling; // Splatanie magii
     public int Dodge; // Unik
     public int HighestDamageDealt; // Największe zadane obrażenia

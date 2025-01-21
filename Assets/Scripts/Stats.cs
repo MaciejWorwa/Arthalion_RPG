@@ -20,40 +20,44 @@ public class Stats : MonoBehaviour
     [Header("Rasa")]
     public string Race;
 
+    [Header("Rozmiar")]
+    public string Size;
+
     [Header("Id początkowej broni")]
     public List<int> PrimaryWeaponIds = new List<int>();
 
-    [Header("Cechy pierwszorzędowe")]
+    [Header("Atrybuty")]
     public int WW;
     public int US;
-    public int K;
-    public int Odp;
+    public int S;
+    public int Wt;
+    public int I;
+    public int Zw;
     public int Zr;
     public int Int;
     public int SW;
     public int Ogd;
 
     [Header("Cechy drugorzędowe")]
-    public int A;
-    public int S;
-    public int Wt;
     public int Sz;
     [HideInInspector] public int TempSz;
-    public int Mag;
     public int MaxHealth;
     public int TempHealth;
-    public int PO;
-    public int PP;
+    public int CorruptionPoints; // Punkty Zepsucia
     public int PS;
+    public int PP;
+    public int Resolve; // Punkty Determinacji
+    public int Resilience; // Punkty Bohatera
+    public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
+    public int Advantage; // Przewaga
+    public int Initiative; // Inicjatywa w walce
 
     [Header("Punkty zbroi")]
     public int Armor_head;
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
-
-    [Header("Inicjatywa")]
-    public int Initiative;
+    public int Armor_shield;
 
     [Header("Zdolności")]
     public bool Ambidextrous; // Oburęczność
@@ -84,8 +88,11 @@ public class Stats : MonoBehaviour
     public bool WillOfIron; // Żelazna wola
 
     [Header("Umiejętności")]
+    public int Athletics;
     public int Channeling; // Splatanie magii
     public int Dodge; // Unik
+    public int Melee; // Broń Biała
+    public int Ranged; // Broń Zasięgowa
 
     [Header("Statystyki")]
     public int HighestDamageDealt; // Największe zadane obrażenia
@@ -108,52 +115,21 @@ public class Stats : MonoBehaviour
     {
         WW += Random.Range(2, 21);
         US += Random.Range(2, 21);
-        K += Random.Range(2, 21);
-        Odp += Random.Range(2, 21);
+        S += Random.Range(2, 21);
+        Wt += Random.Range(2, 21);
+        I += Random.Range(2, 21);
+        Zw += Random.Range(2, 21);
         Zr += Random.Range(2, 21);
         Int += Random.Range(2, 21);
         SW += Random.Range(2, 21);
         Ogd += Random.Range(2, 21);
 
-        int rollMaxHealth = Random.Range(1, 11);
-        if (rollMaxHealth <= 6 && rollMaxHealth > 3)
-        {
-            MaxHealth += 1;
-            TempHealth += 1;
-        }   
-        else if (rollMaxHealth <= 9)
-        {
-            MaxHealth += 2;
-            TempHealth += 2;
-        }
-        else if (rollMaxHealth == 10)
-        {
-            MaxHealth += 3;
-            TempHealth += 3;
-        }
-
-        int rollPP = Random.Range(1, 11);
-        if (rollPP <= 4)
-            PP = 2;
-        else if (rollPP <= 7)
-            PP = 3;
-        else if (rollPP >= 8)
-            PP = 3;
-
-        if (Race == "Elf")
-        {
-            PP--;
-        }
-        else if (Race == "Krasnolud")
-        {
-            if (PP != 3) PP--;
-        }
-        else if (Race == "Niziołek")
-        {
-            if (rollPP <= 7 && rollPP > 4) PP--;
-        }
+        MaxHealth = S / 10 + (2 * Wt / 10) + SW / 10;
+        if (Race == "Niziołek") MaxHealth -= S / 10;
+        TempHealth = MaxHealth;
 
         PS = PP;
+        Resolve = Resilience; // Punkty Determinacji są Równe Punktom Bohatera
     }
 
     public void CheckForSpecialRaceAbilities()
@@ -185,10 +161,10 @@ public class Stats : MonoBehaviour
         int minWWorUS = Mathf.Min(WW, US);
 
         // Sumowanie cech pierwszorzędowych z uwzględnieniem mnożenia większej wartości (WW lub US) przez ilość Ataków
-        int primaryStatsSum = ((maxWWorUS * A) + minWWorUS);
+        int primaryStatsSum = maxWWorUS + minWWorUS;
 
         // Sumowanie zbroi i wytrzymałości
-        int totalArmor = Armor_head + Armor_arms + Armor_torso + Armor_legs + ((Odp / 10) * 4);
+        int totalArmor = Armor_head + Armor_arms + Armor_torso + Armor_legs + Armor_shield + (Wt / 10 * 4);
 
         int weaponPower = 0;
 
@@ -201,11 +177,11 @@ public class Stats : MonoBehaviour
             }
             else if(weapon.Type.Contains("melee"))
             {
-                weaponPower += weapon.S + (K / 10) * 8;
+                weaponPower += weapon.S + S / 10 * 8;
             }
 
             weaponPower = weapon.S;
-            if(weapon.Impact == true) weaponPower += (maxWWorUS * A) / 2;  
+            if(weapon.Impact == true) weaponPower += maxWWorUS / 2;  
         }
 
         // Zliczanie aktywnych zdolności

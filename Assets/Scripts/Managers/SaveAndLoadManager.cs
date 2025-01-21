@@ -192,13 +192,13 @@ public class SaveAndLoadManager : MonoBehaviour
 
         RoundsManagerData roundsManagerData = new RoundsManagerData(allUnits);
 
-        // Serializacja do JSON
-        foreach (var pair in RoundsManager.Instance.UnitsWithActionsLeft)
-        {
-            if (pair.Key == null) continue;
+        // // Serializacja do JSON
+        // foreach (var pair in RoundsManager.Instance.UnitsWithActionsLeft)
+        // {
+        //     if (pair.Key == null) continue;
 
-            roundsManagerData.Entries.Add(new UnitNameAndActionsLeft() { UnitName = pair.Key.gameObject.name, ActionsLeft = pair.Value });
-        }
+        //     roundsManagerData.Entries.Add(new UnitNameAndActionsLeft() { UnitName = pair.Key.gameObject.name, ActionsLeft = pair.Value });
+        // }
         string roundsManagerJsonData = JsonUtility.ToJson(roundsManagerData, true);
 
         // Zapisanie danych do pliku
@@ -492,19 +492,6 @@ public class SaveAndLoadManager : MonoBehaviour
 
             //Ustalenie pozycji jednostki
             Vector3 position = new Vector3(unitData.position[0], unitData.position[1], unitData.position[2]);
-
-            //Jeżeli jest to proces uczenia AI to wczytujemy jednostki na losowych pozycjach
-            if(ReinforcementLearningManager.Instance.IsLearning)
-            {
-                List<Vector2> availablePositions = GridManager.Instance.AvailablePositions();
-
-                if (availablePositions.Count != 0)
-                {
-                    // Wybranie losowej pozycji z dostępnych
-                    int randomIndex = UnityEngine.Random.Range(0, availablePositions.Count);
-                    position = availablePositions[randomIndex];
-                }
-            }
 
             GameObject unitGameObject = UnitsManager.Instance.CreateUnit(statsData.Id, statsData.Name, position);
 

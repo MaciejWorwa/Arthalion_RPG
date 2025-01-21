@@ -39,6 +39,12 @@ public class MovementManager : MonoBehaviour
         // Nie pozwala wykonać akcji ruchu, dopóki poprzedni ruch nie zostanie zakończony. Sprawdza też, czy gra nie jest wstrzymana (np. poprzez otwarcie dodatkowych paneli)
         if( IsMoving == true || GameManager.IsGamePaused) return;
 
+        if(unit.GetComponent<Unit>().CanMove == false)
+        {
+            Debug.Log("Ta jednostka nie może już wykonać ruchu w tej rundzie.");
+            return;
+        }
+
         // Sprawdza zasięg ruchu postaci
         int movementRange = unit.GetComponent<Stats>().TempSz;
 
@@ -55,20 +61,11 @@ public class MovementManager : MonoBehaviour
         List<Vector2> path = FindPath(startCharPos, selectedTilePos);
 
         // Sprawdza czy wybrane pole jest w zasięgu ruchu postaci. W przypadku automatycznej walki ten warunek nie jest wymagany.
-        if (path.Count > 0 && (path.Count <= movementRange || GameManager.IsAutoCombatMode || ReinforcementLearningManager.Instance.IsLearning))
+        if (path.Count > 0 && (path.Count <= movementRange || GameManager.IsAutoCombatMode))
         {
-            //Wykonuje akcję
-            bool canDoAction = true;
-            if(unit.GetComponent<Unit>().IsRunning || unit.GetComponent<Unit>().IsRetreating) // Bieg lub bezpieczny odwrót
-            {
-                canDoAction = RoundsManager.Instance.DoFullAction(unit.GetComponent<Unit>());
-            }
-            else if(!unit.GetComponent<Unit>().IsCharging) // Zwykły ruch. Akcje za szarże są zużywane podczas ataku
-            {
-                canDoAction = RoundsManager.Instance.DoHalfAction(unit.GetComponent<Unit>());
-            }
+            if(unit.GetComponent<Unit>().CanMove == false) return;
 
-            if(!canDoAction) return;   
+            unit.GetComponent<Unit>().CanMove = false;
 
             //Resetuje przycelowanie, jeśli było aktywne
             if (Unit.SelectedUnit.GetComponent<Unit>().AimingBonus != 0)
@@ -85,7 +82,7 @@ public class MovementManager : MonoBehaviour
             selectedTile.GetComponent<Tile>().IsOccupied = true;
 
             //Zapobiega zaznaczeniu jako zajęte pola docelowego, do którego jednostka w trybie automatycznej walki niekoniecznie da radę dojść
-            if(GameManager.IsAutoCombatMode || ReinforcementLearningManager.Instance.IsLearning)
+            if(GameManager.IsAutoCombatMode)
             {
                 AutoCombatManager.Instance.TargetTile = selectedTile.GetComponent<Tile>();
             }
@@ -94,10 +91,12 @@ public class MovementManager : MonoBehaviour
             GridManager.Instance.ResetColorOfTilesInMovementRange();
 
             //Sprwadza, czy ruch powoduje ataki okazyjne
-            CheckForOpportunityAttack(unit, selectedTilePos);
+            CombatManager.Instance.CheckForOpportunityAttack(unit, selectedTilePos);
 
             // Wykonuje pojedynczy ruch tyle razy ile wynosi zasięg ruchu postaci
             StartCoroutine(MoveWithDelay(unit, path, movementRange));
+
+            unit.GetComponent<Unit>().CanMove = false;
         }
         else
         {
@@ -117,7 +116,7 @@ public class MovementManager : MonoBehaviour
             float elapsedTime = 0f;
             float duration = 0.2f; // Czas trwania interpolacji
 
-            while (elapsedTime < duration && unit != null && !ReinforcementLearningManager.Instance.IsLearning)
+            while (elapsedTime < duration && unit != null)
             {
                 IsMoving = true;
 
@@ -148,7 +147,7 @@ public class MovementManager : MonoBehaviour
         }
 
         //Zaznacza jako zajęte faktyczne pole, na którym jednostka zakończy ruch, a nie pole do którego próbowała dojść
-        if(GameManager.IsAutoCombatMode || ReinforcementLearningManager.Instance.IsLearning)
+        if(GameManager.IsAutoCombatMode)
         {
             AutoCombatManager.Instance.CheckForTargetTileOccupancy(unit);
         }
@@ -279,32 +278,31 @@ public class MovementManager : MonoBehaviour
     #region Charge and Run modes
     public void Run()
     {
-        UpdateMovementRange(3);
+        UpdateMovementRange(2);
+        Retreat(false); // Zresetowanie bezpiecznego odwrotu
     }
 
-    public void UpdateMovementRange(int modifier, Unit unit = null)
+    public void UpdateMovementRange(int modifier, Unit unit = null, bool isCharging = false)
     {
         if (Unit.SelectedUnit != null)
         {
             unit = Unit.SelectedUnit.GetComponent<Unit>();
         }
 
-        if(unit == null || !RoundsManager.Instance.UnitsWithActionsLeft.ContainsKey(unit)) return;
+        if(unit == null) return;
 
         Stats stats = unit.GetComponent<Stats>();
 
-        int actions_left = RoundsManager.Instance.UnitsWithActionsLeft[unit];
-
         //Jeżeli postać już jest w trybie szarży lub biegu, resetuje je
-        if (unit.IsCharging && modifier == 2 || unit.IsRunning && modifier == 3)
+        if (isCharging && unit.IsCharging && modifier == 2 || unit.IsRunning && !isCharging && modifier == 2)
         {
             modifier = 1;
         }
 
         //Sprawdza, czy jednostka może wykonać bieg lub szarże
-        if ((modifier == 2 || modifier == 3) && actions_left < 2)
+        if ((modifier == 2 || modifier == 3) && !unit.CanDoAction)
         {
-            Debug.Log("Ta jednostka nie może w tej rundzie wykonać akcji podwójnej.");
+            Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
             return;
         } 
         else if( modifier == 3 && stats.Race == "Zombie")
@@ -314,15 +312,14 @@ public class MovementManager : MonoBehaviour
         } 
 
         //Aktualizuje obecny tryb poruszania postaci
-        unit.IsCharging = modifier == 2;
-        unit.IsRunning = modifier == 3;
+        unit.IsCharging = isCharging;
+        unit.IsRunning = modifier == 2 && !isCharging ? true : false;
 
-        //Zmienia typ ataku w menadżerze walki
         if(unit.IsRunning)
         {
             CombatManager.Instance.ChangeAttackType("StandardAttack"); //Resetuje szarże jako obecny typ ataku i ustawia standardowy atak
         }
-        
+
         //Sprawdza, czy zbroja nie jest wynikiem zaklęcia Pancerz Eteru
         bool etherArmor = false;
         if(MagicManager.Instance.UnitsStatsAffectedBySpell != null && MagicManager.Instance.UnitsStatsAffectedBySpell.Count > 0)
@@ -338,17 +335,24 @@ public class MovementManager : MonoBehaviour
             }
         }
         //Uwzględnia karę do Szybkości za zbroję płytową
-        bool has_plate_armor = (stats.Armor_head >= 5 || stats.Armor_torso >= 5 || stats.Armor_arms >= 5 || stats.Armor_legs >= 5);
+        bool has_plate_armor = stats.Armor_head >= 5 || stats.Armor_torso >= 5 || stats.Armor_arms >= 5 || stats.Armor_legs >= 5;
         bool is_sturdy = stats.Sturdy;
         int movement_armor_penalty = (has_plate_armor && !is_sturdy && !etherArmor) ? 1 : 0;
 
         //Oblicza obecną szybkość
         stats.TempSz = (stats.Sz - movement_armor_penalty) * modifier;
 
-        // Aktualizuje podświetlenie pól w zasięgu ruchu
-        GridManager.Instance.HighlightTilesInMovementRange(stats);
+        if(unit.IsRunning)
+        {
+            // DODAĆ TUTAJ OPCJE DLA MANUALNEGO RZUCANIA KOŚĆMI
+            
+            stats.TempSz += UnitsManager.Instance.TestSkill("Athletics", "Zw", stats, 20) / 2;
+        }
 
-        ChangeButtonColor(modifier);
+        ChangeButtonColor(modifier, unit.IsCharging);
+
+        // Aktualizuje podświetlenie pól w zasięgu ruchu
+        GridManager.Instance.HighlightTilesInMovementRange(stats);  
     }
 
     //Bezpieczny odwrót
@@ -357,87 +361,33 @@ public class MovementManager : MonoBehaviour
         if (Unit.SelectedUnit == null) return;
         Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
 
-        if(value == true && RoundsManager.Instance.UnitsWithActionsLeft[unit] < 2) //Sprawdza, czy jednostka może wykonać akcję podwójną
+        //DODAĆ NOWE ZASADY ODWROTU: a) gdy ma więcej przewag niż każdy przeciwnik od którego odchodzi to przewagi się zerują i ma do wykonania ruch oraz akcję, b) gdy ma tyle samo lub mniej przewag może użyć akcję na unik (przeciwstawny test unik/broń biała). Wygrana strona dostaje +1 przewagi, jak unikający wygra to może wykonać ruch bez okazyjki.
+        // Czyli sama akcja odwrotu nie aktywuje się przy ruchu, tylko w momencie kliknięcia na nią. Potem gracz decyduje, czy się ruszyć, czy nie - ale zna już wynik akcji Odwrotu.
+
+        if(value == true && !unit.CanDoAction) //Sprawdza, czy jednostka może wykonać akcję podwójną
         {
             Debug.Log("Ta jednostka nie może w tej rundzie wykonać akcji podwójnej.");
             return;
         }
 
         unit.IsRetreating = value;
+        if(value == true)
+        {
+            UpdateMovementRange(1);
+            CombatManager.Instance.ChangeAttackType("StandardAttack");
+        }
+
         _retreatButton.GetComponent<Image>().color = unit.IsRetreating ? Color.green : Color.white;
     }
 
-    private void ChangeButtonColor(int modifier)
+    private void ChangeButtonColor(int modifier, bool isCharging)
     {  
         //_chargeButton.GetComponent<Image>().color = modifier == 1 ? Color.white : modifier == 2 ? Color.green : Color.white;
-        _runButton.GetComponent<Image>().color = modifier == 3 ? Color.green : Color.white;   
+        _runButton.GetComponent<Image>().color = modifier == 2 && !isCharging ? Color.green : Color.white;   
     }
     #endregion
 
-    #region Check for opportunity attack
-    // Sprawdza czy ruch powoduje atak okazyjny
-    public void CheckForOpportunityAttack(GameObject movingUnit, Vector2 selectedTilePosition)
-    {
-        //Przy bezpiecznym odwrocie nie występuje atak okazyjny
-        if(Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Unit>().IsRetreating) return;
-
-        List<Unit> adjacentOpponents = AdjacentOpponents(movingUnit.transform.position, movingUnit.tag);
-
-        if(adjacentOpponents.Count == 0) return;
-
-        // Atak okazyjny wywolywany dla kazdego wroga bedacego w zwarciu z bohaterem gracza
-        foreach (Unit unit in adjacentOpponents)
-        {
-            Weapon weapon = InventoryManager.Instance.ChooseWeaponToAttack(unit.gameObject);
-
-            //Jeżeli jest tojednostka ogłuszona, unieruchomiona, bezbronna lub jednostka z bronią dystansową to ją pomijamy
-            if (weapon.Type.Contains("ranged") || unit.Trapped || unit.StunDuration > 0 || unit.HelplessDuration > 0) continue;
-
-            // Sprawdzenie czy ruch powoduje oddalenie się od przeciwników (czyli atak okazyjny)
-            float distanceFromOpponentAfterMove = Vector2.Distance(selectedTilePosition, unit.transform.position);
-
-            if (distanceFromOpponentAfterMove > 1.8f)
-            {
-                Debug.Log($"Ruch spowodował atak okazyjny od {unit.GetComponent<Stats>().Name}.");
-
-                // Wywołanie ataku okazyjnego
-                CombatManager.Instance.Attack(unit, movingUnit.GetComponent<Unit>(), true);             
-            }
-        }
-    }
-
-    // Funkcja pomocnicza do sprawdzania jednostek w sąsiedztwie danej pozycji
-    private List<Unit> AdjacentOpponents(Vector2 center, string movingUnitTag)
-    {
-        Vector2[] positions = {
-            center,
-            center + Vector2.right,
-            center + Vector2.left,
-            center + Vector2.up,
-            center + Vector2.down,
-            center + new Vector2(1, 1),
-            center + new Vector2(-1, -1),
-            center + new Vector2(-1, 1),
-            center + new Vector2(1, -1)
-        };
-
-        List<Unit> units = new List<Unit>();
-
-        foreach (var pos in positions)
-        {
-            Collider2D collider = Physics2D.OverlapPoint(pos);
-            if (collider == null || collider.GetComponent<Unit>() == null) continue;
-
-            if (!collider.CompareTag(movingUnitTag))
-            {
-                units.Add(collider.GetComponent<Unit>());
-            }
-        }
-
-        return units;
-    }
-    #endregion
-
+   
     #region Highlight path
     public void HighlightPath(GameObject unit, GameObject tile)
     {
