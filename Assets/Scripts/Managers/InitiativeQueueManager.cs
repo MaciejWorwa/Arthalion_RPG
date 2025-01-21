@@ -39,6 +39,8 @@ public class InitiativeQueueManager : MonoBehaviour
     private Color _activeColor = new Color(0.15f, 1f, 0.45f, 0.2f); // Kolor aktywnego przycisku (jednostka, której tura obecnie trwa)
     private Color _selectedActiveColor = new Color(0.08f, 0.5f, 0.22f, 0.5f); // Kolor wybranego przycisku, gdy jednocześnie jest to aktywna jednostka
     public UnityEngine.UI.Slider AdvantageBar; // Pasek przewagi sił w bitwie
+    public int PlayersAdvantage;
+    public int EnemyAdvantage;
     
 
     #region Initiative queue

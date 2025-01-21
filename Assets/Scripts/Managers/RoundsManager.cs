@@ -71,7 +71,6 @@ public class RoundsManager : MonoBehaviour
             unit.CanDoAction = true;
             unit.CanAttack = true;
             unit.CanMove = true;
-            unit.GuardedAttackBonus = 0;
 
             if (unit.StunDuration > 0)
             {

@@ -37,7 +37,6 @@ public class Unit : MonoBehaviour
     public int AimingBonus;
     public int CastingNumberBonus;
     public int DefensiveBonus;
-    public int GuardedAttackBonus; //Modyfikator do uników i parowania za ostrożny atak
 
     [Header("Dostępne działania")]
     public bool CanAttack = true;

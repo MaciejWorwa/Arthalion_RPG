@@ -593,6 +593,7 @@ public class StatsData
     public int TempSz;
     public int MaxHealth;
     public int TempHealth;
+    public int CriticalWounds;
     public int CorruptionPoints; // Punkty Zepsucia
     public int PP;
     public int PS;
@@ -696,6 +697,7 @@ public class WeaponData
     public bool Slow; // powolny
     public bool Snare; // unieruchamiający
     public bool Tiring; // ciężki
+    public int Shield; // tarcza
 
     public WeaponData(Weapon weapons)
     {

@@ -39,6 +39,7 @@ public class Weapon : MonoBehaviour
     public bool Slow; // powolny
     public bool Snare; // unieruchamiający
     public bool Tiring; // ciężki
+    public int Shield; // Tarcza
 
     public Dictionary<int, int> WeaponsWithReloadLeft = new Dictionary<int, int>(); // słownik zawierający wszystkie posiadane przez postać bronie wraz z ich ReloadLeft
 

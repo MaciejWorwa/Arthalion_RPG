@@ -43,6 +43,7 @@ public class Stats : MonoBehaviour
     [HideInInspector] public int TempSz;
     public int MaxHealth;
     public int TempHealth;
+    public int CriticalWounds; // Ilość Ran Krytycznych
     public int CorruptionPoints; // Punkty Zepsucia
     public int PS;
     public int PP;
