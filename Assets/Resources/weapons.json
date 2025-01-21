@@ -1,0 +1,351 @@
+{
+  "Weapons": [
+    {
+      "Id": 1,
+      "Name": "Arkan",
+      "Type": ["ranged", "short-range-only", "no-damage"],
+      "TwoHanded": false,
+      "AttackRange": 4,
+      "ReloadTime": 1,
+      "ReloadLeft": 0,
+      "Snare": true
+    },
+    {
+      "Id": 2,
+      "Name": "Bicz",
+      "Type": ["ranged", "short-range-only", "strength-based"],
+      "TwoHanded": false,
+      "AttackRange": 3,
+      "S": -4,
+      "ReloadTime": 1,
+      "ReloadLeft": 0,
+      "Fast": true,
+      "Snare": true
+    },
+    {
+      "Id": 3,
+      "Name": "Bolas",
+      "Type": ["ranged", "throwing"],
+      "TwoHanded": false,
+      "AttackRange": 4,
+      "S": 1,
+      "ReloadTime": 1,
+      "ReloadLeft": 0,
+      "Snare": true
+    },
+    {
+      "Id": 4,
+      "Name": "Broń dwuręczna",
+      "Type": ["melee"],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 0,
+      "Impact": true,
+      "Slow": true
+    },
+    {
+      "Id": 5,
+      "Name": "Broń jednoręczna",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": 0
+    },
+    {
+      "Id": 6,
+      "Name": "Broń naturalna",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": 0,
+      "NaturalWeapon": true
+    },
+    {
+      "Id": 7,
+      "Name": "Broń naturalna - druzgocząca",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": 0,
+      "NaturalWeapon": true,
+      "Impact": true
+    },
+    {
+      "Id": 8,
+      "Name": "Broń naturalna - ignorująca zbroję",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": 0,
+      "NaturalWeapon": true,
+      "ArmourIgnoring": true
+    },
+    {
+      "Id": 9,
+      "Name": "Długi łuk",
+      "Type": ["ranged"],
+      "TwoHanded": true,
+      "AttackRange": 15,
+      "S": 3,
+      "ReloadTime": 1,
+      "ReloadLeft": 0,
+      "ArmourPiercing": true
+    },
+    {
+      "Id": 10,
+      "Name": "Elfi łuk",
+      "Type": ["ranged"],
+      "TwoHanded": true,
+      "AttackRange": 18,
+      "S": 3,
+      "ReloadTime": 1,
+      "ReloadLeft": 0,
+      "ArmourPiercing": true
+    },
+    {
+      "Id": 11,
+      "Name": "Kastet/rękawica",
+      "Type": ["melee"],
+      "TwoHanded": false,
+      "AttackRange": 1.5,
+      "S": -3,
+      "Pummelling": true
+    },
+    {
+      "Id": 12,
+      "Name": "Kij",
+      "Type": ["melee"],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": -2,
+      "Pummelling": true,
+      "Defensive": true
+    },
+    {
+      "Id": 13,
+      "Name": "Korbacz",
+      "Type": ["melee"],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 1,
+      "Tiring": true,
+      "Impact": true
+    },
+    {
+      "Id": 14,
+      "Name": "Krótki łuk",
+      "Type": ["ranged"],
+      "TwoHanded": true,
+      "AttackRange": 8,
+      "S": 3,
+      "ReloadTime": 1,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 15,
+      "Name": "Kusza",
+      "Type": ["ranged"],
+      "TwoHanded": true,
+      "AttackRange": 15,
+      "S": 4,
+      "ReloadTime": 2,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 16,
+      "Name": "Kusza pistoletowa",
+      "Type": ["ranged"],
+      "TwoHanded": false,
+      "AttackRange": 4,
+      "S": 2,
+      "ReloadTime": 2,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 17,
+      "Name": "Kusza samopowtarzalna",
+      "Type": ["ranged"],
+      "TwoHanded": true,
+      "AttackRange": 8,
+      "S": 2,
+      "ReloadTime": 0,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 18,
+      "Name": "Łuk",
+      "Type": ["ranged"],
+      "TwoHanded": true,
+      "AttackRange": 12,
+      "S": 3,
+      "ReloadTime": 1,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 19,
+      "Name": "Morgernsztern",
+      "Type": ["melee"],
+      "TwoHanded": false,
+      "AttackRange": 1.5,
+      "S": 0,
+      "Tiring": true,
+      "Impact": true
+    },
+    {
+      "Id": 20,
+      "Name": "Muszkiet hochlandzki",
+      "Type": ["ranged", "gunpowder"],
+      "TwoHanded": true,
+      "AttackRange": 24,
+      "S": 4,
+      "Impact": true,
+      "ReloadTime": 4,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 21,
+      "Name": "Nóż/gwiazdka do rzucania",
+      "Type": ["ranged"],
+      "TwoHanded": false,
+      "AttackRange": 3,
+      "S": -3,
+      "ReloadTime": 1,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 22,
+      "Name": "Oszczep",
+      "Type": ["ranged", "throwing"],
+      "TwoHanded": false,
+      "AttackRange": 4,
+      "S": -1
+    },
+    {
+      "Id": 23,
+      "Name": "Pistolet",
+      "Type": ["ranged", "gunpowder"],
+      "TwoHanded": false,
+      "AttackRange": 4,
+      "S": 4,
+      "Impact": true,
+      "ReloadTime": 4,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 24,
+      "Name": "Pistolet wielostrzałowy",
+      "Type": ["ranged", "gunpowder"],
+      "TwoHanded": false,
+      "AttackRange": 4,
+      "S": 4,
+      "ReloadTime": 0,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 25,
+      "Name": "Proca",
+      "Type": ["ranged"],
+      "TwoHanded": false,
+      "AttackRange": 8,
+      "S": 3,
+      "ReloadTime": 1,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 26,
+      "Name": "Proca drzewcowa",
+      "Type": ["ranged"],
+      "TwoHanded": true,
+      "AttackRange": 12,
+      "S": 4,
+      "ReloadTime": 2,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 27,
+      "Name": "Puklerz",
+      "Type": ["melee", "shield"],
+      "AttackRange": 1.5,
+      "S": -3,
+      "Balanced": true,
+      "Defensive": true,
+      "Pummelling": true
+    },
+    {
+      "Id": 28,
+      "Name": "Rapier",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": -1,
+      "Fast": true
+    },
+    {
+      "Id": 29,
+      "Name": "Rusznica",
+      "Type": ["ranged", "gunpowder"],
+      "TwoHanded": true,
+      "AttackRange": 12,
+      "S": 4,
+      "Impact": true,
+      "ReloadTime": 4,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 30,
+      "Name": "Rusznica wielostrzałowa",
+      "Type": ["ranged", "gunpowder"],
+      "TwoHanded": true,
+      "AttackRange": 12,
+      "S": 4,
+      "ReloadTime": 0,
+      "ReloadLeft": 0
+    },
+    {
+      "Id": 31,
+      "Name": "Sieć",
+      "Type": ["ranged", "no-damage", "throwing"],
+      "TwoHanded": false,
+      "AttackRange": 2,
+      "ReloadTime": 2,
+      "ReloadLeft": 0,
+      "Snare": true
+    },
+    {
+      "Id": 32,
+      "Name": "Szpada",
+      "Type": ["malee"],
+      "TwoHanded": false,
+      "AttackRange": 1.5,
+      "S": -2,
+      "Fast": true
+    },
+    {
+      "Id": 33,
+      "Name": "Sztylet",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": -3
+    },
+    {
+      "Id": 34,
+      "Name": "Tarcza",
+      "Type": ["melee", "shield"],
+      "AttackRange": 1.5,
+      "S": -2,
+      "Defensive": true
+    },
+    {
+      "Id": 35,
+      "Name": "Upiorna broń",
+      "Type": ["melee"],
+      "TwoHanded": false,
+      "AttackRange": 1.5,
+      "S": 2,
+      "Quality": "Magiczna"
+    },
+    {
+      "Id": 36,
+      "Name": "Włócznia",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": 0,
+      "Fast": true
+    }
+  ]
+}
