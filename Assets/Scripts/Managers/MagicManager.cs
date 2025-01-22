@@ -287,7 +287,7 @@ public class MagicManager : MonoBehaviour
 
                 StartCoroutine(CombatManager.Instance.CheckForParryAndDodge(attackerWeapon, targetWeapon, target.GetComponent<Stats>(), target.GetComponent<Unit>(), true));
 
-                isSuccessful = CombatManager.Instance.TargetIsDefended;
+                //isSuccessful = CombatManager.Instance.TargetIsDefended;
             }
         }
 

@@ -830,11 +830,11 @@ public class UnitsManager : MonoBehaviour
 
             if(difference >= 0)
             { 
-                InitiativeQueueManager.Instance.CalculateAdvantage(difference, 0, unit.tag);
+                InitiativeQueueManager.Instance.CalculateDominance(difference, 0, unit.tag);
             }
             else
             {
-                InitiativeQueueManager.Instance.CalculateAdvantage(difference, 0, unit.tag);
+                InitiativeQueueManager.Instance.CalculateDominance(difference, 0, unit.tag);
             }
         }
     }

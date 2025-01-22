@@ -314,9 +314,6 @@ public class InventoryManager : MonoBehaviour
             equippedWeapons[1] = selectedWeapon;
         }
 
-        //Ustala, czy postać może parować tą bronią
-        unit.GetComponent<Unit>().CanParry = selectedWeapon.Type.Contains("melee") && selectedWeapon.Id != 0 ? true : false;
-
         //Odwołanie do komponentu Weapon wybranej postaci
         Weapon unitWeapon = unit.GetComponent<Weapon>();
 
@@ -348,11 +345,11 @@ public class InventoryManager : MonoBehaviour
 
             if(difference >= 0)
             { 
-                InitiativeQueueManager.Instance.CalculateAdvantage(difference, 0, Unit.SelectedUnit.tag);
+                InitiativeQueueManager.Instance.CalculateDominance(difference, 0, Unit.SelectedUnit.tag);
             }
             else
             {
-                InitiativeQueueManager.Instance.CalculateAdvantage(difference, 0, Unit.SelectedUnit.tag);
+                InitiativeQueueManager.Instance.CalculateDominance(difference, 0, Unit.SelectedUnit.tag);
             }
         }
     }

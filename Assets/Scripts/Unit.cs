@@ -44,8 +44,6 @@ public class Unit : MonoBehaviour
     public bool CanDoAction = true;
     public bool CanCastSpell = false;
     public bool Feinted = false; // Określa, czy postać wykonała w poprzedniej akcji udaną fintę
-    public bool CanParry = true;
-    public bool CanDodge = false;
 
     public Stats Stats;
     public TMP_Text NameDisplay;
@@ -56,8 +54,6 @@ public class Unit : MonoBehaviour
         Stats = gameObject.GetComponent<Stats>();
 
         DisplayUnitName();
-
-        if(Stats.Dodge > 0) CanDodge = true;
 
         MovementManager.Instance.UpdateMovementRange(1, this);
 

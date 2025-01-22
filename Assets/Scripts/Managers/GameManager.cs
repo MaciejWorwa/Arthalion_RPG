@@ -592,7 +592,7 @@ public class GameManager : MonoBehaviour
                 }
             }
             //Ukrycie paska przewagi
-            InitiativeQueueManager.Instance.AdvantageBar.gameObject.SetActive(false);
+            InitiativeQueueManager.Instance.DominanceBar.gameObject.SetActive(false);
             Debug.Log("Panel ze statystykami przeciwników został ukryty.");
         }
         else
@@ -605,9 +605,9 @@ public class GameManager : MonoBehaviour
                 }
             }
             // Aktywacja paska przewagi, jeśli ma sens go wyświetlać
-            if (InitiativeQueueManager.Instance.AdvantageBar.maxValue > 1 && !InitiativeQueueManager.Instance.AdvantageBar.gameObject.activeSelf)
+            if (InitiativeQueueManager.Instance.DominanceBar.maxValue > 1 && !InitiativeQueueManager.Instance.DominanceBar.gameObject.activeSelf)
             {
-                InitiativeQueueManager.Instance.AdvantageBar.gameObject.SetActive(true);
+                InitiativeQueueManager.Instance.DominanceBar.gameObject.SetActive(true);
             }
             Debug.Log("Panel ze statystykami przeciwników został ujawniony.");
         }

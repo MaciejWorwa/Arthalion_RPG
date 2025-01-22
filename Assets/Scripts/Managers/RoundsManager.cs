@@ -66,8 +66,6 @@ public class RoundsManager : MonoBehaviour
             unit.GetComponent<Stats>().CheckForSpecialRaceAbilities();
 
             unit.IsTurnFinished = false;
-            unit.CanParry = true;
-            if(unit.GetComponent<Stats>().Dodge > 0) unit.CanDodge = true;
             unit.CanDoAction = true;
             unit.CanAttack = true;
             unit.CanMove = true;

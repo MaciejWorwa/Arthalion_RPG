@@ -38,9 +38,11 @@ public class InitiativeQueueManager : MonoBehaviour
     private Color _selectedColor = new Color(0f, 0f, 0f, 0.5f); // Kolor wybranego przycisku (zaznaczonej jednostki)
     private Color _activeColor = new Color(0.15f, 1f, 0.45f, 0.2f); // Kolor aktywnego przycisku (jednostka, której tura obecnie trwa)
     private Color _selectedActiveColor = new Color(0.08f, 0.5f, 0.22f, 0.5f); // Kolor wybranego przycisku, gdy jednocześnie jest to aktywna jednostka
-    public UnityEngine.UI.Slider AdvantageBar; // Pasek przewagi sił w bitwie
+    public UnityEngine.UI.Slider DominanceBar; // Pasek przewagi sił w bitwie
     public int PlayersAdvantage;
     public int EnemyAdvantage;
+    [SerializeField] private TMP_InputField _playersAdvantageInput;
+    [SerializeField] private TMP_InputField _enemyAdvantageInput;
     
 
     #region Initiative queue
@@ -55,7 +57,7 @@ public class InitiativeQueueManager : MonoBehaviour
         //Aktualizuje pasek przewagi w bitwie
         unit.GetComponent<Stats>().Overall = unit.GetComponent<Stats>().CalculateOverall();
 
-        CalculateAdvantage(unit.GetComponent<Stats>().Overall, 0, unit.tag);
+        CalculateDominance(unit.GetComponent<Stats>().Overall, 0, unit.tag);
     }
 
     public void RemoveUnitFromInitiativeQueue(Unit unit)
@@ -64,7 +66,7 @@ public class InitiativeQueueManager : MonoBehaviour
 
         //Aktualizuje pasek przewagi w bitwie
         unit.GetComponent<Stats>().Overall = unit.GetComponent<Stats>().CalculateOverall();
-        CalculateAdvantage(0, unit.GetComponent<Stats>().Overall, unit.tag);
+        CalculateDominance(0, unit.GetComponent<Stats>().Overall, unit.tag);
     }
 
     public void UpdateInitiativeQueue()
@@ -179,28 +181,69 @@ public class InitiativeQueueManager : MonoBehaviour
     }
     #endregion
     
-    public void CalculateAdvantage(int addedOverall, int substractedOverall, string unitTag)
+    public void CalculateDominance(int addedOverall, int substractedOverall, string unitTag)
     {
         // Aktualizacja maksymalnej wartości przewagi
-        if(AdvantageBar.maxValue == 1) // Początkowa wartość Slidera (nie da sie ustawić na 0)
+        if(DominanceBar.maxValue == 1) // Początkowa wartość Slidera (nie da sie ustawić na 0)
         { 
-            AdvantageBar.maxValue = addedOverall;
+            DominanceBar.maxValue = addedOverall;
         }
         else
         {
-            AdvantageBar.maxValue += addedOverall - substractedOverall;
+            DominanceBar.maxValue += addedOverall - substractedOverall;
         }
 
         // Aktualizacja wartości przewagi gracza (tylko jeśli jednostka należy do gracza)
         if (unitTag == "PlayerUnit")
         {
-            AdvantageBar.value += addedOverall - substractedOverall;
+            DominanceBar.value += addedOverall - substractedOverall;
         }
 
         // Aktywacja paska, jeśli ma sens go wyświetlać
-        if (AdvantageBar.maxValue > 1 && !AdvantageBar.gameObject.activeSelf && !GameManager.IsStatsHidingMode)
+        if (DominanceBar.maxValue > 1 && !DominanceBar.gameObject.activeSelf && !GameManager.IsStatsHidingMode)
         {
-            AdvantageBar.gameObject.SetActive(true);
+            DominanceBar.gameObject.SetActive(true);
+        }
+    }
+
+    public void CalculateAdvantageBasedOnDominance()
+    {
+        // Zaktualizowanie przewag grupowych za różnicę sił
+        if(DominanceBar.value < DominanceBar.maxValue / 3)
+        {
+            CalculateAdvantage("PlayerUnit", -1);
+            CalculateAdvantage("EnemyUnit", 1);
+        }
+        else if(DominanceBar.value * 3 > DominanceBar.maxValue * 2)
+        {
+            CalculateAdvantage("EnemyUnit", -1);
+            CalculateAdvantage("PlayerUnit", 1);
+        }
+    }
+
+    public void CalculateAdvantage(string unitTag, int value)
+    {
+        if (unitTag == "PlayerUnit")
+        {
+            PlayersAdvantage += value;
+            _playersAdvantageInput.text = PlayersAdvantage.ToString();
+        }
+        else if (unitTag =="EnemyUnit")
+        {
+            EnemyAdvantage += value;
+            _enemyAdvantageInput.text = EnemyAdvantage.ToString();
+        }
+    }
+
+    public void SetAdvantageByInput(TMP_InputField inputField)
+    {
+        if(inputField == _playersAdvantageInput)
+        {
+            PlayersAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
+        }
+        else if(inputField == _enemyAdvantageInput)
+        {
+            EnemyAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
         }
     }
 }
