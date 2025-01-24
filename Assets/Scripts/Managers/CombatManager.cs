@@ -11,6 +11,8 @@ using UnityEditor;
 using System.Drawing;
 using TMPro;
 using System;
+using static UnityEngine.GraphicsBuffer;
+using UnityEditor.Experimental.GraphView;
 
 public class CombatManager : MonoBehaviour
 {
@@ -37,9 +39,6 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private int _attackModifier;
-    private float _attackDistance;
-
     [Header("Przyciski wszystkich typów ataku")]
     [SerializeField] private UnityEngine.UI.Button _aimButton;
     [SerializeField] private UnityEngine.UI.Button _defensiveStanceButton;
@@ -53,8 +52,6 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _disarmButton;
     public Dictionary<string, bool> AttackTypes = new Dictionary<string, bool>();
 
-    private bool _isSuccessful;  //Skuteczność ataku
-
     [Header("Panele do manualnego zarządzania")]
     [SerializeField] private GameObject _parryAndDodgePanel;
     [SerializeField] private UnityEngine.UI.Button _dodgeButton;
@@ -66,15 +63,13 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private GameObject _applyRollResultPanel;
     [SerializeField] private TMP_InputField _rollInputField;
     [SerializeField] private TMP_InputField _defenceRollInputField;
+
     // Zmienne do przechowywania wyniku
     private int _manualRollResult;
     private bool _isWaitingForRoll;
-    private int _defenceSuccessLevel;
-    private int _defenceRollResult;
-    private int _defenceSuccessValue;
     public bool IsManualPlayerAttack;
 
-    private List<string> _greenskinsList = new List<string> {"Goblin", "Hobgoblin", "Ork zwyczajny", "Czarny ork", "Dziki ork"}; //Lista string wszystkich zielonoskórych
+    private List<string> _greenskinsList = new List<string> { "Goblin", "Hobgoblin", "Ork zwyczajny", "Czarny ork", "Dziki ork" }; //Lista string wszystkich zielonoskórych
 
     // Metoda inicjalizująca słownik ataków
     void Start()
@@ -113,14 +108,14 @@ public class CombatManager : MonoBehaviour
     // Metoda ustawiająca dany typ ataku
     public void ChangeAttackType(string attackTypeName = null)
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
         Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
 
-        if(attackTypeName == null) attackTypeName = "StandardAttack";
+        if (attackTypeName == null) attackTypeName = "StandardAttack";
 
         //Resetuje szarżę lub bieg, jeśli były aktywne
-        if(attackTypeName != "Charge" && unit.IsCharging)
+        if (attackTypeName != "Charge" && unit.IsCharging)
         {
             MovementManager.Instance.UpdateMovementRange(1);
         }
@@ -145,7 +140,7 @@ public class CombatManager : MonoBehaviour
             }
 
             // Zmieniamy wartość bool dla danego typu ataku na true, a jeśli już był true to zmieniamy na standardowy atak.
-            if(!AttackTypes[attackTypeName])
+            if (!AttackTypes[attackTypeName])
             {
                 AttackTypes[attackTypeName] = true;
             }
@@ -153,7 +148,7 @@ public class CombatManager : MonoBehaviour
             {
                 AttackTypes[attackTypeName] = false;
                 AttackTypes["StandardAttack"] = true;
-                if(unit.GetComponent<Stats>().TempSz == unit.GetComponent<Stats>().Sz * 2)
+                if (unit.GetComponent<Stats>().TempSz == unit.GetComponent<Stats>().Sz * 2)
                 {
                     MovementManager.Instance.UpdateMovementRange(1);
                 }
@@ -162,9 +157,9 @@ public class CombatManager : MonoBehaviour
             //Ogłuszanie jest dostępne tylko dla jednostek ze zdolnością ogłuszania
             if (AttackTypes["Stun"] == true && unit.GetComponent<Stats>().StrikeToStun == false)
             {
-                    AttackTypes[attackTypeName] = false;
-                    AttackTypes["StandardAttack"] = true;
-                    Debug.Log("Ogłuszanie mogą wykonywać tylko jednostki posiadające tą zdolność.");
+                AttackTypes[attackTypeName] = false;
+                AttackTypes["StandardAttack"] = true;
+                Debug.Log("Ogłuszanie mogą wykonywać tylko jednostki posiadające tą zdolność.");
             }
 
             //Rozbrajanie jest dostępne tylko dla jednostek ze zdolnością rozbrajania
@@ -221,274 +216,399 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Attack function
-    public void Attack(Unit attacker, Unit target, bool opportunityAttack)
+    public void Attack(Unit attacker, Unit target, bool opportunityAttack = false)
     {
-         //Sprawdza, czy gra nie jest wstrzymana (np. poprzez otwarcie dodatkowych paneli)
+        StartCoroutine(AttackCoroutine(attacker, target, opportunityAttack));
+    }
+    private IEnumerator AttackCoroutine(Unit attacker, Unit target, bool opportunityAttack)
+    {
+        // 1) Sprawdź, czy gra jest wstrzymana
         if (GameManager.IsGamePaused)
         {
             Debug.Log("Gra została wstrzymana. Aby ją wznowić musisz wyłączyć okno znajdujące się na polu gry.");
-            return;
+            yield break;
         }
 
-        if (attacker.CanAttack == false && opportunityAttack == false)
+        // 2) Sprawdź, czy jednostka może wykonać atak
+        if (!attacker.CanDoAction && !opportunityAttack)
         {
-            Debug.Log("Wybrana jednostka nie może wykonać kolejnego ataku w tej rundzie.");
-            return;
+            Debug.Log("Wybrana jednostka nie może wykonać ataku w tej rundzie.");
+            yield break;
         }
 
+        // 3) Pobierz statystyki i broń
         Stats attackerStats = attacker.Stats;
         Stats targetStats = target.Stats;
-
         Weapon attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(attacker.gameObject);
         Weapon targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
 
-        //Liczy dystans pomiedzy walczącymi
-        _attackDistance = CalculateDistance(attacker.gameObject, target.gameObject);
+        // 4) Oblicz dystans
+        float attackDistance = CalculateDistance(attacker.gameObject, target.gameObject);
 
-        //Wykonuje atak, jeśli cel jest w zasięgu
-        if (_attackDistance <= attackerWeapon.AttackRange || _attackDistance <= attackerWeapon.AttackRange * 3 && attackerWeapon.Type.Contains("ranged"))
+        // 5) Sprawdź zasięg i ewentualnie wykonaj szarżę
+        if (attackDistance > attackerWeapon.AttackRange && (!attackerWeapon.Type.Contains("ranged") || attackDistance > attackerWeapon.AttackRange * 3))
         {
-
-            if (attackerWeapon.Type.Contains("ranged"))
+            // Poza zasięgiem
+            if (attacker.IsCharging)
             {
-                //Sprawdza konieczne warunki do wykonania ataku dystansowego
-                if(ValidateRangedAttack(attacker, target, attackerWeapon, _attackDistance) == false) return;
-
-                // Sprawdza, czy na linii strzału znajduje się przeszkoda
-                RaycastHit2D[] raycastHits = Physics2D.RaycastAll(attacker.transform.position, target.transform.position - attacker.transform.position, _attackDistance);
-
-                foreach (var raycastHit in raycastHits)
-                {
-                    if (raycastHit.collider == null) continue;
-
-                    var mapElement = raycastHit.collider.GetComponent<MapElement>();
-                    var unit = raycastHit.collider.GetComponent<Unit>();
-
-                    if (mapElement != null && mapElement.IsLowObstacle)
-                    {
-                        _attackModifier -= 20;
-                        Debug.Log("Strzał jest wykonywany w jednostkę znajdującą się za przeszkodą. Zastosowano ujemny modyfikator do trafienia.");
-                        break; // Żeby modyfikator nie kumulował się za każdą przeszkodę
-                    }
-
-                    if (unit != null && unit != target && unit != attacker)
-                    {
-                        _attackModifier -= 20;
-                        Debug.Log("Na linii strzału znajduje się inna jednostka. Zastosowano ujemny modyfikator do trafienia.");
-                        break; // Żeby modyfikator nie kumulował się za każdą postać
-                    }
-                }
-            }
-
-            //Sprawdza, czy jest to atak wykonywany przez gracza, po którym będzie trzeba wpisać obrażenia w odpowiednim panelu. Ta zmienna jest konieczna, aby nowa jednostka nie była wybierana dopóki nie wpiszemy obrażeń.
-            IsManualPlayerAttack = attacker.CompareTag("PlayerUnit") && GameManager.IsAutoDiceRollingMode == false;
-
-            //Wykonuje akcję (pomija tak okazyjny)
-            bool canDoAction = true;
-            canDoAction = RoundsManager.Instance.DoAction(attacker);
-
-            if (!canDoAction)
-            {
-                //Zresetowanie bonusu do trafienia
-                _attackModifier = 0;
-                return;
-            }
-
-            int attackSuccessLevel = 0;
-
-            //Zaznacza, że jednostka wykonała już akcję ataku w tej rundzie. Uniemożliwia to wykonanie kolejnej. Nie dotyczy ataku okazyjnego i finty, a w wielokrotnym sprawdza ilość dostępnych ataków
-            if (!opportunityAttack)
-            {
-                attacker.CanAttack = false;
-            } 
-
-            //W przypadku, gdy atak następuje po udanym rzucie na trafienie rzeczywistymi kośćmi to nie sprawdzamy rzutu na trafienie. W przeciwnym razie sprawdzamy
-            if(IsManualPlayerAttack)
-            {
-                if(attackerWeapon.Quality != "Magiczna" && target.GetComponent<Stats>().Ethereal == true)
-                {
-                    Debug.Log("Przeciwnik jest odporny na niemagiczne ataki. Aby go zranić konieczne jest użycie magicznej broni lub zaklęcia.");
-                    _isSuccessful = false;
-                }
-                else
-                {                 
-                    //Obliczenie modyfikatora do ataku
-                    int modifier = CalculateAttackModifier(attacker, attackerWeapon, target, _attackDistance);
-
-                    string message = $"Wykonaj rzut kośćmi na trafienie.";
-                    if(modifier > 0)
-                    {      
-                        message += $" Modyfikator: <color=green>{modifier}</color>.";
-                    }
-                    else if (modifier < 0)
-                    {
-                        message += $" Modyfikator: <color=red>{modifier}</color>.";
-                    }
-                    message += $" Jeśli atak chybi, wyłącz okno znajdujące się na środku ekranu.";
-                    Debug.Log(message);
-
-                    StartCoroutine(WaitForRollResult());
-
-                    // Korutyna obsługująca rzut na trafienia
-                    IEnumerator WaitForRollResult()
-                    {
-                        // Wywołaj korutynę i poczekaj na wynik
-                        yield return StartCoroutine(WaitForAttackRollValue());
-
-                        yield return new WaitUntil(() => _applyRollResultPanel.activeSelf == false);
-
-                        //Sprawdza, czy atak jest atakiem dystansowym, czy atakiem w zwarciu i ustala jego skuteczność
-                        attackSuccessLevel = CheckAttackEffectiveness(attacker, attackerWeapon, target, targetWeapon, _manualRollResult);
-
-                        Debug.Log($"attackSuccessLevel {attackSuccessLevel}");
-
-                        _isSuccessful = attackSuccessLevel > 0 ? true : false;
-
-                        Debug.Log($"_isSuccessful {_isSuccessful}");
-                    }
-                }
-                
-                //Sprawia, że po ataku należy przeładować broń. Uwzględnia błyskawiczne przeładowanie
-                if (attackerWeapon.Type.Contains("ranged"))
-                {
-                    ResetWeaponLoad(attackerWeapon, attackerStats);
-                }
+                // Jeżeli to miała być szarża, próbujemy ją wykonać
+                Charge(attacker.gameObject, target.gameObject);
             }
             else
             {
-                //Sprawdza, czy atak jest atakiem dystansowym, czy atakiem w zwarciu i ustala jego skuteczność
-                attackSuccessLevel = CheckAttackEffectiveness(attacker, attackerWeapon, target, targetWeapon);
-                
-                _isSuccessful = attackSuccessLevel > 0 ? true : false;
+                Debug.Log("Cel jest poza zasięgiem ataku.");
             }
-
-            //Zresetowanie bonusu do trafienia
-            _attackModifier = 0;
-
-            if(_isSuccessful == false) return;
-
-            ExecuteAttack(attacker, target, attackerWeapon, attackSuccessLevel);
-            StartCoroutine(AnimationManager.Instance.PlayAnimation("attack", attacker.gameObject, target.gameObject));
-
+            yield break;
         }
-        else if (attacker.GetComponent<Unit>().IsCharging)
+
+        // 6) Sprawdzenie dodatkowych warunków dla ataku dystansowego (np. przeszkody, czy broń jest naładowana, itp.)
+        if (attackerWeapon.Type.Contains("ranged"))
         {
-            Charge(attacker.gameObject, target.gameObject);
+            bool validRanged = ValidateRangedAttack(attacker, target, attackerWeapon, attackDistance);
+            if (!validRanged) yield break;
+
+
+            // ==================================================================
+            //DODAĆ MODYFIKATORY ZA PRZESZKODY NA LINII STRZAŁU
+            // ==================================================================
+        }
+
+        // 7) Określamy, czy atak jest manualny czy automatyczny
+        IsManualPlayerAttack = attacker.CompareTag("PlayerUnit") && GameManager.IsAutoDiceRollingMode == false;
+
+        // 8) Jeśli to nie atak okazyjny – zużywamy akcję
+        if (!opportunityAttack)
+        {
+            RoundsManager.Instance.DoAction(attacker);
+        }
+
+        // ==================================================================
+        // 9) *** RZUT ATAKU *** (manualny lub automatyczny)
+        // ==================================================================
+        int attackModifier = CalculateAttackModifier(attacker, attackerWeapon, target, attackDistance);
+
+        int rollOnAttack;
+        if (IsManualPlayerAttack)
+        {
+            string message = $"Wykonaj rzut kośćmi na trafienie.";
+            if (attackModifier > 0)
+            {
+                message += $" Modyfikator: <color=green>{attackModifier}</color>.";
+            }
+            else if (attackModifier < 0)
+            {
+                message += $" Modyfikator: <color=red>{attackModifier}</color>.";
+            }
+            message += $" Jeśli atak chybi, wyłącz okno znajdujące się na środku ekranu.";
+            Debug.Log(message);
+
+            // Wywołujemy panel do wpisania wyniku (korutyna czeka, żeby reszta kodu nie poszła od razu dalej)
+            yield return StartCoroutine(WaitForAttackRollValue());
+            rollOnAttack = _manualRollResult;
         }
         else
         {
-            Debug.Log("Cel ataku stoi poza zasięgiem.");
+            // Automatyczny rzut
+            rollOnAttack = UnityEngine.Random.Range(1, 101);
         }
-    }
 
-    public void ExecuteAttack(Unit attacker, Unit target, Weapon attackerWeapon, int attackSuccessLevel)
-    {
-        Stats attackerStats = attacker.GetComponent<Stats>();
-        Stats targetStats = target.GetComponent<Stats>();
+        // 10) Liczymy poziomy sukcesu atakującego
+        int skillValue = attackerWeapon.Type.Contains("ranged") ? attackerStats.US : attackerStats.WW;
+        int[] results = CalculateSuccessLevel(attackerWeapon, rollOnAttack, skillValue, attackModifier);
+        int attackerSuccessValue = results[0];
+        int attackerSuccessLevel = results[1];
 
-        Debug.Log("ATAAAAAAAAAK");
+        string successLevelColor = results[0] >= 0 ? "green" : "red";
+        string modifierString = attackModifier != 0 ? $" Modyfikator: {attackModifier}," : "";
+        Debug.Log($"{attackerStats.Name} atakuje przy użyciu {attackerWeapon.Name}. Wynik rzutu: {rollOnAttack}, Wartość umiejętności: {skillValue},{modifierString} PS: <color={successLevelColor}>{attackerSuccessLevel}</color>");
 
-        if(attackSuccessLevel > 0)
+        // Obsługa fuksa / pecha
+        if (IsDoubleDigit(rollOnAttack) || (attackerWeapon.Impale && rollOnAttack % 10 == 0) || (attackerWeapon.Dangerous && attackerSuccessValue < 0 && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
         {
-            int armor = CalculateArmor(targetStats, attackerWeapon);
-
-            int damage = CalculateDamage(attackSuccessLevel, attackerStats, attackerWeapon);
-
-            //Bonus do obrażeń w przypadku atakowania postaci bezbronnej
-            if (target.HelplessDuration > 0)
+            if (attackerSuccessValue >= 0)
             {
-                int extraRoll = UnityEngine.Random.Range(1, 11);
-                damage += extraRoll;
-                Debug.Log($"Rzut na dodatkowe obrażenia z powodu atakowania bezbronnej jednostki: {extraRoll}");
+                Debug.Log($"{attackerStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color> na trafienie!");
+                attackerStats.FortunateEvents++;
             }
-
-            //Uwzględnienie strzału przebijającego zbroję (zdolność)
-            if (attackerStats.SureShot && _attackDistance <= 1.5f && attackerWeapon.Type.Contains("ranged") && armor > 0) armor--;
-
-            Debug.Log($"{attackerStats.Name} zadał {damage} obrażeń.");
-
-            //Aktualizuje osiągnięcia
-            attackerStats.TotalDamageDealt += damage;
-            if(damage > attackerStats.HighestDamageDealt)
+            else if (IsDoubleDigit(rollOnAttack) || (attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
             {
-                attackerStats.HighestDamageDealt = damage;
-            }
-
-            //Zadaje obrażenia
-            ApplyDamage(damage, attackerStats, attackerWeapon, targetStats, armor, target);
-            
-            //Sprawdza, czy atak spowodował śmierć
-            if (targetStats.TempHealth < 0 && GameManager.IsAutoKillMode)
-            {
-                HandleDeath(targetStats, target.gameObject, attackerStats);
+                Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color> na trafienie!");
+                attackerStats.UnfortunateEvents++;
             }
         }
-        else
+
+        // Obsługa FUKSA i PECHA
+        bool isDoubleRoll = IsDoubleDigit(rollOnAttack);
+        bool isImpaleRoll = attackerWeapon.Impale && rollOnAttack % 10 == 0;
+        bool isDangerousRoll = attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9) && attackerSuccessValue < 0;
+        bool isSpecialRoll = isDoubleRoll || isImpaleRoll || isDangerousRoll; // Sprawdzamy, czy mamy do czynienia z którymś z „wyjątkowych” rzutów
+
+        if (isSpecialRoll)
         {
+            if (attackerSuccessValue >= 0)
+            {
+                Debug.Log($"{attackerStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color> na trafienie!");
+                attackerStats.FortunateEvents++;
+            }
+            else
+            {
+                // Tu sprawdzamy tylko double albo „niebezpieczny” rzut na 9, bo impale przy nieudanym rzucie nie wywołuje żadnego efektu.
+                if (isDoubleRoll || isDangerousRoll)
+                {
+                    Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color> na trafienie!");
+                    attackerStats.UnfortunateEvents++;
+                }
+            }
+        }
+
+        // Jeśli to była broń dystansowa – resetujemy ładowanie
+        if (attackerWeapon.Type.Contains("ranged"))
+        {
+            ResetWeaponLoad(attackerWeapon, attackerStats);
+        }
+
+        // ==================================================================
+        // 11) *** OBRONA *** (tylko jeśli to atak w zwarciu i nie chcemy możemy bronić się przed strzałem)
+        // ==================================================================
+        int defenceSuccessValue = 0;
+        int defenceSuccessLevel = 0;
+        int defenceRollResult = 0;
+
+        // Modyfikatory do parowania i uników
+        int parryModifier = 0;
+        int dodgeModifier = 0;
+        if (attackerWeapon.Wrap) parryModifier -= 10;
+        if (attackerWeapon.Slow)
+        {
+            parryModifier += 10;
+            dodgeModifier += 10;
+        }
+        if (targetWeapon.Defensive) parryModifier += 10;
+        if (targetWeapon.Unbalanced) parryModifier -= 10;
+        if (attackerStats.Size > targetStats.Size) parryModifier -= (attackerStats.Size - targetStats.Size) * 20; // Kara do parowania za rozmiar
+
+        // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
+        bool canParry = attackerWeapon.Type.Contains("melee") || targetWeapon.Shield >= 2;
+        bool canDodge = attackerWeapon.Type.Contains("melee");
+
+        // Obliczamy sumaryczną wartość parowania i uniku
+        int parryValue = targetStats.WW + parryModifier;
+        int dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
+
+        if (canParry || canDodge)
+        {
+            // Jeśli AutoDefense jest wyłączone => czekamy, aż gracz wybierze reakcję obronną
+            if (!GameManager.IsAutoDefenseMode)
+            {
+                Debug.Log("Wybierz reakcję atakowanej postaci.");
+
+                _parryAndDodgePanel.SetActive(true);
+
+                _dodgeButton.gameObject.SetActive(canDodge);
+                _parryButton.gameObject.SetActive(canParry);
+
+                // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
+                yield return new WaitUntil(() => _parryAndDodgePanel.activeSelf == false);
+
+                // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi i wybrano parowanie lub unik, to czekamy na wynik rzutu
+                if ((_parryOrDodge == "parry" || _parryOrDodge == "dodge") && !GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
+                {
+                    yield return StartCoroutine(WaitForDefenceRollValue());
+                    defenceRollResult = _manualRollResult;
+                }
+                else if (_parryOrDodge == "parry" || _parryOrDodge == "dodge")
+                {
+                    defenceRollResult = UnityEngine.Random.Range(1, 101);
+                }
+                else if (_parryOrDodge == "cancel")
+                {
+                    // Kontynuujemy korytynę
+                }
+
+                // Policz poziom sukcesu obrońcy
+                if (_parryOrDodge == "parry")
+                {
+                    // Parowanie
+                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, parryValue);
+                    defenceSuccessValue = defenceResults[0];
+                    defenceSuccessLevel = defenceResults[1];
+
+
+                    string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
+                    Debug.Log($"{targetStats.Name} próbuje parować. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.WW}, PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+                }
+                else if (_parryOrDodge == "dodge")
+                {
+                    // Unik
+                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, dodgeValue);
+                    defenceSuccessValue = defenceResults[0];
+                    defenceSuccessLevel = defenceResults[1];
+
+                    string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
+                    Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.Dodge + targetStats.Zw}, PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+                }
+
+                // Resetujemy wybór reakcji obronnej
+                _parryOrDodge = "";
+            }
+            else
+            {
+                defenceRollResult = UnityEngine.Random.Range(1, 101);
+
+                if (parryValue >= dodgeValue)
+                {
+                    // Parowanie
+                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, parryValue);
+                    defenceSuccessValue = defenceResults[0];
+                    defenceSuccessLevel = defenceResults[1];
+
+                    string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
+                    Debug.Log($"{targetStats.Name} próbuje parować. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.WW}, PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+                }
+                else
+                {
+                    // Unik
+                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, dodgeValue);
+                    defenceSuccessValue = defenceResults[0];
+                    defenceSuccessLevel = defenceResults[1];
+
+                    string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
+                    Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.Dodge + targetStats.Zw}, PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+                }
+            }
+
+            // Obsługa fuksa / pecha
+            if (IsDoubleDigit(defenceRollResult))
+            {
+                if (defenceSuccessValue >= 0)
+                {
+                    Debug.Log($"{targetStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
+                    targetStats.FortunateEvents++;
+                }
+                else
+                {
+                    Debug.Log($"{targetStats.Name} wyrzucił <color=red>PECHA</color>!");
+                    targetStats.UnfortunateEvents++;
+                }
+            }
+        }
+
+        // 12) Teraz dopiero wiemy, ile wynoszą poziomy sukcesu atakującego i obrońcy
+        // Następuje finalne rozstrzygnięcie
+        int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
+        if (combinedSuccessLevel <= 0)
+        {
+            // Atak chybił
             Debug.Log($"Atak {attackerStats.Name} chybił.");
             StartCoroutine(AnimationManager.Instance.PlayAnimation("miss", null, target.gameObject));
-        }
-    }
-
-    // Obliczanie i stosowanie obrażeń
-    private void ApplyDamage(int damage, Stats attackerStats, Weapon attackerWeapon, Stats targetStats, int armor, Unit targetUnit)
-    {
-        //Aktualizuje osiągnięcia
-        targetStats.TotalDamageTaken += damage;
-        if(damage > targetStats.HighestDamageTaken)
-        {
-            targetStats.HighestDamageTaken = damage;
-        }
-
-        int targetWt = targetStats.Wt / 10;
-
-        if (damage > targetWt + armor || (!attackerWeapon.Undamaging && damage <= targetWt + armor))
-        {
-            int actualDamage = damage > targetWt + armor ? damage - (targetWt + armor) : 1;
-            targetStats.TempHealth -= actualDamage;
-
-            if (!GameManager.IsStatsHidingMode || targetUnit.gameObject.CompareTag("PlayerUnit"))
-            {
-                Debug.Log($"{targetStats.Name} znegował {targetWt + armor} obrażeń.");
-            }
-            else if (targetStats.TempHealth >= 0)
-            {
-                Debug.Log($"{targetStats.Name} został zraniony.");
-            }
-
-            if ((targetStats.TempHealth < 0 && GameManager.IsHealthPointsHidingMode) ||
-                (targetStats.TempHealth < 0 && targetUnit.gameObject.CompareTag("EnemyUnit") && GameManager.IsStatsHidingMode))
-            {
-                Debug.Log($"Żywotność {targetStats.Name} spadła poniżej zera i wynosi <color=red>{targetStats.TempHealth}</color>.");
-            }
-
-            // Aktualizacja punktów żywotności
-            if (!GameManager.IsHealthPointsHidingMode && !(GameManager.IsStatsHidingMode && targetUnit.gameObject.CompareTag("EnemyUnit")))
-            {
-                targetUnit.DisplayUnitHealthPoints();
-                if (targetStats.TempHealth < 0)
-                {
-                    Debug.Log($"Punkty żywotności {targetStats.Name}: <color=red>{targetStats.TempHealth}/{targetStats.MaxHealth}</color>");
-                }
-                else
-                {
-                    Debug.Log($"Punkty żywotności {targetStats.Name}: {targetStats.TempHealth}/{targetStats.MaxHealth}");
-                }
-            }
-            else
-            {
-                targetUnit.HideUnitHealthPoints();
-            }
-
-            StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, targetUnit.gameObject, actualDamage));
+            yield break;
         }
         else
         {
-            Debug.Log($"Atak nie przebił się przez pancerz.");
-
-            StartCoroutine(AnimationManager.Instance.PlayAnimation("parry", null, targetUnit.gameObject));
+            //Zaktualizowanie przewagi
+            InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, 1);
+            string group = attacker.tag == "PlayerUnit" ? "sojuszników" : "przeciwników";
+            Debug.Log($"Przewaga {group} została zwiększona o <color=#4dd2ff>1</color>.");
         }
 
+        // 13) Jeśli atakujący wygrywa, zadaj obrażenia
+        // Oblicz pancerz i finalne obrażenia
+        int armor = CalculateArmor(targetStats, attackerWeapon);
+        int damage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, targetStats, attackerWeapon, attackDistance);
+
+        Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.");
+
+        // 14) Zadaj obrażenia
+        ApplyDamageToTarget(damage, armor, attackerStats, attackerWeapon, targetStats, target);
+
+        // 15) Animacja ataku i ewentualnie sprawdzenie śmierci
+        StartCoroutine(AnimationManager.Instance.PlayAnimation("attack", attacker.gameObject, target.gameObject));
+
+        if (targetStats.TempHealth < 0 && GameManager.IsAutoKillMode)
+        {
+            HandleDeath(targetStats, target.gameObject, attackerStats);
+        }
+    }
+
+    private void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Weapon attackerWeapon, Stats targetStats, Unit target)
+    {
+        // targetStats.TotalDamageTaken += damage; itp.
+        int targetWt = targetStats.Wt / 10;
+        int reducedDamage = armor + targetWt;
+        int finalDamage = 0;
+
+        if (damage > reducedDamage)
+        {
+            finalDamage = damage - reducedDamage;
+        }
+        else
+        {
+            // Jeśli atak nie przebił pancerza, ale broń NIE JEST tępa, to broń zadaje 1 obrażeń
+            if (!attackerWeapon.Undamaging) finalDamage = 1;
+        }
+
+        if (finalDamage > 0)
+        {
+            targetStats.TempHealth -= finalDamage;
+            Debug.Log($"{targetStats.Name} znegował {reducedDamage} obrażeń.");
+
+            //Informacja o punktach żywotności po zadaniu obrażeń
+            if (!GameManager.IsHealthPointsHidingMode || target.CompareTag("PlayerUnit"))
+            {
+                if (targetStats.TempHealth < 0)
+                {
+                    Debug.Log($"Punkty żywotności {targetStats.Name}: <color=red>{targetStats.TempHealth}</color><color=#4dd2ff>/{targetStats.MaxHealth}</color>");
+                }
+                else
+                {
+                    Debug.Log($"Punkty żywotności {targetStats.Name}: <color=red>{targetStats.TempHealth}</color><color=#4dd2ff>/{targetStats.MaxHealth}</color>");
+                }
+                target.DisplayUnitHealthPoints();
+            }
+
+            StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, target.gameObject, finalDamage));
+        }
+        else
+        {
+            Debug.Log("Atak nie przebił pancerza i nie zadał obrażeń.");
+            StartCoroutine(AnimationManager.Instance.PlayAnimation("parry", null, target.gameObject));
+        }
+    }
+
+    private int[] CalculateSuccessLevel(Weapon weapon, int rollResult, int skillValue, int modifier = 0)
+    {
+        int successValue = skillValue + modifier - rollResult;
+        int successLevel = (skillValue + modifier) / 10 - rollResult / 10;
+
+        if (successValue > 0) // Nieudany test
+        {
+            if (weapon.Practical) // Uwzględnia zaletę przedmiotu "Praktyczny"
+            {
+                Debug.Log($"Używamy cechy Praktyczny i podnosimy PS z {successLevel} na {successLevel + 1}");
+                successLevel++;
+            }
+            else if (weapon.Unrielable) // Uwzględnia zaletę przedmiotu "Zawodny"
+            {
+                Debug.Log($"Używamy cechy Zawodny i obniżamy PS z {successLevel} na {successLevel - 1}");
+                successLevel--;
+            }
+        }
+        else // Udany test
+        {
+            if (weapon.Precise) // Uwzględnia zaletę przedmiotu "Precyzyjny"
+            {
+                Debug.Log($"Używamy cechy Precyzyjny i podnosimy PS z {successLevel} na {successLevel + 1}");
+                successLevel++;
+            }
+        }
+
+        if (weapon.Imprecise) // Uwzględnia zaletę przedmiotu "Nieprecyzyjny"
+        {
+            Debug.Log($"Używamy cechy Nieprecyzyjny i obniżamy PS z {successLevel} na {successLevel - 1}");
+            successLevel--;
+        }
+
+        return new int[] { successValue, successLevel };
     }
 
     public void HandleDeath(Stats targetStats, GameObject target, Stats attackerStats)
@@ -502,8 +622,8 @@ public class CombatManager : MonoBehaviour
         StartCoroutine(AnimationManager.Instance.PlayAnimation("kill", attackerStats.gameObject, target));
 
         //Aktualizuje osiągnięcia
-        attackerStats.OpponentsKilled ++;
-        if(attackerStats.StrongestDefeatedOpponentOverall < targetStats.Overall)
+        attackerStats.OpponentsKilled++;
+        if (attackerStats.StrongestDefeatedOpponentOverall < targetStats.Overall)
         {
             attackerStats.StrongestDefeatedOpponentOverall = targetStats.Overall;
             attackerStats.StrongestDefeatedOpponent = targetStats.Name;
@@ -522,8 +642,7 @@ public class CombatManager : MonoBehaviour
     {
         if (attacker != null && target != null)
         {
-            _attackDistance = Vector2.Distance(attacker.transform.position, target.transform.position);
-            return _attackDistance;
+            return Vector2.Distance(attacker.transform.position, target.transform.position);
         }
         else
         {
@@ -536,13 +655,13 @@ public class CombatManager : MonoBehaviour
     {
         // Sprawdza, czy broń jest naładowana
         if (attackerWeapon.ReloadLeft != 0)
-        {            
+        {
             Debug.Log($"Broń wymaga przeładowania.");
             return false;
         }
 
         // Sprawdza, czy cel nie znajduje się zbyt blisko
-        if (attackDistance <= 1.5f)
+        if (attackDistance <= 1.5f && !attackerWeapon.Type.Contains("Pistol"))
         {
             Debug.Log($"Jednostka stoi zbyt blisko celu, aby wykonać atak dystansowy.");
 
@@ -573,204 +692,6 @@ public class CombatManager : MonoBehaviour
 
     #endregion
 
-    #region Check attack effectiveness
-    private int CheckAttackEffectiveness(Unit attackerUnit, Weapon attackerWeapon, Unit targetUnit, Weapon targetWeapon, int rollResult = 0)
-    { 
-        bool _isSuccessful = false;
-        Stats attackerStats = attackerUnit.GetComponent<Stats>();
-        Stats targetStats = targetUnit.GetComponent<Stats>();
-
-        int finalSuccessLevel = 0;
-
-        //Rzut na trafienie, jeśli nie został podany wynik manualnego rzutu
-        if(rollResult == 0)
-        {
-            rollResult = UnityEngine.Random.Range(1, 101);
-        }
-
-        // Przewagi grupowe
-        int attackerAdvantage = 0;
-        int targetAdvantage = 0;
-
-        if(attackerUnit.tag == "EnemyUnit")
-        {
-            attackerAdvantage = InitiativeQueueManager.Instance.EnemyAdvantage;
-            targetAdvantage = InitiativeQueueManager.Instance.PlayersAdvantage;
-        }
-        else if(attackerUnit.tag == "PlayerUnit")
-        {
-            targetAdvantage = InitiativeQueueManager.Instance.EnemyAdvantage;
-            attackerAdvantage= InitiativeQueueManager.Instance.PlayersAdvantage;
-        }
-
-        // Obliczanie modyfikatora ataku
-        _attackModifier = CalculateAttackModifier(attackerUnit, attackerWeapon, targetUnit, _attackDistance);
-
-        // Sprawdzenie ataku dystansowego
-        if (attackerWeapon.Type.Contains("ranged"))
-        {
-            // Liczy poziomy sukcesu. Uwzględnia przewagi
-            int advantageDifference = attackerAdvantage * 10 - targetAdvantage * 10;
-            int attackerSuccessValue = attackerStats.US + _attackModifier + advantageDifference - rollResult;
-            int attackerSuccessLevel = attackerSuccessValue / 10;
-
-            //Zaktualizowanie przewagi
-            if (attackerSuccessLevel > 0)
-            {
-                InitiativeQueueManager.Instance.CalculateAdvantage(attackerUnit.tag, 1);
-                Debug.Log($"Zwiększamy przewage {attackerUnit.tag}");
-            }   
-
-            finalSuccessLevel = attackerSuccessLevel;
-
-            _isSuccessful = attackerSuccessValue >= 0;
-
-            string modifierString = _attackModifier != 0 || advantageDifference != 0 ? $" Modyfikator: {_attackModifier + advantageDifference}" : "";
-            string successLevelString = $"Poziomy sukcesu: " + (_isSuccessful ? $"<color=green>{attackerSuccessLevel}</color>" : $"<color=red>{attackerSuccessLevel}</color>");
-
-            Debug.Log($"{attackerStats.Name} atakuje {targetUnit.GetComponent<Stats>().Name} przy użyciu {attackerWeapon.Name}. Rzut na US: {rollResult} Wartość cechy: {attackerStats.US} {modifierString} {successLevelString}");
-            ResetWeaponLoad(attackerWeapon, attackerStats);
-        }
-
-        // Sprawdzenie ataku w zwarciu
-        if (attackerWeapon.Type.Contains("melee"))
-        {
-            // Liczy poziomy sukcesu. Uwzględnia przewagi
-            int attackerSuccessValue = attackerStats.WW + _attackModifier + attackerAdvantage * 10 - rollResult;
-            int attackerSuccessLevel = attackerSuccessValue / 10;
-            int targetSuccessLevel = 0;
-
-            //Atakowany próbuje parować lub unikać.
-            if (!GameManager.IsAutoDefenseMode) //Sprawdzenie, czy jest aktywny tryb automatycznej obrony
-            {
-                _parryAndDodgePanel.SetActive(true);
-
-                StartCoroutine(WaitForDefenseReaction());
-
-                // Korutyna obsługująca reakcję obronną
-                IEnumerator WaitForDefenseReaction()
-                {
-                    // Czekaj na kliknięcie przycisku
-                    Debug.Log("Wybierz reakcję atakowanej postaci.");
-                    yield return new WaitUntil(() => _parryAndDodgePanel.activeSelf == false);
-                    
-                    if(!GameManager.IsAutoDiceRollingMode)
-                    {
-                        yield return new WaitUntil(() => _applyRollResultPanel.activeSelf == false);
-                    }
-
-                    StartCoroutine(CheckForParryAndDodge(attackerWeapon, targetWeapon, targetStats, targetUnit, false));
-
-                    _defenceSuccessLevel = _defenceSuccessValue / 10;
-                    finalSuccessLevel = attackerSuccessLevel - _defenceSuccessLevel;
-
-                    //Sprawdza, czy lepiej bronić się przy użyciu WW, czy zrobić Unik
-                    int defenseAttributeValue = targetStats.Dodge + targetStats.Zw > targetStats.WW ? targetStats.Dodge + targetStats.Zw : targetStats.WW;
-                    string defenseAttributeName = targetStats.Dodge + targetStats.Zw > targetStats.WW ? "Unik" : "WW";
-                    _defenceSuccessLevel = _defenceSuccessValue / 10;
-
-                    finalSuccessLevel = attackerSuccessLevel - _defenceSuccessLevel;
-
-                    _isSuccessful = finalSuccessLevel > 0;
-
-                    Debug.Log($"_isSuccessful {_isSuccessful}");
-
-                    //Zaktualizowanie przewagi
-                    if (_isSuccessful)
-                    {
-                        InitiativeQueueManager.Instance.CalculateAdvantage(attackerUnit.tag, 1);
-                        Debug.Log($"Zwiększamy przewage {attackerUnit.tag}");
-                    }  
-                    else if(attackerSuccessLevel < targetSuccessLevel)
-                    {
-                        InitiativeQueueManager.Instance.CalculateAdvantage(targetUnit.tag, 1);
-                        Debug.Log($"Zwiększamy przewage {targetUnit.tag}");
-                    }
-
-                    string modifierString = _attackModifier != 0 || attackerAdvantage != 0 ? $" Modyfikator: {_attackModifier + attackerAdvantage * 10}" : "";
-                    string attackerSuccessLevelString = $"Poziomy sukcesu: " + (attackerSuccessValue >= 0 ? $"<color=green>{attackerSuccessLevel}</color>" : $"<color=red>{attackerSuccessLevel}</color>");
-                    string targetSuccessLevelString = $"Poziomy sukcesu: " + (_defenceSuccessValue >= 0 ? $"<color=green>{_defenceSuccessLevel}</color>" : $"<color=red>{_defenceSuccessLevel}</color>");
-
-                    Debug.Log($"_defenceSuccessValue {_defenceSuccessValue}");
-
-                    Debug.Log($"{attackerStats.Name} atakuje {targetUnit.GetComponent<Stats>().Name} przy użyciu {attackerWeapon.Name}. Rzut na WW: {rollResult} Wartość umiejętności: {attackerStats.WW} {modifierString} {attackerSuccessLevelString}");
-                    Debug.Log($"{targetStats.Name} broni się. Rzut na {defenseAttributeName}: {_defenceRollResult} Wartość umiejętności: {targetStats.WW}" + $"{(targetAdvantage != 0 ? $" Modyfikator: {targetAdvantage * 10}" : "")}" + $" {targetSuccessLevelString}");
-
-                    Debug.Log($"_isSuccessful {_isSuccessful}");
-
-                    ExecuteAttack(attackerUnit, targetUnit, attackerWeapon, finalSuccessLevel);
-                    StartCoroutine(AnimationManager.Instance.PlayAnimation("attack", attackerUnit.gameObject, targetUnit.gameObject));  
-
-                    _isSuccessful = false;
-                }
-                _parryOrDodge = "";
-
-                return 0;
-            }
-            else
-            {
-                StartCoroutine(CheckForParryAndDodge(attackerWeapon, targetWeapon, targetStats, targetUnit, false));
-
-                //Sprawdza, czy lepiej bronić się przy użyciu WW, czy zrobić Unik
-                int defenseAttributeValue = targetStats.Dodge + targetStats.Zw > targetStats.WW ? targetStats.Dodge + targetStats.Zw : targetStats.WW;
-                string defenseAttributeName = targetStats.Dodge + targetStats.Zw > targetStats.WW ? "Unik" : "WW";
-                _defenceSuccessLevel = _defenceSuccessValue / 10;
-
-                finalSuccessLevel = attackerSuccessLevel - _defenceSuccessLevel;
-
-                _isSuccessful = finalSuccessLevel > 0;
-
-                //Zaktualizowanie przewagi
-                if (_isSuccessful)
-                {
-                    InitiativeQueueManager.Instance.CalculateAdvantage(attackerUnit.tag, 1);
-                    Debug.Log($"Zwiększamy przewage {attackerUnit.tag}");
-                }  
-                else if(attackerSuccessLevel < targetSuccessLevel)
-                {
-                    InitiativeQueueManager.Instance.CalculateAdvantage(targetUnit.tag, 1);
-                    Debug.Log($"Zwiększamy przewage {targetUnit.tag}");
-                }
-
-                string modifierString = _attackModifier != 0 || attackerAdvantage != 0 ? $" Modyfikator: {_attackModifier + attackerAdvantage * 10}" : "";
-                string attackerSuccessLevelString = $"Poziomy sukcesu: " + (attackerSuccessValue >= 0 ? $"<color=green>{attackerSuccessLevel}</color>" : $"<color=red>{attackerSuccessLevel}</color>");
-                string targetSuccessLevelString = $"Poziomy sukcesu: " + (_defenceSuccessValue >= 0 ? $"<color=green>{_defenceSuccessLevel}</color>" : $"<color=red>{_defenceSuccessLevel}</color>");
-
-                Debug.Log($"_defenceSuccessValue {_defenceSuccessValue}");
-
-                Debug.Log($"{attackerStats.Name} atakuje {targetUnit.GetComponent<Stats>().Name} przy użyciu {attackerWeapon.Name}. Rzut na WW: {rollResult} Wartość umiejętności: {attackerStats.WW} {modifierString} {attackerSuccessLevelString}");
-                Debug.Log($"{targetStats.Name} broni się. Rzut na {defenseAttributeName}: {_defenceRollResult} Wartość umiejętności: {targetStats.WW}" + $"{(targetAdvantage != 0 ? $" Modyfikator: {targetAdvantage * 10}" : "")}" + $" {targetSuccessLevelString}");
-            }     
-        }
-
-        // Odporność przeciwnika na niemagiczne ataki
-        if (attackerWeapon.Quality != "Magiczna" && attackerStats.DaemonicAura != true && targetUnit.GetComponent<Stats>().Ethereal)
-        {
-            Debug.Log("Przeciwnik jest odporny na niemagiczne ataki. Aby go zranić, konieczne jest użycie magicznej broni lub zaklęcia.");
-            return 0;
-        }
-
-        //Fuks i pech
-        if(IsDoubleDigit(rollResult))
-        {
-            if (_isSuccessful)
-            {
-                Debug.Log($"{attackerStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color> na trafienie!");
-
-                //Aktualizuje osiągnięcia
-                attackerStats.FortunateEvents ++;
-            }
-            else
-            {
-                Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color> na trafienie!");
-
-                //Aktualizuje osiągnięcia
-                attackerStats.UnfortunateEvents ++; 
-            }
-        }
-
-        return finalSuccessLevel;
-    }
 
     // Funkcja sprawdzająca, czy liczba ma dwie identyczne cyfry
     private bool IsDoubleDigit(int number)
@@ -792,15 +713,24 @@ public class CombatManager : MonoBehaviour
     //Oblicza modyfikator do trafienia
     private int CalculateAttackModifier(Unit attackerUnit, Weapon attackerWeapon, Unit targetUnit, float attackDistance = 0)
     {
-        int attackModifier = _attackModifier;
+        int attackModifier = 0;
 
         Stats attackerStats = attackerUnit.GetComponent<Stats>();
         Stats targetStats = targetUnit.GetComponent<Stats>();
 
+        // Modyfikator za rozmiar
+        if (attackerStats.Size < targetStats.Size) attackModifier += 10;
+
+        // Modyfikator za szarżę
+        if (attackerUnit.IsCharging) attackModifier += 10;
+
+        // Modyfikator za broń z cechą "Celny"
+        if (attackerWeapon.Accurate) attackModifier += 10;
+
         // Utrudnienie za atak słabszą ręką
         if (attackerUnit.GetComponent<Inventory>().EquippedWeapons[0] == null || attackerWeapon.Name != attackerUnit.GetComponent<Inventory>().EquippedWeapons[0].Name)
         {
-            if (!attackerStats.Ambidextrous && attackerWeapon.Id != 0 && !attackerWeapon.Balanced)
+            if (!attackerStats.Ambidextrous && attackerWeapon.Id != 0)
             {
                 attackModifier -= 20;
             }
@@ -831,15 +761,15 @@ public class CombatManager : MonoBehaviour
         attackModifier += CountOutnumber(attackerUnit, targetUnit);
 
         // Bijatyka
-        if (attackerWeapon.Type.Contains("melee") && 
-            (attackerWeapon.Id == 0 || attackerWeapon.Id == 11) && 
+        if (attackerWeapon.Type.Contains("melee") &&
+            (attackerWeapon.Id == 0 || attackerWeapon.Id == 11) &&
             attackerStats.StreetFighting)
         {
             attackModifier += 10;
         }
 
         //Zapiekła nienawiść
-        if(attackerStats.GrudgeBornFury == true && _greenskinsList.Contains(targetStats.Race))
+        if (attackerStats.GrudgeBornFury == true && _greenskinsList.Contains(targetStats.Race))
         {
             attackModifier += 5;
         }
@@ -914,23 +844,38 @@ public class CombatManager : MonoBehaviour
 
         return modifier;
     }
-    #endregion
 
     #region Calculating damage
-    int CalculateDamage(int successLevel, Stats attackerStats, Weapon attackerWeapon)
+    int CalculateDamage(int attackRoll, int successLevel, Stats attackerStats, Stats targetStats, Weapon attackerWeapon, float attackDistance)
     {
         int damage;
 
-        if (_attackDistance <= 1.5f) //Oblicza łączne obrażenia dla ataku w zwarciu
+        // Uwzględnienie cechy broni "Przebijająca"
+        if (attackerWeapon.Damaging && successLevel < attackRoll % 10 && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 1)
         {
-            damage = attackerStats.StrikeMightyBlow || (attackerWeapon.Id == 0 && attackerStats.StreetFighting == true) ? successLevel + attackerStats.S / 10 + attackerWeapon.S + 1 : successLevel + attackerStats.S / 10 + attackerWeapon.S;
+            Debug.Log($"Używamy cechy Przebijająca i zamieniamy PS z {successLevel} na {attackRoll % 10}");
+            successLevel = attackRoll % 10;
+        }
+
+        if (attackDistance <= 1.5f || attackerWeapon.Type.Contains("strength-based")) //Oblicza łączne obrażenia dla ataku w zwarciu
+        {
+            damage = successLevel + attackerStats.S / 10 + Math.Min(0, attackerWeapon.S - attackerWeapon.Damage);
         }
         else //Oblicza łączne obrażenia dla ataku dystansowego
         {
-            damage = attackerStats.MightyShot ? successLevel + attackerWeapon.S + 1 : successLevel + attackerWeapon.S;
+            damage = successLevel + attackerWeapon.S;
+        }
 
-            //Dodaje siłę do broni dystansowych opierających na niej swoje obrażenia (np. bicz)
-            if(attackerWeapon.Type.Contains("strength-based")) damage += attackerStats.S / 10;         
+        // Uwzględnia cechę Druzgoczący
+        if (attackerWeapon.Impact && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 2) 
+        {
+            damage += attackRoll % 10; // Dodaje liczbę jedności z rzutu na atak
+        }
+
+        // Uwzględnia przewagę rozmiaru
+        if (attackerStats.Size > targetStats.Size)
+        {
+            damage *= attackerStats.Size - targetStats.Size;
         }
 
         if (damage < 0) damage = 0;
@@ -973,71 +918,16 @@ public class CombatManager : MonoBehaviour
                 break;
         }
 
-        //Podwaja wartość zbroi w przypadku walki przy użyciu pięści
-        if(attackerWeapon.Id == 0) armor *= 2;
+        //Podwaja wartość zbroi w przypadku walki przy użyciu broni Tępej
+        if(attackerWeapon.Undamaging) armor *= 2;
 
         //Zwiększenie pancerza, jeśli cel ataku posiada tarcze
-        Weapon targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(targetStats.gameObject);
-        if(targetWeapon.Shield > 0)
-        {
-            armor += targetWeapon.Shield;
-        }
+        armor += targetStats.GetComponent<Inventory>().EquippedWeapons.Where(weapon => weapon != null && weapon.Shield > 0).Select(weapon => weapon.Shield).FirstOrDefault();
 
         //Uwzględnienie broni przebijających zbroję
-        if (attackerWeapon.ArmourPiercing == true) armor --;
-
-        //Uwzględnienie broni ignorujących zbroję
-        if (attackerWeapon.ArmourIgnoring == true) armor = 0;
+        if (attackerWeapon.Penetrating == true) armor --; // UWZGLĘDNIĆ TU W PRZYSZŁOŚCI, ŻE PANCERZE NIEMETALOWE POWINNY BYĆ CAŁKOWICIE IGNOROWANE
 
         return armor;
-    }
-    #endregion
-
-    #region Aiming
-    public void SetAim()
-    {
-        if (Unit.SelectedUnit == null) return;
-
-        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
-
-        //Sprawdza, czy postać już celuje i chce przestać, czy chce dopiero przycelować
-        if(unit.AimingBonus != 0)
-        {
-            unit.AimingBonus = 0;        
-        }
-        else
-        {
-            //Wykonuje akcję
-            bool canDoAction;
-            canDoAction = RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
-            if(!canDoAction) return;
-
-            Weapon attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(unit.gameObject);
-            if (attackerWeapon == null)
-            {
-                attackerWeapon = unit.GetComponent<Weapon>();
-            }
-
-            //Dodaje modyfikator do trafienia uzwględniając strzał mierzony w przypadku ataków dystansowych
-            unit.AimingBonus += unit.GetComponent<Stats>().Sharpshooter && attackerWeapon.Type.Contains("ranged") ? 20 : 10; 
-
-            Debug.Log($"{unit.GetComponent<Stats>().Name} przycelowuje.");
-
-            StartCoroutine(AnimationManager.Instance.PlayAnimation("aim", Unit.SelectedUnit));
-        }
-
-        UpdateAimButtonColor();
-    }
-    public void UpdateAimButtonColor()
-    {
-        if(Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Unit>().AimingBonus != 0)
-        {
-            _aimButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.green;
-        }
-        else
-        {
-            _aimButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.white;
-        }
     }
     #endregion
 
@@ -1067,8 +957,6 @@ public class CombatManager : MonoBehaviour
         {
             //Zapisuje grę przed wykonaniem ruchu, aby użycie punktu szczęścia wczytywało pozycję przed wykonaniem szarży i można było wykonać ją ponownie
             SaveAndLoadManager.Instance.SaveUnits(UnitsManager.Instance.AllUnits, "autosave");
-
-            _attackModifier += 10;
 
             MovementManager.Instance.MoveSelectedUnit(targetTile, attacker);
 
@@ -1160,9 +1048,10 @@ public class CombatManager : MonoBehaviour
 
         if (unit.DefensiveBonus == 0)
         {
+            if (!unit.CanDoAction) return;
+
             //Wykonuje akcję
-            bool canDoAction = RoundsManager.Instance.DoAction(unit);
-            if(!canDoAction) return;   
+            RoundsManager.Instance.DoAction(unit);
 
             Debug.Log($"{unit.GetComponent<Stats>().Name} przyjmuje pozycja obronną.");
 
@@ -1193,99 +1082,6 @@ public class CombatManager : MonoBehaviour
         }
     }
     #endregion
-
-    #region Parry and dodge
-    public IEnumerator CheckForParryAndDodge(Weapon attackerWeapon, Weapon targetWeapon, Stats targetStats, Unit targetUnit, bool isTouchSpellAttack)
-    {
-        _defenceSuccessLevel = 0;
-
-        int targetAdvantage = targetUnit.tag == "EnemyUnit" ? InitiativeQueueManager.Instance.EnemyAdvantage : InitiativeQueueManager.Instance.PlayersAdvantage;
-
-        //Sprawdza, czy atakowany ma jakieś modifykatory do parowania
-        //int parryModifier = 0;
-        // if(isTouchSpellAttack)
-        // {
-        //     parryModifier -= 20;
-        // }
-        // else
-        // {
-        //     if (targetWeapon.Defensive) parryModifier += 10;
-        //     if (attackerWeapon.Slow) parryModifier += 10;
-        //     if (attackerWeapon.Fast) parryModifier -= 10;
-        //     if (Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Stats>().PowerfulBlow) parryModifier -= 30;
-        // }
-
-        // //Uwzględnia karę do uników za ciężką zbroję
-        // //Sprawdza, czy zbroja nie jest wynikiem zaklęcia Pancerz Eteru
-        // bool etherArmor = false;
-        // if(MagicManager.Instance.UnitsStatsAffectedBySpell != null && MagicManager.Instance.UnitsStatsAffectedBySpell.Count > 0)
-        // {
-        //     //Przeszukanie statystyk jednostek, na które działają zaklęcia czasowe
-        //     for (int i = 0; i < MagicManager.Instance.UnitsStatsAffectedBySpell.Count; i++)
-        //     {
-        //         //Jeżeli wcześniejsza wartość zbroi (w tym przypadku na głowie, ale to może być dowolna lokalizacja) jest inna niż obecna, świadczy to o użyciu Pancerzu Eteru
-        //         if (MagicManager.Instance.UnitsStatsAffectedBySpell[i].Name == targetStats.Name && MagicManager.Instance.UnitsStatsAffectedBySpell[i].Armor_head != targetStats.Armor_head)
-        //         {
-        //             etherArmor = true;
-        //         }
-        //     }
-        // }
-        // int dodgeModifier = 0;
-        // if((targetStats.Armor_head >= 3 || targetStats.Armor_torso >= 3 || targetStats.Armor_arms >= 3 || targetStats.Armor_legs >= 3) && !etherArmor)
-        // {
-        //     dodgeModifier = -10;
-        // }
-
-        if(GameManager.IsAutoDefenseMode == false)
-        {
-            if (_parryOrDodge == "parry")
-            {
-                // Ręczne wpisanie wyniku na parowanie lub unik
-                if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
-                {
-                    // Wywołaj korutynę i poczekaj na wynik
-                    yield return StartCoroutine(WaitForDefenceRollValue());
-                    _defenceRollResult = _manualRollResult;
-                }
-
-                _defenceSuccessValue = targetStats.WW + targetAdvantage * 10 - _defenceRollResult;
-
-                Debug.Log($"PAROWANIE MANUAL manualRollResult {_defenceRollResult} _defenceSuccessLevel {_defenceSuccessLevel}");
-                
-            }
-            else if (_parryOrDodge == "dodge")
-            {
-                // Ręczne wpisanie wyniku na parowanie lub unik
-                if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
-                {
-                    // Wywołaj korutynę i poczekaj na wynik
-                    yield return StartCoroutine(WaitForDefenceRollValue());
-                    _defenceRollResult = _manualRollResult;
-                }
-
-                _defenceSuccessValue = targetStats.Dodge + targetStats.Zw + targetAdvantage * 10 - _defenceRollResult;
-
-                Debug.Log($"UNIK MANUAL manualRollResult {_defenceRollResult} _defenceSuccessLevel {_defenceSuccessLevel}");
-            }
-
-            yield break;
-        }
-
-        _defenceRollResult = UnityEngine.Random.Range(1, 101);
-
-        /* Sprawdza, czy atakowana postać ma większą szansę na unik, czy na parowanie i na tej podstawie ustala kolejność tych akcji.
-        Warunek sprawdza też, czy obrońca broni się Pięściami (Id=0). Parowanie pięściami jest możliwe tylko, gdy przeciwnik również atakuje Pięściami. */
-        if (targetStats.Dodge + targetStats.Zw <= targetStats.WW && targetWeapon.Type.Contains("melee") && (targetWeapon.Id != 0 || targetWeapon.Id == attackerWeapon.Id))
-        {
-            _defenceSuccessValue = targetStats.WW + targetAdvantage * 10 - _defenceRollResult;
-
-            //W PRZYSZŁOŚCI DODAĆ MODYFIKATORY UMIEJĘTNOŚCI Broń Biała DO WW, KTÓRE UWZGLĘDNIAJĄ TYP BRONI, KTÓRYM JEDNOSTKA WALCZY
-        }
-        else
-        {
-            _defenceSuccessValue = targetStats.Dodge + targetStats.Zw + targetAdvantage * 10 - _defenceRollResult;
-        }
-    }
 
     // Korutyna czekająca na wpisanie wyniku rzutu obronnego przez użytkownika
     private IEnumerator WaitForDefenceRollValue()
@@ -1356,13 +1152,19 @@ public class CombatManager : MonoBehaviour
             _isWaitingForRoll = false; // Przerywamy oczekiwanie
             _rollInputField.text = ""; // Czyścimy pole
         }
+
+        if (_defenceRollInputField != null && int.TryParse(_defenceRollInputField.text, out int defenceResult))
+        {
+            _manualRollResult = defenceResult;
+            _isWaitingForRoll = false; // Przerywamy oczekiwanie
+            _defenceRollInputField.text = ""; // Czyścimy pole
+        }
     }
    
     void ParryOrDodgeButtonClick(string parryOrDodge)
     {
         _parryOrDodge = parryOrDodge;
     }
-    #endregion
 
     #region Reloading
     public void Reload()
@@ -1379,10 +1181,10 @@ public class CombatManager : MonoBehaviour
 
         if(weapon.ReloadLeft > 0)
         {
+            if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction) return;
+
             //Wykonuje akcję
-            bool canDoAction;
-            canDoAction = RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
-            if(!canDoAction) return;  
+            RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
 
             weapon.ReloadLeft --;
 
@@ -1426,168 +1228,6 @@ public class CombatManager : MonoBehaviour
         }
 
         InventoryManager.Instance.DisplayReloadTime();
-    }
-    #endregion
-
-    #region Feint
-    private bool Feint(int rollResult, Stats attackerStats, Stats targetStats)
-    {
-        //Przeciwstawny rzut na WW
-        int targetRollResult = UnityEngine.Random.Range(1, 101);
-
-        int attackerSuccessLevel = attackerStats.WW - rollResult;
-        int targetSuccessLevel = targetStats.WW - targetRollResult;
-
-        Debug.Log($"{attackerStats.Name} wykonuje fintę. Następuje przeciwstawny rzut na WW. Atakujący rzuca: {rollResult} Wartość WW: {attackerStats.WW}. Atakowany rzuca: {targetRollResult} Wartość WW: {targetStats.WW}. Wynik: {attackerSuccessLevel} do {targetSuccessLevel}");
-
-        if (attackerSuccessLevel > targetSuccessLevel)
-        {
-            return true;
-        }
-        else return false;
-    }
-    #endregion
-
-    #region Stun
-    public void Stun(Weapon attackerWeapon, Stats attackerStats, Stats targetStats)
-    {
-        //Przeciwstawny rzut na Krzepę
-        int attackerRollResult = UnityEngine.Random.Range(1, 101);
-        int modifier = attackerWeapon.Pummelling ? 10 : 0; // bonus za broń z cechą "ogłuszający"
-        int targetRollResult = UnityEngine.Random.Range(1, 101);
-
-        int attackerSuccessLevel = attackerStats.S - attackerRollResult + modifier;
-        int targetSuccessLevel = targetStats.S - targetRollResult;
-
-        Debug.Log($"{attackerStats.Name} wykonuje ogłuszanie. Następuje przeciwstawny rzut na krzepę. Atakujący rzuca: {attackerRollResult} Wartość cechy: {attackerStats.S}. Atakowany rzuca: {targetRollResult} Wartość cechy: {targetStats.S}. Wynik: {attackerSuccessLevel} do {targetSuccessLevel}");
-
-        if (attackerSuccessLevel > targetSuccessLevel)
-        {
-            // Rzut na odporność
-            int odpRoll = UnityEngine.Random.Range(1, 101);
-            int armorModifier = targetStats.Armor_head * 10; //Mofydikator do rzutu na odporność za zbroję na głowie
-
-            Debug.Log($"Rzut na odporność {targetStats.Name}. Wynik rzutu: {odpRoll} Wartość cechy: {targetStats.Wt}. Modyfikator za hełm: {armorModifier}");
-
-            if (odpRoll >= 96)
-            {
-                Debug.Log($"{targetStats.Name} wyrzucił <color=red>PECHA!</color>");                
-                //Aktualizuje osiągnięcia
-                targetStats.UnfortunateEvents ++;
-            }
-            else if (odpRoll <= 5)
-            {
-                Debug.Log($"{targetStats.Name} wyrzucił <color=red>SZCZĘŚCIE!</color>");                
-                //Aktualizuje osiągnięcia
-                targetStats.FortunateEvents ++;
-            }
-
-            if (odpRoll > (targetStats.Wt + modifier) && odpRoll > 5 || odpRoll >= 96)
-            {
-                int roundsNumber = UnityEngine.Random.Range(1, 11);
-
-                if(targetStats.GetComponent<Unit>().StunDuration < roundsNumber)
-                {
-                    targetStats.GetComponent<Unit>().StunDuration = roundsNumber;
-                    targetStats.GetComponent<Unit>().CanDoAction = false;
-                    Debug.Log($"{targetStats.Name} zostaje ogłuszony na {roundsNumber} rund/y.");
-                }
-            }
-            else
-            {
-                Debug.Log($"Ogłuszanie nie powiodło się.");
-            }
-        }
-        else
-        {
-            Debug.Log($"Ogłuszanie nie powiodło się.");
-        }
-    }
-    #endregion
-
-    #region Trap
-    //Próba uwolnienia się z unieruchomienia
-    public void EscapeFromTheSnare(Unit unit)
-    {
-        Stats unitStats = unit.GetComponent<Stats>();
-
-        int rollResult = UnityEngine.Random.Range(1, 101);
-
-        string attributeName = unitStats.S > unitStats.Zr ? "Krzepę" : "Zręczność";
-        int attributeValue = unitStats.S > unitStats.Zr ? unitStats.S : unitStats.Zr;
-
-        Debug.Log($"{unitStats.Name} próbuje się uwolnić. Rzut na {attributeName}: {rollResult} Wartość cechy: {attributeValue}");
-
-        if (rollResult >= 96)
-        {
-            Debug.Log($"{unitStats.Name} wyrzucił <color=red>PECHA!</color>");                
-            //Aktualizuje osiągnięcia
-            unitStats.UnfortunateEvents ++;
-        }
-        else if (rollResult <= 5)
-        {
-            Debug.Log($"{unitStats.Name} wyrzucił <color=red>SZCZĘŚCIE!</color>");                
-            //Aktualizuje osiągnięcia
-            unitStats.FortunateEvents ++;
-        }
-
-
-        if (rollResult < attributeValue && rollResult < 96 || rollResult <= 5)
-        {
-            unit.Trapped = false;
-
-            foreach (var u in UnitsManager.Instance.AllUnits)
-            {
-                if(unit.UnitId == u.TrappedUnitId)
-                {
-                    u.TrappedUnitId = 0;
-                }
-            }
-
-            Debug.Log($"{unitStats.Name} uwolnił/a się.");
-        }
-        else
-        {
-            Debug.Log($"Próba uwolnienia {unitStats.Name} nie powiodła się.");
-        }    
-    }
-    #endregion
-
-    #region Disarm
-    private void Disarm(Stats attackerStats, Stats targetStats, Weapon targetWeapon)
-    {
-        if (targetWeapon.NaturalWeapon == true)
-        {
-            Debug.Log("Próba rozbrojenia nie powiodła się. Nie można rozbrajać jednostek walczących bronią naturalną.");
-            return;
-        }
-
-        //Przeciwstawny rzut na Zręczność
-        int attackerRollResult = UnityEngine.Random.Range(1, 101);
-        int targetRollResult = UnityEngine.Random.Range(1, 101);
-
-        int attackerSuccessLevel = attackerStats.Zr - attackerRollResult;
-        int targetSuccessLevel = targetStats.Zr - targetRollResult;
-
-        Debug.Log($"{attackerStats.Name} próbuje rozbroić {targetStats.Name}. Następuje przeciwstawny rzut na zręczność. Atakujący rzuca: {attackerRollResult} Wartość cechy: {attackerStats.Zr}. Atakowany rzuca: {targetRollResult} Wartość cechy: {targetStats.Zr}. Wynik: {attackerSuccessLevel} do {targetSuccessLevel}");
-
-        if (attackerSuccessLevel > targetSuccessLevel)
-        {
-            targetStats.GetComponent<Weapon>().ResetWeapon();
-
-            //Aktualizujemy tablicę dobytych broni
-            Weapon[] equippedWeapons = targetStats.GetComponent<Inventory>().EquippedWeapons;
-            for (int i = 0; i < equippedWeapons.Length; i++)
-            {
-                equippedWeapons[i] = null;
-            }
-
-            Debug.Log($"{targetStats.Name} został rozbrojony.");
-        }
-        else
-        {
-            Debug.Log($"Rozbrajanie nie powiodło się.");
-        }
     }
     #endregion
 
@@ -1654,5 +1294,4 @@ public class CombatManager : MonoBehaviour
         return units;
     }
     #endregion
-
 }

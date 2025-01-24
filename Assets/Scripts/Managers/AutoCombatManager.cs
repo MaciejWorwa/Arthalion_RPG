@@ -52,7 +52,7 @@ public class AutoCombatManager : MonoBehaviour
         float distance = Vector2.Distance(closestOpponent.transform.position, unit.transform.position);
 
         // Jeśli rywal jest w zasięgu ataku to wykonuje atak
-        if (unit.CanAttack == true && (distance <= weapon.AttackRange || distance <= weapon.AttackRange * 2 && weapon.Type.Contains("ranged") && !weapon.Type.Contains("short-range-only")))
+        if ((distance <= weapon.AttackRange || distance <= weapon.AttackRange * 2) && weapon.Type.Contains("ranged") && !weapon.Type.Contains("short-range-only"))
         {
             if (weapon.Type.Contains("ranged"))
             {
@@ -79,11 +79,6 @@ public class AutoCombatManager : MonoBehaviour
             // Jeśli broń nie wymaga naladowania to wykonuje atak, w przeciwnym razie wykonuje ładowanie
             if (weapon.ReloadLeft == 0)
             {
-                if (unit.CanDoAction && weapon.ReloadTime == 1 && unit.GetComponent<Stats>().RapidReload)
-                {
-                    CombatManager.Instance.SetAim();
-                }
-
                 CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>(), false);
 
                 if (unit.CanDoAction || unit.GetComponent<Stats>().RapidReload)
@@ -154,11 +149,6 @@ public class AutoCombatManager : MonoBehaviour
             bool isFirstWeaponShield = equippedWeapons[0] != null && equippedWeapons[0].Type.Contains("shield");
             bool hasTwoOneHandedWeaponsOrShield = (equippedWeapons[0] != null && equippedWeapons[1] != null && equippedWeapons[0].Name != equippedWeapons[1].Name) || isFirstWeaponShield;
 
-            if (unit.CanDoAction && (unit.GetComponent<Stats>().LightningParry || hasTwoOneHandedWeaponsOrShield))
-            {
-                CombatManager.Instance.SetAim();
-            }
-
             if (unit.CanDoAction)
             {
                 CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>(), false);
@@ -193,7 +183,7 @@ public class AutoCombatManager : MonoBehaviour
         //Ścieżka ruchu atakującego
         List<Vector2> path = MovementManager.Instance.FindPath(unit.transform.position, targetTilePosition);
 
-        if ((!weapon.Type.Contains("ranged")) && unit.CanAttack == true && path.Count <= unit.GetComponent<Stats>().TempSz * 2 && path.Count >= unit.GetComponent<Stats>().Sz / 2 && unit.CanDoAction && unit.CanMove) // Jeśli rywal jest w zasięgu szarży to wykonuje szarżę
+        if ((!weapon.Type.Contains("ranged")) && path.Count <= unit.GetComponent<Stats>().TempSz * 2 && path.Count >= unit.GetComponent<Stats>().Sz / 2 && unit.CanDoAction && unit.CanMove) // Jeśli rywal jest w zasięgu szarży to wykonuje szarżę
         {
             Debug.Log($"{unit.GetComponent<Stats>().Name} szarżuje na {closestOpponent.GetComponent<Stats>().Name}.");
 
@@ -202,7 +192,7 @@ public class AutoCombatManager : MonoBehaviour
 
             CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>(), false);
         }
-        else if (path.Count < unit.GetComponent<Stats>().Sz / 2 && path.Count > 0 && unit.CanAttack == true && unit.CanDoAction && unit.CanMove) //Wykonuje ruch w kierunku przeciwnika, a następnie atak
+        else if (path.Count < unit.GetComponent<Stats>().Sz / 2 && path.Count > 0 && unit.CanDoAction && unit.CanMove) //Wykonuje ruch w kierunku przeciwnika, a następnie atak
         {
             // Uruchomia korutynę odpowiedzialną za ruch i atak
             StartCoroutine(MoveAndAttack(unit, targetTile, closestOpponent.GetComponent<Unit>(), weapon));
@@ -268,11 +258,6 @@ public class AutoCombatManager : MonoBehaviour
             {
                 //Kończy turę, żeby zostawić sobie akcję na parowanie
                 RoundsManager.Instance.FinishTurn();
-            }
-            else
-            {
-                // Przycelowuje
-                CombatManager.Instance.SetAim();
             }
         }
     }

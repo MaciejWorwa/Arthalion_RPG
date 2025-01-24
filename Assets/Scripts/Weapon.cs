@@ -18,6 +18,15 @@ public class Weapon : MonoBehaviour
     [Header("Jakość")]
     public string Quality;
 
+    [Header("Kategoria")]
+    public string Category;
+
+    [Header("Obciążenie")]
+    public int Encumbrance; // Obciążenie
+
+    [Header("Uszkodzenie")]
+    public int Damage; // Uszkodzenie broni
+
     [Header("Siła")]
     public int S;
 
@@ -29,18 +38,32 @@ public class Weapon : MonoBehaviour
     public int ReloadLeft;
 
     [Header("Cechy")]
-    public bool ArmourIgnoring; // ignorujący zbroje
-    public bool ArmourPiercing; // przebijający zbroje
-    public bool Balanced; // wyważony
-    public bool Defensive; // parujący
-    public bool Fast; // szybki
-    public bool Impact; // druzgoczący
-    public bool Pummelling; // ogłuszający
-    public bool Slow; // powolny
-    public bool Snare; // unieruchamiający
-    public bool Tiring; // ciężki
+    public bool Accurate; // Celny (+10 do trafienia)
+    public bool Blackpowder; // Prochowa
+    public int Blast; // Wybuchowa
+    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1)
+    public bool Damaging; // Przebijająca
+    public bool Dangerous; // Niebezpieczna
+    public bool Defensive; // Parujący
+    public int Durable; // Wytrzymały (str. 292)
+    public bool Entangle; // Unieruchamiający
+    public bool Fast; // Szybka
+    public bool Hack; // Rąbiąca
+    public bool Impact; // Druzgoczący
+    public bool Impale; // Nadziewający (str. 298)
+    public bool Imprecise; // Nieprecyzyjna (zmiejsza poziom testu ataku o 1)
+    public bool Lightweight; // Poręczny (redukuje obciążenie o 1)
+    public bool Penetrating; // Przekłuwająca
+    public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
+    public bool Precise; // Precyzyjna (zwiększa poziom udanego testu ataku o 1)
+    public bool Pummel; // Ogłuszający
+    public bool Slow; // Powolny
     public int Shield; // Tarcza
+    public bool Tiring; // Ciężka
     public bool Undamaging; // Tępy
+    public bool Unbalanced; // Niewyważona
+    public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
+    public bool Wrap; // Plącząca (utrudnia parowanie o 1 PS)
 
     public Dictionary<int, int> WeaponsWithReloadLeft = new Dictionary<int, int>(); // słownik zawierający wszystkie posiadane przez postać bronie wraz z ich ReloadLeft
 
@@ -55,14 +78,12 @@ public class Weapon : MonoBehaviour
         AttackRange = 1.5f;
         ReloadTime = 0;
         ReloadLeft = 0;
-        ArmourPiercing = false;
-        Balanced = false;
+
         Defensive = false;
         Fast = false;
         Impact = false;
-        Pummelling = false;
+        Pummel = false;
         Slow = false;
-        Snare = false;
         Tiring = false;
     }
 }

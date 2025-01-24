@@ -81,9 +81,10 @@ public class MagicManager : MonoBehaviour
             return;
         }
 
-        // Wykonanie akcji
-        bool canDoAction = RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
-        if(!canDoAction) return;   
+        if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction) return;
+
+        //Wykonuje akcję
+        RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
 
         StartCoroutine(ChannelingMagicCoroutine());
 
@@ -234,16 +235,13 @@ public class MagicManager : MonoBehaviour
         //Wykonuje akcję
         if (spell.CastingTimeLeft >= 2 && spellcasterUnit.CanDoAction == true)
         {
-            bool canDoAction = RoundsManager.Instance.DoAction(spellcasterUnit);
+            if (Unit.SelectedUnit.GetComponent<Unit>().CanDoAction)
+            {
+                spell.CastingTimeLeft -= 2;
 
-            if (canDoAction) spell.CastingTimeLeft -= 2;
-            else return;
-        }
-        else if (spell.CastingTimeLeft == 1 || (spell.CastingTimeLeft >= 2 && spellcasterUnit.CanDoAction == true))
-        {
-            bool canDoAction = RoundsManager.Instance.DoAction(spellcasterUnit);
-
-            if (canDoAction) spell.CastingTimeLeft--;
+                //Wykonuje akcję
+                RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
+            }
             else return;
         }
 
@@ -284,8 +282,6 @@ public class MagicManager : MonoBehaviour
 
                 // Próba parowania lub uniku
                 Weapon targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
-
-                StartCoroutine(CombatManager.Instance.CheckForParryAndDodge(attackerWeapon, targetWeapon, target.GetComponent<Stats>(), target.GetComponent<Unit>(), true));
 
                 //isSuccessful = CombatManager.Instance.TargetIsDefended;
             }

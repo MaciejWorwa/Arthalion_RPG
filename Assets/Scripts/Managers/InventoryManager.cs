@@ -265,9 +265,10 @@ public class InventoryManager : MonoBehaviour
             //Uwzględnia szybkie wyciągnięcie. Nie dotyczy tryby automatycznego (akcja jest zużywana bezpośrednio w AutoCombatManager, bo jednostka automatycznie wielokrotnie zmienia bronie, dopóki nie trafi na odpowiednią)
             if(!unit.GetComponent<Stats>().QuickDraw && !GameManager.IsAutoCombatMode && !SaveAndLoadManager.Instance.IsLoading)
             {
-                bool canDoAction = true;
-                canDoAction = RoundsManager.Instance.DoAction(unit.GetComponent<Unit>());
-                if (!canDoAction) return;
+                if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction) return;
+
+                //Wykonuje akcję
+                RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
             }
 
             //W przypadku, gdy dana broń jest już trzymana, ale chcemy jedynie zmienić rękę to usuwa tą broń z poprzedniej ręki

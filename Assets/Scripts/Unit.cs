@@ -39,7 +39,6 @@ public class Unit : MonoBehaviour
     public int DefensiveBonus;
 
     [Header("Dostępne działania")]
-    public bool CanAttack = true;
     public bool CanMove = true;
     public bool CanDoAction = true;
     public bool CanCastSpell = false;
@@ -126,7 +125,6 @@ public class Unit : MonoBehaviour
             LastSelectedUnit = SelectedUnit;
             SelectedUnit = this.gameObject;
 
-            CombatManager.Instance.UpdateAimButtonColor();
             CombatManager.Instance.UpdateDefensiveStanceButtonColor();
 
             //Odświeża listę ekwipunku

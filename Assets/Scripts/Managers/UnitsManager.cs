@@ -1192,15 +1192,9 @@ public class UnitsManager : MonoBehaviour
         bool frighteningPlayerExist = false;
         bool terryfyingPlayerExist = false;
 
-        bool enemyUnitExists = false;
-        bool playerUnitExists = false;
-
         foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
         {
             Stats unitStats = pair.Key.GetComponent<Stats>();
-
-            if (pair.Key.CompareTag("EnemyUnit")) enemyUnitExists = true;
-            if (pair.Key.CompareTag("PlayerUnit")) playerUnitExists = true;
 
             if(unitStats.Terryfying)
             {
@@ -1215,7 +1209,7 @@ public class UnitsManager : MonoBehaviour
         }
 
         // Sprawdza, czy istnieją jednostki tylko jednego typu
-        if (!enemyUnitExists || !playerUnitExists)
+        if (BothTeamsExist() == false)
         {
             // Jeśli istnieje tylko jeden typ jednostek, wszystkie jednostki przestają się bać
             foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
@@ -1337,5 +1331,22 @@ public class UnitsManager : MonoBehaviour
         }
     }
     #endregion
+
+    public bool BothTeamsExist()
+    {
+        bool enemyUnitExists = false;
+        bool playerUnitExists = false;
+
+        foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
+        {
+            Stats unitStats = pair.Key.GetComponent<Stats>();
+
+            if (pair.Key.CompareTag("EnemyUnit")) enemyUnitExists = true;
+            if (pair.Key.CompareTag("PlayerUnit")) playerUnitExists = true;
+        }
+
+        if (enemyUnitExists && playerUnitExists) return true;
+        else return false;
+    }
 
 }

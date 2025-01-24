@@ -577,7 +577,9 @@ public class StatsData
     public int Exp; // Punkty doświadczenia
     public string Name;
     public string Race;
-    public string Size;
+
+    public SizeCategory Size; // Rozmiar
+
     public List<int> PrimaryWeaponIds = new List<int>(); // Zmienione na listę
     public int WW;
     public int US;

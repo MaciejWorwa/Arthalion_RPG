@@ -7,7 +7,10 @@ public class IncrementButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
 {
     private Button _button;
     [SerializeField] private int _incrementValue;
+    [SerializeField] private string _valueName;
     private bool _isHeld = false;
+    private Coroutine _repeatActionCoroutine;
+
 
     void Start()
     {
@@ -16,10 +19,15 @@ public class IncrementButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (_button.interactable) // Sprawdzanie, czy przycisk jest aktywny
+        if (_button.interactable && !_isHeld) // Sprawdzanie, czy przycisk jest aktywny
         {
             _isHeld = true;
-            StartCoroutine(RepeatAction());
+
+            if (_repeatActionCoroutine != null)
+            {
+                StopCoroutine(_repeatActionCoroutine);
+            }
+            _repeatActionCoroutine = StartCoroutine(RepeatAction());
         }
     }
 
@@ -32,10 +40,21 @@ public class IncrementButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
     {
         while (_isHeld)
         {
-            //Modyfikuje liczbę punktów żywotności jednostki
-            UnitsManager.Instance.ChangeTemporaryHealthPoints(_incrementValue);
+            if(_valueName == "TempHealth")
+            {
+                //Modyfikuje liczbę punktów żywotności jednostki
+                UnitsManager.Instance.ChangeTemporaryHealthPoints(_incrementValue);
+            }
+            else if (_valueName == "PlayersAdvantage")
+            {
+                InitiativeQueueManager.Instance.CalculateAdvantage("PlayerUnit", _incrementValue);
+            }
+            else if (_valueName == "EnemiesAdvantage")
+            {
+                InitiativeQueueManager.Instance.CalculateAdvantage("EnemyUnit", _incrementValue);
+            }
             
-            yield return new WaitForSeconds(0.2f); // Czeka przed kolejnym wywołaniem
+            yield return new WaitForSeconds(0.3f); // Czeka przed kolejnym wywołaniem
         }
     }
 }

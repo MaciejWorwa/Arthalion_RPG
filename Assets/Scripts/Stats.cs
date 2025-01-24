@@ -6,6 +6,16 @@ using UnityEngine;
 using UnityEngine.TextCore.Text;
 using static UnityEngine.GraphicsBuffer;
 using System.Linq;
+public enum SizeCategory
+{
+    Drobny = 0,      // drobny
+    Niewielki = 1,    // niewielki
+    Mały = 2,         // mały
+    Średni = 3,       // średni
+    Duży = 4,         // duży
+    Wielki = 5,       // wielki
+    Monstrualny = 6   // monstrualny
+}
 
 public class Stats : MonoBehaviour
 {
@@ -21,7 +31,7 @@ public class Stats : MonoBehaviour
     public string Race;
 
     [Header("Rozmiar")]
-    public string Size;
+    public SizeCategory Size; // Rozmiar
 
     [Header("Id początkowej broni")]
     public List<int> PrimaryWeaponIds = new List<int>();

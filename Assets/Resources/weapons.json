@@ -45,10 +45,10 @@
     },
     {
       "Id": 5,
-      "Name": "Broń jednoręczna",
+      "Name": "Broń ręczna",
       "Type": ["melee"],
       "AttackRange": 1.5,
-      "S": 0
+      "S": 4
     },
     {
       "Id": 6,
@@ -142,9 +142,9 @@
       "Name": "Kusza",
       "Type": ["ranged"],
       "TwoHanded": true,
-      "AttackRange": 15,
-      "S": 4,
-      "ReloadTime": 2,
+      "AttackRange": 30,
+      "S": 9,
+      "ReloadTime": 1,
       "ReloadLeft": 0
     },
     {
@@ -170,9 +170,9 @@
     {
       "Id": 18,
       "Name": "Łuk",
-      "Type": ["ranged"],
+      "Type": ["ranged", "strength-based"],
       "TwoHanded": true,
-      "AttackRange": 12,
+      "AttackRange": 25,
       "S": 3,
       "ReloadTime": 1,
       "ReloadLeft": 0

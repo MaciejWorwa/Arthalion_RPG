@@ -32,6 +32,7 @@ public class MovementManager : MonoBehaviour
     [HideInInspector] public bool IsMoving;
     [SerializeField] private Button _runButton;
     [SerializeField] private Button _retreatButton;
+    [SerializeField] private Toggle _canMoveToggle;
 
     #region Move functions
     public void MoveSelectedUnit(GameObject selectedTile, GameObject unit)
@@ -64,14 +65,12 @@ public class MovementManager : MonoBehaviour
         if (path.Count > 0 && (path.Count <= movementRange || GameManager.IsAutoCombatMode))
         {
             if(unit.GetComponent<Unit>().CanMove == false) return;
-
+            
             unit.GetComponent<Unit>().CanMove = false;
+            SetCanMoveToggle(false);
 
-            //Resetuje przycelowanie, jeśli było aktywne
-            if (Unit.SelectedUnit.GetComponent<Unit>().AimingBonus != 0)
-            {
-                CombatManager.Instance.SetAim();
-            }
+            Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a ruch. </color>");
+
             //Resetuje pozycję obronną, jeśli była aktywna
             if (Unit.SelectedUnit.GetComponent<Unit>().DefensiveBonus != 0)
             {
@@ -90,13 +89,11 @@ public class MovementManager : MonoBehaviour
             // Resetuje kolor pól w zasięgu ruchu na czas jego wykonywania
             GridManager.Instance.ResetColorOfTilesInMovementRange();
 
-            //Sprwadza, czy ruch powoduje ataki okazyjne
+            //Sprawdza, czy ruch powoduje ataki okazyjne
             CombatManager.Instance.CheckForOpportunityAttack(unit, selectedTilePos);
 
             // Wykonuje pojedynczy ruch tyle razy ile wynosi zasięg ruchu postaci
             StartCoroutine(MoveWithDelay(unit, path, movementRange));
-
-            unit.GetComponent<Unit>().CanMove = false;
         }
         else
         {
@@ -403,6 +400,16 @@ public class MovementManager : MonoBehaviour
         }
     }
     #endregion
+
+    public void SetCanMoveToggle(bool canMove)
+    {
+        _canMoveToggle.isOn = canMove;
+    }
+    public void SetCanMoveByToggle()
+    {
+        if (Unit.SelectedUnit == null) return;
+        Unit.SelectedUnit.GetComponent<Unit>().CanMove = _canMoveToggle.isOn;
+    }
 }
 
 public class Node

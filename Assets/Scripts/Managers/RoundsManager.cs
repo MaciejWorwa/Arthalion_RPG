@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using System.IO;
 using Unity.VisualScripting;
 using static UnityEngine.UI.CanvasScaler;
+using UnityEngine.UIElements;
 
 public class RoundsManager : MonoBehaviour
 {   
@@ -34,8 +35,8 @@ public class RoundsManager : MonoBehaviour
     }
     public static int RoundNumber;
     [SerializeField] private TMP_Text _roundNumberDisplay;
-    public Button NextRoundButton;
-    [SerializeField] private Slider _actionsLeftSlider;
+    public UnityEngine.UI.Button NextRoundButton;
+    [SerializeField] private UnityEngine.UI.Toggle _canDoActionToggle;
     [SerializeField] private GameObject _useFortunePointsButton;
     private bool _isFortunePointSpent; //informacja o tym, że punkt szczęścia został zużyty, aby nie można było ponownie go użyć do wczytania tego samego autozapisu
 
@@ -55,7 +56,13 @@ public class RoundsManager : MonoBehaviour
         _roundNumberDisplay.text = "Runda: " + RoundNumber;
         NextRoundButton.transform.GetChild(0).GetComponent<TMP_Text>().text = "Następna runda";
  
-        Debug.Log($"<color=#4dd2ff>--------------------------------------------- RUNDA {RoundNumber} ---------------------------------------------</color>");
+        Debug.Log($"<color=#4dd2ff>------------------------------------------------------------------------------------ RUNDA {RoundNumber} ------------------------------------------------------------------------------------</color>");
+
+        //Aktualizuje przewagę, jeśli któraś ze stron wyraźnie dominuje siłą
+        if(UnitsManager.Instance.BothTeamsExist())
+        {
+            InitiativeQueueManager.Instance.CalculateAdvantageBasedOnDominance();
+        }
 
         //Resetuje ilość dostępnych akcji dla wszystkich jednostek
         foreach (Unit unit in UnitsManager.Instance.AllUnits)
@@ -67,8 +74,9 @@ public class RoundsManager : MonoBehaviour
 
             unit.IsTurnFinished = false;
             unit.CanDoAction = true;
-            unit.CanAttack = true;
+            SetCanDoActionToggle(true);
             unit.CanMove = true;
+            MovementManager.Instance.SetCanMoveToggle(true);
 
             if (unit.StunDuration > 0)
             {
@@ -103,12 +111,6 @@ public class RoundsManager : MonoBehaviour
                 {
                     MagicManager.Instance.ResetSpellEffect(unit);
                 }
-            }
-            if(unit.Trapped)
-            {
-                unit.CanDoAction = false;
-                unit.CanMove = false;
-                CombatManager.Instance.EscapeFromTheSnare(unit);
             }
             if(unit.IsScared)
             {
@@ -208,10 +210,10 @@ public class RoundsManager : MonoBehaviour
     }
 
     #region Units actions
-    public bool DoAction(Unit unit)
+    public void DoAction(Unit unit)
     {
         //Zapobiega zużywaniu akcji przed rozpoczęciem bitwy
-        if(RoundNumber == 0) return true;
+        if(RoundNumber == 0) return;
 
         if (unit.CanDoAction)
         {
@@ -236,19 +238,17 @@ public class RoundsManager : MonoBehaviour
                 InitiativeQueueManager.Instance.SelectUnitByQueue();
             }
 
-            return true;
+            return;
         }
         else
         {
             Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
-            return false;
+            return;
         }
     }
 
     public void DisplayActionsLeft()
     {
-        if (Unit.SelectedUnit != null) return;
-
         if(Unit.SelectedUnit == null)
         {
             _useFortunePointsButton.SetActive(false);
@@ -257,7 +257,8 @@ public class RoundsManager : MonoBehaviour
         {
             Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
 
-            _actionsLeftSlider.value = unit.CanDoAction ? 1 : 0;
+            SetCanDoActionToggle(unit.CanDoAction);
+            MovementManager.Instance.SetCanMoveToggle(unit.CanMove);
 
             if (_isFortunePointSpent != true && !unit.CanDoAction && !GameManager.IsAutoCombatMode)
             {
@@ -265,23 +266,6 @@ public class RoundsManager : MonoBehaviour
             }
         }
     }
-
-    // public void ChangeActionsLeft(int value)
-    // {
-    //     if (Unit.SelectedUnit == null) return;
-
-    //     Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
- 
-    //     if (!UnitsWithActionsLeft.ContainsKey(unit)) return;
-
-    //     UnitsWithActionsLeft[unit] += value;
-
-    //     //Limitem dolnym jest 0, a górnym 2
-    //     if (UnitsWithActionsLeft[unit] < 0) UnitsWithActionsLeft[unit] = 0;
-    //     else if (UnitsWithActionsLeft[unit] > 2) UnitsWithActionsLeft[unit] = 2;
-
-    //     DisplayActionsLeft();
-    // }
 
     public void UseFortunePoint()
     {
@@ -335,18 +319,15 @@ public class RoundsManager : MonoBehaviour
             _roundNumberDisplay.text = "Zaczynamy?";
             NextRoundButton.transform.GetChild(0).GetComponent<TMP_Text>().text = "Start";
         }
+    }
 
-        // UnitsWithActionsLeft.Clear(); // Czyści słownik przed uzupełnieniem nowymi danymi
-
-        // foreach (var entry in data.Entries)
-        // {
-        //     GameObject unitObject = GameObject.Find(entry.UnitName);
-
-        //     if (unitObject != null)
-        //     {
-        //         Unit matchedUnit = unitObject.GetComponent<Unit>();
-        //         matchedUnit.CanDoAction = entry.ActionsLeft > 0 ? true : false;
-        //     }
-        // }
+    public void SetCanDoActionToggle(bool canDoAction)
+    {
+        _canDoActionToggle.isOn = canDoAction;
+    }
+    public void SetCanDoActionByToggle()
+    {
+        if (Unit.SelectedUnit == null) return;
+        Unit.SelectedUnit.GetComponent<Unit>().CanDoAction = _canDoActionToggle.isOn;
     }
 }

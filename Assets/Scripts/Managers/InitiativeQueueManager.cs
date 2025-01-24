@@ -4,6 +4,8 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Linq;
+using UnityEditor.Experimental.GraphView;
+using static System.Net.Mime.MediaTypeNames;
 
 public class InitiativeQueueManager : MonoBehaviour
 {
@@ -40,10 +42,15 @@ public class InitiativeQueueManager : MonoBehaviour
     private Color _selectedActiveColor = new Color(0.08f, 0.5f, 0.22f, 0.5f); // Kolor wybranego przycisku, gdy jednocześnie jest to aktywna jednostka
     public UnityEngine.UI.Slider DominanceBar; // Pasek przewagi sił w bitwie
     public int PlayersAdvantage;
-    public int EnemyAdvantage;
+    public int EnemiesAdvantage;
     [SerializeField] private TMP_InputField _playersAdvantageInput;
-    [SerializeField] private TMP_InputField _enemyAdvantageInput;
-    
+    [SerializeField] private TMP_InputField _enemiesAdvantageInput;
+
+    private void Start()
+    {
+        _playersAdvantageInput.text = "0";
+        _enemiesAdvantageInput.text = "0";
+    }
 
     #region Initiative queue
     public void AddUnitToInitiativeQueue(Unit unit)
@@ -143,7 +150,7 @@ public class InitiativeQueueManager : MonoBehaviour
 
     private void SetOptionColor(GameObject optionObj, Color color)
     {
-        optionObj.GetComponent<Image>().color = color;
+        optionObj.GetComponent<UnityEngine.UI.Image>().color = color;
     }
 
     public void SelectUnitByQueue()
@@ -170,12 +177,6 @@ public class InitiativeQueueManager : MonoBehaviour
             else if (GameManager.IsAutoSelectUnitMode && ActiveUnit == null && !GameManager.IsAutoCombatMode || GameManager.IsStatsHidingMode && ActiveUnit == null)
             {
                 RoundsManager.Instance.NextRound();
-            }
-
-            //Jeżeli wybrana postać jest unieruchomiona to wykonuje próbę uwolnienia się (bo to jedyne, co może w tej rundzie zrobić)
-            if(ActiveUnit != null && ActiveUnit.Trapped == true)
-            {
-                CombatManager.Instance.EscapeFromTheSnare(ActiveUnit);
             }     
         }
     }
@@ -213,11 +214,13 @@ public class InitiativeQueueManager : MonoBehaviour
         {
             CalculateAdvantage("PlayerUnit", -1);
             CalculateAdvantage("EnemyUnit", 1);
+            Debug.Log($"Przewaga przeciwników została zwiększona, a sojuszników zmniejszona o 1.");
         }
         else if(DominanceBar.value * 3 > DominanceBar.maxValue * 2)
         {
             CalculateAdvantage("EnemyUnit", -1);
             CalculateAdvantage("PlayerUnit", 1);
+            Debug.Log($"Przewaga sojuszników została zwiększona, a przeciwników zmniejszona o 1.");
         }
     }
 
@@ -225,13 +228,13 @@ public class InitiativeQueueManager : MonoBehaviour
     {
         if (unitTag == "PlayerUnit")
         {
-            PlayersAdvantage += value;
+            PlayersAdvantage = Mathf.Max(0, PlayersAdvantage + value);
             _playersAdvantageInput.text = PlayersAdvantage.ToString();
         }
-        else if (unitTag =="EnemyUnit")
+        else if (unitTag == "EnemyUnit")
         {
-            EnemyAdvantage += value;
-            _enemyAdvantageInput.text = EnemyAdvantage.ToString();
+            EnemiesAdvantage = Mathf.Max(0, EnemiesAdvantage + value);
+            _enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
         }
     }
 
@@ -241,9 +244,9 @@ public class InitiativeQueueManager : MonoBehaviour
         {
             PlayersAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
         }
-        else if(inputField == _enemyAdvantageInput)
+        else if(inputField == _enemiesAdvantageInput)
         {
-            EnemyAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
+            EnemiesAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
         }
     }
 }
