@@ -769,55 +769,95 @@ public class UnitsManager : MonoBehaviour
 
         GameObject unit = Unit.SelectedUnit;
 
-        // Pobiera pole ze statystyk postaci o nazwie takiej samej jak nazwa textInputa (z wyłączeniem słowa "input")
+        // Pobiera nazwę cechy z nazwy obiektu InputField (bez "_input")
         string attributeName = textInput.name.Replace("_input", "");
 
-        FieldInfo field = unit.GetComponent<Stats>().GetType().GetField(attributeName);
-
-        if(field == null) return;
-
-        // Zmienia wartość cechy
-        if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() == null) // to działa dla cech opisywanych wartościami int (pomija umiejętności, które nie są ustawiane przy użyciu slidera)
+        // 1. Sprawdzamy, czy mamy do czynienia z umiejętnością z tablicy Melee
+        if (attributeName.StartsWith("Melee_"))
         {
-            // Pobiera wartość inputa, starając się przekonwertować ją na int
-            int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int inputValue) ? inputValue : 0;
-
-            field.SetValue(unit.GetComponent<Stats>(), value);
-
-            if(attributeName == "Mag")
+            string categoryName = attributeName.Replace("Melee_", "");
+            if (Enum.TryParse<MeleeCategory>(categoryName, out var category))
             {
-                DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć, które może rzucić jednostka
+                // Pobiera wartość z pola tekstowego
+                int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int meleeValue)
+                            ? meleeValue
+                            : 0;
+
+                // Ustawia w słowniku
+                unit.GetComponent<Stats>().Melee[category] = value;
             }
         }
-        else if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() != null) // to działa z umiejętnościami
+        // 2. Albo umiejętność z tablicy Ranged
+        else if (attributeName.StartsWith("Ranged_"))
         {
-            int value = (int)textInput.GetComponent<UnityEngine.UI.Slider>().value;
-            field.SetValue(unit.GetComponent<Stats>(), value);
+            string categoryName = attributeName.Replace("Ranged_", "");
+            if (Enum.TryParse<RangedCategory>(categoryName, out var category))
+            {
+                int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int rangedValue)
+                            ? rangedValue
+                            : 0;
+
+                unit.GetComponent<Stats>().Ranged[category] = value;
+            }
         }
-        else if (field.FieldType == typeof(bool)) 
-        {
-            bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn; 
-            field.SetValue(unit.GetComponent<Stats>(), boolValue);
-        }
-        else if (field.FieldType == typeof(string))
-        {
-            string value = textInput.GetComponent<TMP_InputField>().text;
-            field.SetValue(unit.GetComponent<Stats>(), value);
-        }
+        // 3. A jeżeli to nie Melee_ ani Ranged_, wtedy korzystamy z refleksji
         else
         {
-            Debug.Log($"Nie udało się zmienić wartości cechy.");
-        }         
+            // Szukamy zwykłego pola w klasie Stats
+            FieldInfo field = unit.GetComponent<Stats>().GetType().GetField(attributeName);
 
-        if(attributeName == "MaxHealth")
-        {
-            unit.GetComponent<Stats>().TempHealth = unit.GetComponent<Stats>().MaxHealth;
+            // Jeżeli pole nie istnieje, kończymy metodę
+            if (field == null)
+            {
+                Debug.Log($"Nie znaleziono pola '{attributeName}' w klasie Stats.");
+                return;
+            }
 
-            unit.GetComponent<Unit>().DisplayUnitHealthPoints();
-        }
-        else if(attributeName == "Name")
-        {
-            unit.GetComponent<Unit>().DisplayUnitName();
+            // Zależnie od typu pola...
+            if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() == null)
+            {
+                // int przez InputField
+                int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int inputValue) 
+                            ? inputValue 
+                            : 0;
+
+                field.SetValue(unit.GetComponent<Stats>(), value);
+
+                if(attributeName == "Mag")
+                {
+                    DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć
+                }
+            }
+            else if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() != null)
+            {
+                // int przez Slider
+                int value = (int)textInput.GetComponent<UnityEngine.UI.Slider>().value;
+                field.SetValue(unit.GetComponent<Stats>(), value);
+            }
+            else if (field.FieldType == typeof(bool))
+            {
+                bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn; 
+                field.SetValue(unit.GetComponent<Stats>(), boolValue);
+            }
+            else if (field.FieldType == typeof(string))
+            {
+                string value = textInput.GetComponent<TMP_InputField>().text;
+                field.SetValue(unit.GetComponent<Stats>(), value);
+            }
+            else
+            {
+                Debug.Log($"Nie udało się zmienić wartości cechy '{attributeName}'.");
+            }
+
+            if(attributeName == "MaxHealth")
+            {
+                unit.GetComponent<Stats>().TempHealth = unit.GetComponent<Stats>().MaxHealth;
+                unit.GetComponent<Unit>().DisplayUnitHealthPoints();
+            }
+            else if(attributeName == "Name")
+            {
+                unit.GetComponent<Unit>().DisplayUnitName();
+            }
         }
 
         UpdateUnitPanel(unit);
@@ -828,14 +868,7 @@ public class UnitsManager : MonoBehaviour
             int newOverall = unit.GetComponent<Stats>().CalculateOverall();
             int difference = newOverall - unit.GetComponent<Stats>().Overall;
 
-            if(difference >= 0)
-            { 
-                InitiativeQueueManager.Instance.CalculateDominance(difference, 0, unit.tag);
-            }
-            else
-            {
-                InitiativeQueueManager.Instance.CalculateDominance(difference, 0, unit.tag);
-            }
+            InitiativeQueueManager.Instance.CalculateDominance(difference, 0, unit.tag);
         }
     }
     #endregion
@@ -1003,14 +1036,51 @@ public class UnitsManager : MonoBehaviour
 
         foreach (var inputField in attributeInputFields)
         {
-            // Pobiera pole ze statystyk postaci o nazwie takiej samej jak nazwa textInputa (z wyłączeniem słowa "input")
+            // Wyciągamy nazwę cechy z nazwy obiektu InputField
             string attributeName = inputField.name.Replace("_input", "");
+
+            if (attributeName.StartsWith("Melee_"))
+            {
+                string categoryName = attributeName.Replace("Melee_", "");
+                if (Enum.TryParse<MeleeCategory>(categoryName, out var category))
+                {
+                    int meleeValue = unit.GetComponent<Stats>().Melee.ContainsKey(category)
+                        ? unit.GetComponent<Stats>().Melee[category]
+                        : 0;
+
+                    if (inputField.GetComponent<TMPro.TMP_InputField>() != null)
+                    {
+                        inputField.GetComponent<TMPro.TMP_InputField>().text = meleeValue.ToString();
+                    }
+                }
+
+                // Po obsłużeniu Melee, przechodzimy do kolejnego inputField
+                continue;
+            }
+            else if (attributeName.StartsWith("Ranged_"))
+            {
+                string categoryName = attributeName.Replace("Ranged_", "");
+                if (Enum.TryParse<RangedCategory>(categoryName, out var category))
+                {
+                    int rangedValue = unit.GetComponent<Stats>().Ranged.ContainsKey(category)
+                        ? unit.GetComponent<Stats>().Ranged[category]
+                        : 0;
+
+                    if (inputField.GetComponent<TMPro.TMP_InputField>() != null)
+                    {
+                        inputField.GetComponent<TMPro.TMP_InputField>().text = rangedValue.ToString();
+                    }
+                }
+
+                continue;
+            }
+
+            // Jeżeli to nie Melee/Ranged, to wtedy bierzemy się za zwykłe pola
             FieldInfo field = unit.GetComponent<Stats>().GetType().GetField(attributeName);
+            if (field == null)
+                continue;
 
-            if(field == null) continue;
-
-            // Jeśli znajdzie takie pole, to zmienia wartość wyświetlanego tekstu na wartość tej cechy
-            if (field.FieldType == typeof(int)) // to działa dla cech opisywanych wartościami int
+            if (field.FieldType == typeof(int))
             {
                 int value = (int)field.GetValue(unit.GetComponent<Stats>());
 
@@ -1023,28 +1093,28 @@ public class UnitsManager : MonoBehaviour
                     inputField.GetComponent<UnityEngine.UI.Slider>().value = value;
                 }
             }
-            else if (field.FieldType == typeof(bool)) // to działa dla cech opisywanych wartościami bool
+            else if (field.FieldType == typeof(bool))
             {
                 bool value = (bool)field.GetValue(unit.GetComponent<Stats>());
                 inputField.GetComponent<UnityEngine.UI.Toggle>().isOn = value;
             }
-            else if (field.FieldType == typeof(string)) // to działa dla cech opisywanych wartościami string
+            else if (field.FieldType == typeof(string))
             {
                 string value = (string)field.GetValue(unit.GetComponent<Stats>());
-
                 if (inputField.GetComponent<TMPro.TMP_InputField>() != null)
                 {
                     inputField.GetComponent<TMPro.TMP_InputField>().text = value;
                 }
             }
 
-            if(attributeName == "Initiative")
+            if (attributeName == "Initiative")
             {
-                //Aktualizuje kolejkę inicjatywy
-                InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] = unit.GetComponent<Stats>().Initiative;
+                InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] 
+                    = unit.GetComponent<Stats>().Initiative;
                 InitiativeQueueManager.Instance.UpdateInitiativeQueue();
             }
         }
+
     }
 
     public void ChangeTemporaryHealthPoints(int amount)
