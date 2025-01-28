@@ -521,6 +521,10 @@ public class SaveAndLoadManager : MonoBehaviour
             LoadComponentDataWithReflection<StatsData, Stats>(unitGameObject, statsFilePath);
             LoadComponentDataWithReflection<UnitData, Unit>(unitGameObject, unitFilePath);
             LoadComponentDataWithReflection<WeaponData, Weapon>(unitGameObject, weaponFilePath);
+
+            // Wczytanie umiejętności w walce każdą kategorią broni
+            unitGameObject.GetComponent<Stats>().Melee = statsData.MeleeSerialized.ToDictionary(x => Enum.Parse<MeleeCategory>(x.Key),x => x.Value);
+            unitGameObject.GetComponent<Stats>().Ranged = statsData.RangedSerialized.ToDictionary(x => Enum.Parse<RangedCategory>(x.Key),x => x.Value);
    
             //Dodaje jednostkę do kolejki inicjatywy
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unitGameObject.GetComponent<Unit>());

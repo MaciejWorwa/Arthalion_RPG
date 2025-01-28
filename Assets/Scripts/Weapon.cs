@@ -3,6 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
+public enum MeleeCategory
+{
+    Basic,
+    Cavalry,
+    Fencing,
+    Brawling,
+    Flail
+}
+public enum RangedCategory
+{
+    Bow,
+    Crossbow
+}
+
+
 public class Weapon : MonoBehaviour
 {
     public int Id;
@@ -45,6 +60,7 @@ public class Weapon : MonoBehaviour
     public bool Damaging; // Przebijająca
     public bool Dangerous; // Niebezpieczna
     public bool Defensive; // Parujący
+    public bool Distract; // Dekoncentrujący (Powoduje cofanie się. Mechanika jeszcze nie wprowadzona)
     public int Durable; // Wytrzymały (str. 292)
     public bool Entangle; // Unieruchamiający
     public bool Fast; // Szybka

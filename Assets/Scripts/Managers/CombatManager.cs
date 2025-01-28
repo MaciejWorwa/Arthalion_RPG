@@ -287,6 +287,11 @@ public class CombatManager : MonoBehaviour
         // ==================================================================
         int attackModifier = CalculateAttackModifier(attacker, attackerWeapon, target, attackDistance);
 
+        //Zwiększenie modyfikatora do ataku za atak okazyjny
+        if(opportunityAttack) attackModifier += 20;
+        if(attackModifier > 60) attackModifier = 60; // Górny limit modyfikatora
+        if(attackModifier < -30) attackModifier = -30; // Dolny limit modyfikatora
+
         int rollOnAttack;
         if (IsManualPlayerAttack)
         {
@@ -313,8 +318,10 @@ public class CombatManager : MonoBehaviour
         }
 
         // 10) Liczymy poziomy sukcesu atakującego
-        int skillValue = attackerWeapon.Type.Contains("ranged") ? attackerStats.US : attackerStats.WW;
-        int[] results = CalculateSuccessLevel(attackerWeapon, rollOnAttack, skillValue, attackModifier);
+        MeleeCategory meleeSkill = EnumConverter.ParseEnum<MeleeCategory>(attackerWeapon.Category) ?? MeleeCategory.Basic;
+        RangedCategory rangedSkill = EnumConverter.ParseEnum<RangedCategory>(attackerWeapon.Category) ?? RangedCategory.Bow;
+        int skillValue = attackerWeapon.Type.Contains("ranged") ? attackerStats.US + attackerStats.GetSkillModifier(attackerStats.Ranged, rangedSkill) : attackerStats.WW + attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
+        int[] results = CalculateSuccessLevel(attackerWeapon, rollOnAttack, skillValue, true, attackModifier);
         int attackerSuccessValue = results[0];
         int attackerSuccessLevel = results[1];
 
@@ -323,11 +330,16 @@ public class CombatManager : MonoBehaviour
         Debug.Log($"{attackerStats.Name} atakuje przy użyciu {attackerWeapon.Name}. Wynik rzutu: {rollOnAttack}, Wartość umiejętności: {skillValue},{modifierString} PS: <color={successLevelColor}>{attackerSuccessLevel}</color>");
 
         // Obsługa fuksa / pecha
+
+        bool isFortunateOrUnfortunateEvent = false; // Zmienna używana do tego, aby nie powielać dwa razy szczęścia lub pecha w przypadku specyficznych broni
+
         if (IsDoubleDigit(rollOnAttack) || (attackerWeapon.Impale && rollOnAttack % 10 == 0) || (attackerWeapon.Dangerous && attackerSuccessValue < 0 && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
         {
+            isFortunateOrUnfortunateEvent = true;
+
             if (attackerSuccessValue >= 0)
             {
-                Debug.Log($"{attackerStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color> na trafienie!");
+                Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
                 attackerStats.FortunateEvents++;
             }
             else if (IsDoubleDigit(rollOnAttack) || (attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
@@ -343,11 +355,11 @@ public class CombatManager : MonoBehaviour
         bool isDangerousRoll = attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9) && attackerSuccessValue < 0;
         bool isSpecialRoll = isDoubleRoll || isImpaleRoll || isDangerousRoll; // Sprawdzamy, czy mamy do czynienia z którymś z „wyjątkowych” rzutów
 
-        if (isSpecialRoll)
+        if (isSpecialRoll && !isFortunateOrUnfortunateEvent)
         {
             if (attackerSuccessValue >= 0)
             {
-                Debug.Log($"{attackerStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color> na trafienie!");
+                Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
                 attackerStats.FortunateEvents++;
             }
             else
@@ -386,14 +398,21 @@ public class CombatManager : MonoBehaviour
         if (targetWeapon.Defensive) parryModifier += 10;
         if (targetWeapon.Unbalanced) parryModifier -= 10;
         if (attackerStats.Size > targetStats.Size) parryModifier -= (attackerStats.Size - targetStats.Size) * 20; // Kara do parowania za rozmiar
+        if (attackerStats.Size > targetStats.Size) Debug.Log($"modyfikator parowania za rozmiar -{(attackerStats.Size - targetStats.Size) * 20}");
+        if(parryModifier < -30) parryModifier = -30; // Dolny limit modyfikatora
+
+        string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
+        string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
 
         // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
-        bool canParry = attackerWeapon.Type.Contains("melee") || targetWeapon.Shield >= 2;
+        bool canParry = attackerWeapon.Type.Contains("melee") || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2);
         bool canDodge = attackerWeapon.Type.Contains("melee");
 
         // Obliczamy sumaryczną wartość parowania i uniku
-        int parryValue = targetStats.WW + parryModifier;
+        MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
+        int parryValue = targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill) + parryModifier;
         int dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
+
 
         if (canParry || canDodge)
         {
@@ -429,23 +448,23 @@ public class CombatManager : MonoBehaviour
                 if (_parryOrDodge == "parry")
                 {
                     // Parowanie
-                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, parryValue);
+                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, parryValue, false);
                     defenceSuccessValue = defenceResults[0];
                     defenceSuccessLevel = defenceResults[1];
 
 
                     string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
-                    Debug.Log($"{targetStats.Name} próbuje parować. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.WW}, PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+                    Debug.Log($"{targetStats.Name} próbuje parować. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill)},{parryModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>");
                 }
                 else if (_parryOrDodge == "dodge")
                 {
                     // Unik
-                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, dodgeValue);
+                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, dodgeValue, false);
                     defenceSuccessValue = defenceResults[0];
                     defenceSuccessLevel = defenceResults[1];
 
                     string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
-                    Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.Dodge + targetStats.Zw}, PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+                    Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.Dodge + targetStats.Zw},{dodgeModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>");
                 }
 
                 // Resetujemy wybór reakcji obronnej
@@ -458,22 +477,22 @@ public class CombatManager : MonoBehaviour
                 if (parryValue >= dodgeValue)
                 {
                     // Parowanie
-                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, parryValue);
+                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, parryValue, false);
                     defenceSuccessValue = defenceResults[0];
                     defenceSuccessLevel = defenceResults[1];
 
                     string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
-                    Debug.Log($"{targetStats.Name} próbuje parować. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.WW}, PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+                    Debug.Log($"{targetStats.Name} próbuje parować. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill)},{parryModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>");
                 }
                 else
                 {
                     // Unik
-                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, dodgeValue);
+                    int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, dodgeValue, false);
                     defenceSuccessValue = defenceResults[0];
                     defenceSuccessLevel = defenceResults[1];
 
                     string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
-                    Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.Dodge + targetStats.Zw}, PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+                    Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.Dodge + targetStats.Zw},{dodgeModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>");
                 }
             }
 
@@ -496,7 +515,7 @@ public class CombatManager : MonoBehaviour
         // 12) Teraz dopiero wiemy, ile wynoszą poziomy sukcesu atakującego i obrońcy
         // Następuje finalne rozstrzygnięcie
         int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
-        if (combinedSuccessLevel <= 0)
+        if (combinedSuccessLevel <= 0 && attackerWeapon.Type.Contains("melee") || combinedSuccessLevel < 0 && attackerWeapon.Type.Contains("ranged"))
         {
             // Atak chybił
             Debug.Log($"Atak {attackerStats.Name} chybił.");
@@ -514,7 +533,7 @@ public class CombatManager : MonoBehaviour
         // 13) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
         int armor = CalculateArmor(targetStats, attackerWeapon);
-        int damage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, targetStats, attackerWeapon, attackDistance);
+        int damage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, targetStats, attackerWeapon);
 
         Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.");
 
@@ -544,7 +563,11 @@ public class CombatManager : MonoBehaviour
         else
         {
             // Jeśli atak nie przebił pancerza, ale broń NIE JEST tępa, to broń zadaje 1 obrażeń
-            if (!attackerWeapon.Undamaging) finalDamage = 1;
+            if (!attackerWeapon.Undamaging) 
+            {
+                finalDamage = 1;
+                reducedDamage = damage - 1;
+            }
         }
 
         if (finalDamage > 0)
@@ -575,12 +598,12 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private int[] CalculateSuccessLevel(Weapon weapon, int rollResult, int skillValue, int modifier = 0)
+    private int[] CalculateSuccessLevel(Weapon weapon, int rollResult, int skillValue, bool isAttack, int modifier = 0)
     {
         int successValue = skillValue + modifier - rollResult;
         int successLevel = (skillValue + modifier) / 10 - rollResult / 10;
 
-        if (successValue > 0) // Nieudany test
+        if (successValue < 0) // Nieudany test
         {
             if (weapon.Practical) // Uwzględnia zaletę przedmiotu "Praktyczny"
             {
@@ -593,7 +616,7 @@ public class CombatManager : MonoBehaviour
                 successLevel--;
             }
         }
-        else // Udany test
+        else if(isAttack) // Udany test
         {
             if (weapon.Precise) // Uwzględnia zaletę przedmiotu "Precyzyjny"
             {
@@ -602,7 +625,7 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        if (weapon.Imprecise) // Uwzględnia zaletę przedmiotu "Nieprecyzyjny"
+        if (weapon.Imprecise && isAttack) // Uwzględnia zaletę przedmiotu "Nieprecyzyjny"
         {
             Debug.Log($"Używamy cechy Nieprecyzyjny i obniżamy PS z {successLevel} na {successLevel - 1}");
             successLevel--;
@@ -721,6 +744,8 @@ public class CombatManager : MonoBehaviour
         // Modyfikator za rozmiar
         if (attackerStats.Size < targetStats.Size) attackModifier += 10;
 
+        if (attackerStats.Size < targetStats.Size) Debug.Log($"modyfikatro za rozmiar +10");
+
         // Modyfikator za szarżę
         if (attackerUnit.IsCharging) attackModifier += 10;
 
@@ -810,11 +835,11 @@ public class CombatManager : MonoBehaviour
                 Collider2D collider = Physics2D.OverlapPoint(pos);
                 if (collider == null) continue;
 
-                if (collider.CompareTag(allyTag))
+                if (collider.CompareTag(allyTag) && InventoryManager.Instance.ChooseWeaponToAttack(collider.gameObject).Type.Contains("melee"))
                 {
                     allies++;
                 }
-                else if (collider.CompareTag(opponentTag) && !countedOpponents.Contains(collider))
+                else if (collider.CompareTag(opponentTag) && !countedOpponents.Contains(collider) && InventoryManager.Instance.ChooseWeaponToAttack(collider.gameObject).Type.Contains("melee"))
                 {
                     opponents++;
                     countedOpponents.Add(collider); // Dodajemy do zestawu zliczonych przeciwników
@@ -846,20 +871,21 @@ public class CombatManager : MonoBehaviour
     }
 
     #region Calculating damage
-    int CalculateDamage(int attackRoll, int successLevel, Stats attackerStats, Stats targetStats, Weapon attackerWeapon, float attackDistance)
+    int CalculateDamage(int attackRoll, int successLevel, Stats attackerStats, Stats targetStats, Weapon attackerWeapon)
     {
         int damage;
 
         // Uwzględnienie cechy broni "Przebijająca"
-        if (attackerWeapon.Damaging && successLevel < attackRoll % 10 && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 1)
+        if ((attackerWeapon.Damaging || attackerStats.Size - targetStats.Size >= 1) && successLevel < attackRoll % 10 && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging))
         {
             Debug.Log($"Używamy cechy Przebijająca i zamieniamy PS z {successLevel} na {attackRoll % 10}");
             successLevel = attackRoll % 10;
         }
 
-        if (attackDistance <= 1.5f || attackerWeapon.Type.Contains("strength-based")) //Oblicza łączne obrażenia dla ataku w zwarciu
+        if (attackerWeapon.Type.Contains("melee") || attackerWeapon.Type.Contains("strength-based")) //Oblicza łączne obrażenia dla ataku w zwarciu
         {
-            damage = successLevel + attackerStats.S / 10 + Math.Min(0, attackerWeapon.S - attackerWeapon.Damage);
+            Debug.Log($"succesLevel {successLevel} siła atakującego: {attackerStats.S / 10} siła broni: {Math.Max(0, attackerWeapon.S - attackerWeapon.Damage)}");
+            damage = successLevel + attackerStats.S / 10 + Math.Max(0, attackerWeapon.S - attackerWeapon.Damage);
         }
         else //Oblicza łączne obrażenia dla ataku dystansowego
         {
@@ -876,6 +902,7 @@ public class CombatManager : MonoBehaviour
         if (attackerStats.Size > targetStats.Size)
         {
             damage *= attackerStats.Size - targetStats.Size;
+            Debug.Log($"modyfikator obrazeń za rozmiar atakujący rozmiar {attackerStats.Size} cel rozmiar {targetStats.Size} mnożnik obrażeń {attackerStats.Size - targetStats.Size}");
         }
 
         if (damage < 0) damage = 0;

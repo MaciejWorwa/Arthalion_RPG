@@ -602,7 +602,6 @@ public class StatsData
     public int Resolve; // Punkty Determinacji
     public int Resilience; // Punkty Bohatera
     public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
-    public int Advantage; // Przewaga
     public int Initiative;
     public int Armor_head;
     public int Armor_arms;
@@ -637,6 +636,8 @@ public class StatsData
     public int Athletics; // Atletyka
     public int Channeling; // Splatanie magii
     public int Dodge; // Unik
+    public List<Pair> MeleeSerialized = new List<Pair>();
+    public List<Pair> RangedSerialized = new List<Pair>();
     public int HighestDamageDealt; // Największe zadane obrażenia
     public int TotalDamageDealt; // Suma zadanych obrażeń
     public int HighestDamageTaken; // Największe otrzymane obrażenia
@@ -673,7 +674,19 @@ public class StatsData
                 }
             }
         }
+
+        // Przekonwertuj słowniki na listy dla JSON
+        MeleeSerialized = stats.Melee.Select(kvp => new Pair { Key = kvp.Key.ToString(), Value = kvp.Value }).ToList();
+        RangedSerialized = stats.Ranged.Select(kvp => new Pair { Key = kvp.Key.ToString(), Value = kvp.Value }).ToList();
     }
+}
+
+//Klasa pomocnicza do zapisywania słowników
+[System.Serializable]
+public class Pair
+{
+    public string Key;
+    public int Value;
 }
 
 [System.Serializable]
@@ -681,6 +694,7 @@ public class WeaponData
 {
     public int Id;
     public string Name;
+    public string Category;
     public string[] Type;
     public string Quality;
     public bool TwoHanded;
@@ -692,14 +706,38 @@ public class WeaponData
     public bool ArmourIgnoring; // ignorujący zbroje
     public bool ArmourPiercing; // przebijający zbroje
     public bool Balanced; // wyważony
-    public bool Defensive; // parujący
-    public bool Fast; // szybki
-    public bool Impact; // druzgoczący
     public bool Pummelling; // ogłuszający
-    public bool Slow; // powolny
     public bool Snare; // unieruchamiający
-    public bool Tiring; // ciężki
-    public int Shield; // tarcza
+
+
+    // NOWE PONIŻEJ
+    public bool Accurate; // Celny (+10 do trafienia)
+    public bool Blackpowder; // Prochowa
+    public int Blast; // Wybuchowa
+    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1)
+    public bool Damaging; // Przebijająca
+    public bool Dangerous; // Niebezpieczna
+    public bool Defensive; // Parujący
+    public bool Distract; // Dekoncentrujący (Powoduje cofanie się. Mechanika jeszcze nie wprowadzona)
+    public int Durable; // Wytrzymały (str. 292)
+    public bool Entangle; // Unieruchamiający
+    public bool Fast; // Szybka
+    public bool Hack; // Rąbiąca
+    public bool Impact; // Druzgoczący
+    public bool Impale; // Nadziewający (str. 298)
+    public bool Imprecise; // Nieprecyzyjna (zmiejsza poziom testu ataku o 1)
+    public bool Lightweight; // Poręczny (redukuje obciążenie o 1)
+    public bool Penetrating; // Przekłuwająca
+    public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
+    public bool Precise; // Precyzyjna (zwiększa poziom udanego testu ataku o 1)
+    public bool Pummel; // Ogłuszający
+    public bool Slow; // Powolny
+    public int Shield; // Tarcza
+    public bool Tiring; // Ciężka
+    public bool Undamaging; // Tępy
+    public bool Unbalanced; // Niewyważona
+    public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
+    public bool Wrap; // Plącząca (utrudnia parowanie o 1 PS)
 
     public WeaponData(Weapon weapons)
     {

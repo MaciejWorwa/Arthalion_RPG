@@ -6,15 +6,16 @@ using UnityEngine;
 using UnityEngine.TextCore.Text;
 using static UnityEngine.GraphicsBuffer;
 using System.Linq;
+using System;
 public enum SizeCategory
 {
-    Drobny = 0,      // drobny
-    Niewielki = 1,    // niewielki
-    Mały = 2,         // mały
-    Średni = 3,       // średni
-    Duży = 4,         // duży
-    Wielki = 5,       // wielki
-    Monstrualny = 6   // monstrualny
+    Tiny = 0,      // drobny
+    Little = 1,    // niewielki
+    Small = 2,         // mały
+    Average = 3,       // średni
+    Large = 4,         // duży
+    Enormous = 5,       // wielki
+    Monstrous = 6   // monstrualny
 }
 
 public class Stats : MonoBehaviour
@@ -60,7 +61,6 @@ public class Stats : MonoBehaviour
     public int Resolve; // Punkty Determinacji
     public int Resilience; // Punkty Bohatera
     public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
-    public int Advantage; // Przewaga
     public int Initiative; // Inicjatywa w walce
 
     [Header("Punkty zbroi")]
@@ -101,8 +101,8 @@ public class Stats : MonoBehaviour
     public int Athletics;
     public int Channeling; // Splatanie magii
     public int Dodge; // Unik
-    public int Melee; // Broń Biała
-    public int Ranged; // Broń Zasięgowa
+    public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
+    public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Statystyki")]
     public int HighestDamageDealt; // Największe zadane obrażenia
@@ -119,20 +119,37 @@ public class Stats : MonoBehaviour
     private void Start()
     {
         Overall = CalculateOverall();
+
+        // Inicjalizacja domyślnych wartości TYLKO DO TESTÓW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        Melee = new Dictionary<MeleeCategory, int>
+        {
+            { MeleeCategory.Basic, 10 },
+            { MeleeCategory.Cavalry, 5 },
+            { MeleeCategory.Fencing, 15 },
+            { MeleeCategory.Brawling, 8 },
+            { MeleeCategory.Flail, 12 }
+        };
+
+        // Inicjalizacja domyślnych wartości TYLKO DO TESTÓW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        Ranged = new Dictionary<RangedCategory, int>
+        {
+            { RangedCategory.Bow, 13 },
+            { RangedCategory.Crossbow, 21 }
+        };
     }
 
     public void RollForBaseStats()
     {
-        WW += Random.Range(2, 21);
-        US += Random.Range(2, 21);
-        S += Random.Range(2, 21);
-        Wt += Random.Range(2, 21);
-        I += Random.Range(2, 21);
-        Zw += Random.Range(2, 21);
-        Zr += Random.Range(2, 21);
-        Int += Random.Range(2, 21);
-        SW += Random.Range(2, 21);
-        Ogd += Random.Range(2, 21);
+        WW += UnityEngine.Random.Range(2, 21);
+        US += UnityEngine.Random.Range(2, 21);
+        S += UnityEngine.Random.Range(2, 21);
+        Wt += UnityEngine.Random.Range(2, 21);
+        I += UnityEngine.Random.Range(2, 21);
+        Zw += UnityEngine.Random.Range(2, 21);
+        Zr += UnityEngine.Random.Range(2, 21);
+        Int += UnityEngine.Random.Range(2, 21);
+        SW += UnityEngine.Random.Range(2, 21);
+        Ogd += UnityEngine.Random.Range(2, 21);
 
         MaxHealth = S / 10 + (2 * Wt / 10) + SW / 10;
         if (Race == "Niziołek") MaxHealth -= S / 10;
@@ -142,13 +159,25 @@ public class Stats : MonoBehaviour
         Resolve = Resilience; // Punkty Determinacji są Równe Punktom Bohatera
     }
 
+    // Pobieranie modyfikatora za umiejętność dla danej kategorii broni
+    public int GetSkillModifier<T>(Dictionary<T, int> modifiers, T category) where T : Enum
+    {
+        if (modifiers.TryGetValue(category, out int modifier))
+        {
+            return modifier;
+        }
+
+        // Domyślny modyfikator (jeśli kategoria nie istnieje w słowniku)
+        return 0;
+    }
+
     public void CheckForSpecialRaceAbilities()
     {
         //Zdolność regeneracji
         if (Race == "Troll" || Race == "Troll Chaosu")
         {
-            int regeneration = Random.Range(0, 11);
-            int currentWounds = 0;
+            int regeneration = UnityEngine.Random.Range(0, 11);
+            int currentWounds;
 
             if (TempHealth < MaxHealth)
             {
@@ -190,7 +219,6 @@ public class Stats : MonoBehaviour
                 weaponPower += weapon.S + S / 10 * 8;
             }
 
-            weaponPower = weapon.S;
             if(weapon.Impact == true) weaponPower += maxWWorUS / 2;  
         }
 

@@ -46,6 +46,7 @@
     {
       "Id": 5,
       "Name": "Broń ręczna",
+      "Category": "basic",
       "Type": ["melee"],
       "AttackRange": 1.5,
       "S": 4
@@ -100,12 +101,15 @@
     },
     {
       "Id": 11,
-      "Name": "Kastet/rękawica",
+      "Name": "Floret",
+      "Category": "fencing",
       "Type": ["melee"],
-      "TwoHanded": false,
       "AttackRange": 1.5,
-      "S": -3,
-      "Pummelling": true
+      "S": 3,
+      "Fast": true,
+      "Impale": true,
+      "Precise": true,
+      "Undamaging": true 
     },
     {
       "Id": 12,
@@ -119,33 +123,37 @@
     },
     {
       "Id": 13,
-      "Name": "Korbacz",
+      "Name": "Kiścień",
+      "Category": "flail",
       "Type": ["melee"],
       "TwoHanded": true,
       "AttackRange": 1.5,
-      "S": 1,
+      "S": 6,
       "Tiring": true,
-      "Impact": true
+      "Impact": true,
+      "Wrap": true,
+      "Distract:": true
     },
     {
       "Id": 14,
       "Name": "Krótki łuk",
-      "Type": ["ranged"],
+      "Category": "bow",
+      "Type": ["ranged", "strength-based"],
       "TwoHanded": true,
-      "AttackRange": 8,
-      "S": 3,
-      "ReloadTime": 1,
-      "ReloadLeft": 0
+      "AttackRange": 10,
+      "S": 2,
+      "Impale": true
     },
     {
       "Id": 15,
       "Name": "Kusza",
+      "Category": "crossbow",
       "Type": ["ranged"],
       "TwoHanded": true,
       "AttackRange": 30,
       "S": 9,
       "ReloadTime": 1,
-      "ReloadLeft": 0
+      "Impale": true
     },
     {
       "Id": 16,
@@ -170,12 +178,12 @@
     {
       "Id": 18,
       "Name": "Łuk",
+      "Category": "bow",
       "Type": ["ranged", "strength-based"],
       "TwoHanded": true,
       "AttackRange": 25,
       "S": 3,
-      "ReloadTime": 1,
-      "ReloadLeft": 0
+      "Impale": true
     },
     {
       "Id": 19,
@@ -200,13 +208,13 @@
     },
     {
       "Id": 21,
-      "Name": "Nóż/gwiazdka do rzucania",
-      "Type": ["ranged"],
-      "TwoHanded": false,
-      "AttackRange": 3,
-      "S": -3,
-      "ReloadTime": 1,
-      "ReloadLeft": 0
+      "Name": "Nóż",
+      "Category": "basic",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": 1,
+      "Undamaging": true
+
     },
     {
       "Id": 22,
@@ -270,10 +278,12 @@
     {
       "Id": 28,
       "Name": "Rapier",
+      "Category": "fencing",
       "Type": ["melee"],
       "AttackRange": 1.5,
-      "S": -1,
-      "Fast": true
+      "S": 4,
+      "Fast": true,
+      "Impale": true
     },
     {
       "Id": 29,
@@ -325,10 +335,13 @@
     {
       "Id": 34,
       "Name": "Tarcza",
+      "Category": "basic",
       "Type": ["melee", "shield"],
       "AttackRange": 1.5,
-      "S": -2,
-      "Defensive": true
+      "S": 2,
+      "Shield": 2,
+      "Defensive": true,
+      "Undamaging": true
     },
     {
       "Id": 35,
@@ -342,10 +355,12 @@
     {
       "Id": 36,
       "Name": "Włócznia",
+      "Category": "polearm",
       "Type": ["melee"],
-      "AttackRange": 1.5,
-      "S": 0,
-      "Fast": true
+      "TwoHanded": true,
+      "AttackRange": 3,
+      "S": 4,
+      "Impale": true
     }
   ]
 }
