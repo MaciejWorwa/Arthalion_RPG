@@ -166,7 +166,7 @@ public class GridManager : MonoBehaviour
     {
         ResetColorOfTilesInMovementRange();
 
-        if((GameManager.IsAutoCombatMode && !(unitStats.CompareTag("PlayerUnit") && GameManager.IsStatsHidingMode)) || Unit.SelectedUnit == null) return;
+        if((GameManager.IsAutoCombatMode && !(unitStats.CompareTag("PlayerUnit") && GameManager.IsStatsHidingMode)) || Unit.SelectedUnit == null || (!Unit.SelectedUnit.GetComponent<Unit>().CanMove && !Unit.SelectedUnit.GetComponent<Unit>().IsRunning)) return;
 
         // Sprawdzenie zasięgu ruchu
         int movementRange = unitStats.TempSz;

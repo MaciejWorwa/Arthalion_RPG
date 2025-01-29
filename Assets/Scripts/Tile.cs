@@ -46,7 +46,7 @@ public class Tile : MonoBehaviour
 
         HighlightTile();
 
-        if(Unit.SelectedUnit != null && !MovementManager.Instance.IsMoving && !MagicManager.IsTargetSelecting && !GameManager.IsAutoCombatMode)
+        if(Unit.SelectedUnit != null && !MovementManager.Instance.IsMoving && !MagicManager.IsTargetSelecting && !GameManager.IsAutoCombatMode && (Unit.SelectedUnit.GetComponent<Unit>().CanMove || Unit.SelectedUnit.GetComponent<Unit>().IsRunning))
         {
             MovementManager.Instance.HighlightPath(Unit.SelectedUnit, this.gameObject);
         }

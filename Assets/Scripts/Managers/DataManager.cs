@@ -694,46 +694,47 @@ public class WeaponData
 {
     public int Id;
     public string Name;
-    public string Category;
     public string[] Type;
     public string Quality;
+    public string Category;
+    public int Encumbrance; // Obciążenie
+    public int Damage; // Uszkodzenie
     public bool TwoHanded;
     public bool NaturalWeapon;
     public float AttackRange;
     public int S;
     public int ReloadTime;
     public int ReloadLeft;
-    public bool ArmourIgnoring; // ignorujący zbroje
-    public bool ArmourPiercing; // przebijający zbroje
-    public bool Balanced; // wyważony
-    public bool Pummelling; // ogłuszający
-    public bool Snare; // unieruchamiający
-
 
     // NOWE PONIŻEJ
     public bool Accurate; // Celny (+10 do trafienia)
-    public bool Blackpowder; // Prochowa
-    public int Blast; // Wybuchowa
-    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1)
+    public bool Blackpowder; // Prochowa ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Blast; // Wybuchowa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Damaging; // Przebijająca
-    public bool Dangerous; // Niebezpieczna
+    public bool Dangerous; // Niebezpieczna ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Defensive; // Parujący
-    public bool Distract; // Dekoncentrujący (Powoduje cofanie się. Mechanika jeszcze nie wprowadzona)
-    public int Durable; // Wytrzymały (str. 292)
+    public bool Distract; // Dekoncentrujący (Powoduje cofanie się) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Durable; // Wytrzymały (str. 292) ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Entangle; // Unieruchamiający
-    public bool Fast; // Szybka
-    public bool Hack; // Rąbiąca
+    public bool Fast; // Szybka ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Hack; // Rąbiąca ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Impact; // Druzgoczący
     public bool Impale; // Nadziewający (str. 298)
     public bool Imprecise; // Nieprecyzyjna (zmiejsza poziom testu ataku o 1)
-    public bool Lightweight; // Poręczny (redukuje obciążenie o 1)
-    public bool Penetrating; // Przekłuwająca
+    public bool Penetrating; // Przekłuwająca ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Pistol; // Pistolet
     public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
     public bool Precise; // Precyzyjna (zwiększa poziom udanego testu ataku o 1)
-    public bool Pummel; // Ogłuszający
-    public bool Slow; // Powolny
+    public bool Pummel; // Ogłuszający ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Slash; // Sieczna ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Slow; // Powolny ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Shield; // Tarcza
+    public bool Shoddy; // Tandetny  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Spread; // Rozrzucająca  ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Tiring; // Ciężka
+    public bool TrapBlade; // Łamacz mieczy ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Trip; // Przewracająca ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Unbreakable; // Niełamliwa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Undamaging; // Tępy
     public bool Unbalanced; // Niewyważona
     public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
@@ -757,6 +758,49 @@ public class WeaponData
         }
     }
 }
+
+
+[System.Serializable]
+public class ArmorData
+{
+    public int Id;
+    public string Name;
+    public string Quality;
+    public string Category;
+    public int Encumbrance; // Obciążenie
+    public int Damage; // Uszkodzenie
+
+    // NOWE PONIŻEJ
+    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Durable; // Wytrzymały (str. 292) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Flexible; // Giętki  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Impenetrable; // Nieprzebijalny ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Lightweight; // Poręczny (redukuje obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Partial; // Częściowy  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
+    public bool Shoddy; //Tandetny  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
+    public bool WeakPoints; // Wrażliwe punkty  ---------------------- (MECHANIKA DO WPROWADZENIA)
+
+    public ArmorData(Armor armors)
+    {
+        // Pobiera wszystkie pola (zmienne) z klasy Stats
+        var fields = armors.GetType().GetFields();
+        var thisFields = this.GetType().GetFields();
+
+        // Dla każdego pola z klasy stats odnajduje pole w klasie this (czyli WeaponData) i ustawia mu wartość jego odpowiednika z klasy Weapon
+        foreach (var thisField in thisFields)
+        {
+            var field = fields.FirstOrDefault(f => f.Name == thisField.Name); // Znajduje pierwsze pole o tej samej nazwie wśród pol z klasy Weapon
+
+            if (field != null && field.GetValue(armors) != null)
+            {
+                thisField.SetValue(this, field.GetValue(armors));
+            }
+        }
+    }
+}
+
 [System.Serializable]
 public class SpellData
 {
@@ -802,7 +846,9 @@ public class SpellData
 [System.Serializable]
 public class InventoryData
 {
-    public List<WeaponData> AllWeapons = new List<WeaponData>(); //Wszystkie posiadane przez postać przedmioty
+    public List<WeaponData> AllWeapons = new List<WeaponData>(); //Wszystkie posiadane przez postać bronie
+    public List<ArmorData> AllArmors = new List<ArmorData>(); //Wszystkie posiadane przez postać elementy zbroi
+    public List<ArmorData> EquippedArmors = new List<ArmorData>(); //Wszystkie ubrane przez postać elementy zbroi
     public int[] EquippedWeaponsId = new int[2]; // Tablica identyfikatorów broni trzymanych w rękach
     public int CopperCoins;
     public int SilverCoins;
@@ -823,6 +869,18 @@ public class InventoryData
             {
                 EquippedWeaponsId[i] = inventory.EquippedWeapons[i].Id;
             }
+        }
+
+        foreach (var armor in inventory.AllArmors)
+        {
+            ArmorData armorData = new ArmorData(armor);
+            AllArmors.Add(armorData);
+        }
+
+        foreach (var armor in inventory.EquippedArmors)
+        {
+            ArmorData armorData = new ArmorData(armor);
+            EquippedArmors.Add(armorData);
         }
 
         CopperCoins = inventory.CopperCoins;

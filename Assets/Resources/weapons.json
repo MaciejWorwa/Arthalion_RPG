@@ -3,53 +3,50 @@
     {
       "Id": 1,
       "Name": "Arkan",
-      "Type": ["ranged", "short-range-only", "no-damage"],
-      "TwoHanded": false,
-      "AttackRange": 4,
-      "ReloadTime": 1,
-      "ReloadLeft": 0,
-      "Snare": true
+      "Category": "entangling",
+      "Type": ["ranged", "throwing", "no-damage"],
+      "AttackRange": 2,
+      "Entangle": true
     },
     {
       "Id": 2,
       "Name": "Bicz",
-      "Type": ["ranged", "short-range-only", "strength-based"],
-      "TwoHanded": false,
+      "Category": "entangling",
+      "Type": ["ranged", "strength-based"],
       "AttackRange": 3,
-      "S": -4,
-      "ReloadTime": 1,
-      "ReloadLeft": 0,
-      "Fast": true,
-      "Snare": true
+      "S": 2,
+      "Entangle": true
     },
     {
       "Id": 3,
       "Name": "Bolas",
-      "Type": ["ranged", "throwing"],
-      "TwoHanded": false,
-      "AttackRange": 4,
-      "S": 1,
-      "ReloadTime": 1,
-      "ReloadLeft": 0,
-      "Snare": true
+      "Category": "throwing",
+      "Type": ["ranged", "throwing", "strength-based"],
+      "AttackRange": 3,
+      "S": 0,
+      "Entangle": true
     },
     {
       "Id": 4,
-      "Name": "Broń dwuręczna",
-      "Type": ["melee"],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 0,
-      "Impact": true,
-      "Slow": true
-    },
-    {
-      "Id": 5,
-      "Name": "Broń ręczna",
+      "Name": "Broń improwizowana",
       "Category": "basic",
       "Type": ["melee"],
       "AttackRange": 1.5,
-      "S": 4
+      "S": 1,
+      "Encumbrance": 1,
+      "Undamaging": true,
+      "Unbalanced": true
+    },
+    {
+      "Id": 5,
+      "Name": "Buzdygan",
+      "Category": "basic",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 1,
+      "Unbalanced": true,
+      "Pummell": true
     },
     {
       "Id": 6,
@@ -80,24 +77,27 @@
     {
       "Id": 9,
       "Name": "Długi łuk",
-      "Type": ["ranged"],
+      "Category": "bow",
+      "Type": ["ranged", "strength-based"],
       "TwoHanded": true,
-      "AttackRange": 15,
-      "S": 3,
-      "ReloadTime": 1,
-      "ReloadLeft": 0,
-      "ArmourPiercing": true
+      "AttackRange": 50,
+      "S": 4,
+      "Encumbrance": 3,
+      "Impale": true,
+      "Damaging": true
     },
     {
       "Id": 10,
       "Name": "Elfi łuk",
-      "Type": ["ranged"],
+      "Category": "bow",
+      "Type": ["ranged", "strength-based"],
       "TwoHanded": true,
-      "AttackRange": 18,
-      "S": 3,
-      "ReloadTime": 1,
-      "ReloadLeft": 0,
-      "ArmourPiercing": true
+      "AttackRange": 75,
+      "S": 4,
+      "Encumbrance": 2,
+      "Impale": true,
+      "Damaging": true,
+      "Precise": true
     },
     {
       "Id": 11,
@@ -106,33 +106,37 @@
       "Type": ["melee"],
       "AttackRange": 1.5,
       "S": 3,
+      "Encumbrance": 1,
       "Fast": true,
       "Impale": true,
       "Precise": true,
-      "Undamaging": true 
+      "Undamaging": true
     },
     {
       "Id": 12,
-      "Name": "Kij",
-      "Type": ["melee"],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": -2,
-      "Pummelling": true,
-      "Defensive": true
-    },
-    {
-      "Id": 13,
       "Name": "Kiścień",
       "Category": "flail",
       "Type": ["melee"],
       "TwoHanded": true,
       "AttackRange": 1.5,
       "S": 6,
+      "Encumbrance": 2,
       "Tiring": true,
       "Impact": true,
       "Wrap": true,
       "Distract:": true
+    },
+    {
+      "Id": 13,
+      "Name": "Kostur",
+      "Category": "polearm",
+      "Type": ["melee"],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 2,
+      "Pummelling": true,
+      "Defensive": true
     },
     {
       "Id": 14,
@@ -142,6 +146,7 @@
       "TwoHanded": true,
       "AttackRange": 10,
       "S": 2,
+      "Encumbrance": 1,
       "Impale": true
     },
     {
@@ -152,28 +157,29 @@
       "TwoHanded": true,
       "AttackRange": 30,
       "S": 9,
+      "Encumbrance": 1,
       "ReloadTime": 1,
       "Impale": true
     },
     {
       "Id": 16,
       "Name": "Kusza pistoletowa",
+      "Category": "crossbow",
       "Type": ["ranged"],
-      "TwoHanded": false,
-      "AttackRange": 4,
-      "S": 2,
-      "ReloadTime": 2,
-      "ReloadLeft": 0
+      "AttackRange": 5,
+      "S": 7,
+      "Pistol": true
     },
     {
       "Id": 17,
-      "Name": "Kusza samopowtarzalna",
-      "Type": ["ranged"],
-      "TwoHanded": true,
-      "AttackRange": 8,
-      "S": 2,
-      "ReloadTime": 0,
-      "ReloadLeft": 0
+      "Name": "Łamacz mieczy",
+      "Category": "parry",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": 3,
+      "Encumbrance": 1,
+      "TrapBlade": true,
+      "Defensive": true
     },
     {
       "Id": 18,
@@ -183,28 +189,37 @@
       "TwoHanded": true,
       "AttackRange": 25,
       "S": 3,
+      "Encumbrance": 2,
       "Impale": true
     },
     {
       "Id": 19,
-      "Name": "Morgernsztern",
+      "Name": "Młot bojowy",
+      "Category": "twohanded",
       "Type": ["melee"],
-      "TwoHanded": false,
+      "TwoHanded": true,
       "AttackRange": 1.5,
-      "S": 0,
-      "Tiring": true,
-      "Impact": true
+      "S": 6,
+      "Encumbrance": 3,
+      "Slow": true,
+      "Pummell": true,
+      "Damaging": true
     },
     {
       "Id": 20,
       "Name": "Muszkiet hochlandzki",
-      "Type": ["ranged", "gunpowder"],
+      "Category": "blackpowder",
+      "Type": ["ranged"],
       "TwoHanded": true,
-      "AttackRange": 24,
-      "S": 4,
-      "Impact": true,
+      "AttackRange": 50,
+      "S": 9,
+      "Encumbrance": 3,
       "ReloadTime": 4,
-      "ReloadLeft": 0
+      "ReloadLeft": 0,
+      "Accurate": true,
+      "Precise": true,
+      "Damaging": true,
+      "Blackpowder": true
     },
     {
       "Id": 21,
@@ -214,66 +229,72 @@
       "AttackRange": 1.5,
       "S": 1,
       "Undamaging": true
-
     },
     {
       "Id": 22,
       "Name": "Oszczep",
+      "Category": "throwing",
       "Type": ["ranged", "throwing"],
-      "TwoHanded": false,
-      "AttackRange": 4,
-      "S": -1
+      "AttackRange": 3,
+      "S": 3,
+      "Encumbrance": 1,
+      "Impale": true
     },
     {
       "Id": 23,
       "Name": "Pistolet",
-      "Type": ["ranged", "gunpowder"],
-      "TwoHanded": false,
-      "AttackRange": 4,
-      "S": 4,
-      "Impact": true,
-      "ReloadTime": 4,
-      "ReloadLeft": 0
+      "Category": "blackpowder",
+      "Type": ["ranged"],
+      "AttackRange": 10,
+      "S": 8,
+      "ReloadTime": 1,
+      "Damaging": true,
+      "Blackpowder": true,
+      "Pistol": true
     },
     {
       "Id": 24,
-      "Name": "Pistolet wielostrzałowy",
-      "Type": ["ranged", "gunpowder"],
-      "TwoHanded": false,
-      "AttackRange": 4,
-      "S": 4,
-      "ReloadTime": 0,
-      "ReloadLeft": 0
+      "Name": "Pistolet samopowtarzalny",
+      "Category": "engineering",
+      "Type": ["ranged"],
+      "AttackRange": 5,
+      "S": 8,
+      "Encumbrance": 1,
+      "ReloadTime": 4,
+      "AmmoMax": 4,
+      "Damaging": true,
+      "Blackpowder": true,
+      "Pistol": true,
+      "Dangerous": true
     },
     {
       "Id": 25,
       "Name": "Proca",
+      "Category": "sling",
       "Type": ["ranged"],
-      "TwoHanded": false,
-      "AttackRange": 8,
-      "S": 3,
-      "ReloadTime": 1,
-      "ReloadLeft": 0
+      "AttackRange": 30,
+      "S": 6
     },
     {
       "Id": 26,
       "Name": "Proca drzewcowa",
+      "Category": "sling",
       "Type": ["ranged"],
       "TwoHanded": true,
-      "AttackRange": 12,
-      "S": 4,
-      "ReloadTime": 2,
-      "ReloadLeft": 0
+      "AttackRange": 50,
+      "S": 7,
+      "Encumbrance": 2
     },
     {
       "Id": 27,
       "Name": "Puklerz",
+      "Category": "basic",
       "Type": ["melee", "shield"],
       "AttackRange": 1.5,
-      "S": -3,
-      "Balanced": true,
+      "S": 1,
+      "Shield": 1,
       "Defensive": true,
-      "Pummelling": true
+      "Undamaging": true
     },
     {
       "Id": 28,
@@ -282,55 +303,66 @@
       "Type": ["melee"],
       "AttackRange": 1.5,
       "S": 4,
+      "Encumbrance": 1,
       "Fast": true,
       "Impale": true
     },
     {
       "Id": 29,
       "Name": "Rusznica",
-      "Type": ["ranged", "gunpowder"],
+      "Category": "blackpowder",
+      "Type": ["ranged"],
       "TwoHanded": true,
-      "AttackRange": 12,
-      "S": 4,
-      "Impact": true,
-      "ReloadTime": 4,
-      "ReloadLeft": 0
+      "AttackRange": 25,
+      "S": 9,
+      "Encumbrance": 2,
+      "Dangerous": true,
+      "ReloadTime": 3,
+      "Blackpowder": true
     },
     {
       "Id": 30,
-      "Name": "Rusznica wielostrzałowa",
-      "Type": ["ranged", "gunpowder"],
+      "Name": "Rusznica dwulufowa",
+      "Category": "blackpowder",
+      "Type": ["ranged"],
       "TwoHanded": true,
-      "AttackRange": 12,
-      "S": 4,
-      "ReloadTime": 0,
-      "ReloadLeft": 0
+      "AttackRange": 25,
+      "S": 9,
+      "Encumbrance": 3,
+      "Dangerous": true,
+      "AmmoMax": 2,
+      "ReloadTime": 4,
+      "Blackpowder": true
     },
     {
       "Id": 31,
-      "Name": "Sieć",
-      "Type": ["ranged", "no-damage", "throwing"],
-      "TwoHanded": false,
-      "AttackRange": 2,
-      "ReloadTime": 2,
-      "ReloadLeft": 0,
-      "Snare": true
+      "Name": "Szabla",
+      "Category": "cavalry",
+      "Type": ["melee"],
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 1,
+      "Slash": 1
     },
     {
       "Id": 32,
       "Name": "Szpada",
-      "Type": ["malee"],
-      "TwoHanded": false,
+      "Category": "fencing",
+      "Type": ["melee"],
       "AttackRange": 1.5,
-      "S": -2,
-      "Fast": true
+      "S": 2,
+      "Encumbrance": 1,
+      "Fast": true,
+      "Impale": true,
+      "Precise": true
     },
     {
       "Id": 33,
       "Name": "Sztylet",
+      "Category": "basic",
       "Type": ["melee"],
       "AttackRange": 1.5,
-      "S": -3
+      "S": 2
     },
     {
       "Id": 34,
@@ -339,18 +371,20 @@
       "Type": ["melee", "shield"],
       "AttackRange": 1.5,
       "S": 2,
+      "Encumbrance": 1,
       "Shield": 2,
       "Defensive": true,
       "Undamaging": true
     },
     {
       "Id": 35,
-      "Name": "Upiorna broń",
-      "Type": ["melee"],
-      "TwoHanded": false,
-      "AttackRange": 1.5,
-      "S": 2,
-      "Quality": "Magiczna"
+      "Name": "Topór do rzucania",
+      "Category": "throwing",
+      "Type": ["ranged", "throwing"],
+      "AttackRange": 2,
+      "S": 3,
+      "Encumbrance": 1,
+      "Hack": true
     },
     {
       "Id": 36,
@@ -358,8 +392,9 @@
       "Category": "polearm",
       "Type": ["melee"],
       "TwoHanded": true,
-      "AttackRange": 3,
+      "AttackRange": 2,
       "S": 4,
+      "Encumbrance": 2,
       "Impale": true
     }
   ]

@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Linq;
 using TMPro;
 using UnityEngine.UI;
+using UnityEditor.Experimental.GraphView;
 
 public class MovementManager : MonoBehaviour
 {
@@ -35,14 +36,22 @@ public class MovementManager : MonoBehaviour
     [SerializeField] private Toggle _canMoveToggle;
 
     #region Move functions
-    public void MoveSelectedUnit(GameObject selectedTile, GameObject unit)
+    public void MoveSelectedUnit(GameObject selectedTile, GameObject unitGameObject)
     {
         // Nie pozwala wykonać akcji ruchu, dopóki poprzedni ruch nie zostanie zakończony. Sprawdza też, czy gra nie jest wstrzymana (np. poprzez otwarcie dodatkowych paneli)
         if( IsMoving == true || GameManager.IsGamePaused) return;
 
-        if(unit.GetComponent<Unit>().CanMove == false)
+        Unit unit = unitGameObject.GetComponent<Unit>();
+
+        if(!unit.CanMove && !unit.IsRunning)
         {
-            Debug.Log("Ta jednostka nie może już wykonać ruchu w tej rundzie.");
+            Debug.Log("Ta jednostka nie może wykonać ruchu w tej rundzie.");
+            return;
+        }
+        else if (!unit.CanDoAction && unit.IsRunning)
+        {
+            Debug.Log("Ta jednostka nie może wykonać biegu w tej rundzie.");
+            UpdateMovementRange(1);
             return;
         }
 
@@ -64,15 +73,20 @@ public class MovementManager : MonoBehaviour
         // Sprawdza czy wybrane pole jest w zasięgu ruchu postaci. W przypadku automatycznej walki ten warunek nie jest wymagany.
         if (path.Count > 0 && (path.Count <= movementRange || GameManager.IsAutoCombatMode))
         {
-            if(unit.GetComponent<Unit>().CanMove == false) return;
-            
-            unit.GetComponent<Unit>().CanMove = false;
-            SetCanMoveToggle(false);
-
-            Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a ruch. </color>");
+            if(!unit.IsRunning && RoundsManager.RoundNumber != 0)
+            {
+                unit.CanMove = false;
+                SetCanMoveToggle(false);
+                Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a ruch. </color>");
+            }
+            else
+            {
+                RoundsManager.Instance.DoAction(unit);
+                UpdateMovementRange(1);
+            }
 
             //Resetuje pozycję obronną, jeśli była aktywna
-            if (Unit.SelectedUnit.GetComponent<Unit>().DefensiveBonus != 0)
+            if (unit.DefensiveBonus != 0 && unit.CanDoAction)
             {
                 CombatManager.Instance.DefensiveStance();
             }
@@ -90,10 +104,10 @@ public class MovementManager : MonoBehaviour
             GridManager.Instance.ResetColorOfTilesInMovementRange();
 
             //Sprawdza, czy ruch powoduje ataki okazyjne
-            CombatManager.Instance.CheckForOpportunityAttack(unit, selectedTilePos);
+            CombatManager.Instance.CheckForOpportunityAttack(unitGameObject, selectedTilePos);
 
             // Wykonuje pojedynczy ruch tyle razy ile wynosi zasięg ruchu postaci
-            StartCoroutine(MoveWithDelay(unit, path, movementRange));
+            StartCoroutine(MoveWithDelay(unitGameObject, path, movementRange));
         }
         else
         {
@@ -101,7 +115,7 @@ public class MovementManager : MonoBehaviour
         }
     }
 
-    private IEnumerator MoveWithDelay(GameObject unit, List<Vector2> path, int movementRange)
+    private IEnumerator MoveWithDelay(GameObject unitGameObject, List<Vector2> path, int movementRange)
     {
         // Ogranicz iterację do mniejszej wartości: movementRange lub liczby elementów w liście path
         int iterations = Mathf.Min(movementRange, path.Count);
@@ -113,26 +127,26 @@ public class MovementManager : MonoBehaviour
             float elapsedTime = 0f;
             float duration = 0.2f; // Czas trwania interpolacji
 
-            while (elapsedTime < duration && unit != null)
+            while (elapsedTime < duration && unitGameObject != null)
             {
                 IsMoving = true;
 
-                unit.transform.position = Vector2.Lerp(unit.transform.position, nextPos, elapsedTime / duration);
+                unitGameObject.transform.position = Vector2.Lerp(unitGameObject.transform.position, nextPos, elapsedTime / duration);
                 elapsedTime += Time.deltaTime;
                 yield return null; // Poczekaj na odświeżenie klatki animacji
             }
 
             //Na wypadek, gdyby w wyniku ataku okazyjnego podczas ruchu jednostka została zabita i usunięta
-            if(unit == null)
+            if(unitGameObject == null)
             {
                 IsMoving = false;
                 yield break;
-            } 
+            }
 
-            unit.transform.position = nextPos;
+            unitGameObject.transform.position = nextPos;
         }
 
-        if ((Vector2)unit.transform.position == path[iterations - 1])
+        if ((Vector2)unitGameObject.transform.position == path[iterations - 1])
         {
             IsMoving = false;
             Retreat(false);
@@ -146,7 +160,7 @@ public class MovementManager : MonoBehaviour
         //Zaznacza jako zajęte faktyczne pole, na którym jednostka zakończy ruch, a nie pole do którego próbowała dojść
         if(GameManager.IsAutoCombatMode)
         {
-            AutoCombatManager.Instance.CheckForTargetTileOccupancy(unit);
+            AutoCombatManager.Instance.CheckForTargetTileOccupancy(unitGameObject);
         }
     }
 
@@ -409,6 +423,8 @@ public class MovementManager : MonoBehaviour
     {
         if (Unit.SelectedUnit == null) return;
         Unit.SelectedUnit.GetComponent<Unit>().CanMove = _canMoveToggle.isOn;
+
+        GridManager.Instance.HighlightTilesInMovementRange(Unit.SelectedUnit.GetComponent<Stats>());
     }
 }
 

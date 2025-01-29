@@ -230,7 +230,13 @@ public class RoundsManager : MonoBehaviour
             Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a akcję. </color>");
 
             //Zresetowanie szarży lub biegu, jeśli były aktywne (po zużyciu jednej akcji szarża i bieg nie mogą być możliwe)
-            MovementManager.Instance.UpdateMovementRange(1);
+            //MovementManager.Instance.UpdateMovementRange(1);
+
+            //Resetuje pozycję obronną, jeśli była aktywna
+            if (unit.GetComponent<Unit>().DefensiveBonus != 0)
+            {
+                CombatManager.Instance.DefensiveStance();
+            }
 
             //W przypadku ręcznego zadawania obrażeń, czekamy na wpisanie wartości obrażeń przed zmianą jednostki (jednostka jest wtedy zmieniana w funkcji ExecuteAttack w CombatManager)
             if (!CombatManager.Instance.IsManualPlayerAttack)

@@ -53,7 +53,13 @@ public class IncrementButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
             {
                 InitiativeQueueManager.Instance.CalculateAdvantage("EnemyUnit", _incrementValue);
             }
-            
+            else if (_valueName == "ReloadLeft" && Unit.SelectedUnit != null)
+            {
+                Weapon weapon = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons[0];
+                weapon.ReloadLeft = Mathf.Clamp(weapon.ReloadLeft - _incrementValue, 0, weapon.ReloadTime);
+                InventoryManager.Instance.DisplayReloadTime();
+            }
+
             yield return new WaitForSeconds(0.3f); // Czeka przed kolejnym wywołaniem
         }
     }

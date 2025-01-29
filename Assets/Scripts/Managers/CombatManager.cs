@@ -13,6 +13,7 @@ using TMPro;
 using System;
 using static UnityEngine.GraphicsBuffer;
 using UnityEditor.Experimental.GraphView;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 
 public class CombatManager : MonoBehaviour
 {
@@ -63,6 +64,8 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private GameObject _applyRollResultPanel;
     [SerializeField] private TMP_InputField _rollInputField;
     [SerializeField] private TMP_InputField _defenceRollInputField;
+
+    private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
 
     // Zmienne do przechowywania wyniku
     private int _manualRollResult;
@@ -118,6 +121,12 @@ public class CombatManager : MonoBehaviour
         if (attackTypeName != "Charge" && unit.IsCharging)
         {
             MovementManager.Instance.UpdateMovementRange(1);
+        }
+
+        if (attackTypeName == "Charge" && (!unit.CanDoAction || !unit.CanMove))
+        {
+            Debug.Log("Ta jednostka nie może wykonać szarży w obecnej rundzie.");
+            return;
         }
 
         // Sprawdzamy, czy słownik zawiera podany typ ataku
@@ -193,6 +202,12 @@ public class CombatManager : MonoBehaviour
                     return;
                 }
 
+                if(!unit.CanDoAction || !unit.CanMove)
+                {
+                    Debug.Log("Ta jednostka nie może wykonać szarży w obecnej rundzie.");
+                    return;
+                }
+
                 MovementManager.Instance.UpdateMovementRange(2, null, true);
                 MovementManager.Instance.Retreat(false); // Zresetowanie bezpiecznego odwrotu
             }
@@ -242,11 +257,35 @@ public class CombatManager : MonoBehaviour
         Weapon attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(attacker.gameObject);
         Weapon targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
 
+        // Ustalamy umiejętności, które będą testowane w zależności od kategorii broni
+        MeleeCategory meleeSkill = EnumConverter.ParseEnum<MeleeCategory>(attackerWeapon.Category) ?? MeleeCategory.Basic;
+        RangedCategory rangedSkill = EnumConverter.ParseEnum<RangedCategory>(attackerWeapon.Category) ?? RangedCategory.Bow;
+        int skillModifier = attackerWeapon.Type.Contains("ranged") ? attackerStats.GetSkillModifier(attackerStats.Ranged, rangedSkill) : attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
+        _isTrainedWeaponCategory = skillModifier > 0 ? true : false;
+
+        Debug.Log("Czy jednostka jest wyszkolona w tej broni: " + _isTrainedWeaponCategory);
+
+        if (attackerWeapon.Type.Contains("ranged") && !_isTrainedWeaponCategory && attackerWeapon.Category != "crossbow" && attackerWeapon.Category != "throwing")
+        {
+            Debug.Log("Wybrana jednostka nie może walczyć przy użyciu broni z tej kategorii.");
+            yield break;
+        }
+
         // 4) Oblicz dystans
         float attackDistance = CalculateDistance(attacker.gameObject, target.gameObject);
 
         // 5) Sprawdź zasięg i ewentualnie wykonaj szarżę
-        if (attackDistance > attackerWeapon.AttackRange && (!attackerWeapon.Type.Contains("ranged") || attackDistance > attackerWeapon.AttackRange * 3))
+        float effectiveAttackRange = attackerWeapon.AttackRange;
+
+        if (attackerWeapon.Type.Contains("throwing")) // Oblicz właściwy zasięg ataku, uwzględniając broń miotaną
+        {
+            effectiveAttackRange *= attackerStats.S / 10f;
+        }
+
+        bool isOutOfRange = attackDistance > effectiveAttackRange;
+        bool isRangedAndTooFar = attackerWeapon.Type.Contains("ranged") && attackDistance > effectiveAttackRange * 3 && attackerWeapon.Category != "entangling";
+
+        if (isOutOfRange && (!attackerWeapon.Type.Contains("ranged") || isRangedAndTooFar))
         {
             // Poza zasięgiem
             if (attacker.IsCharging)
@@ -318,8 +357,6 @@ public class CombatManager : MonoBehaviour
         }
 
         // 10) Liczymy poziomy sukcesu atakującego
-        MeleeCategory meleeSkill = EnumConverter.ParseEnum<MeleeCategory>(attackerWeapon.Category) ?? MeleeCategory.Basic;
-        RangedCategory rangedSkill = EnumConverter.ParseEnum<RangedCategory>(attackerWeapon.Category) ?? RangedCategory.Bow;
         int skillValue = attackerWeapon.Type.Contains("ranged") ? attackerStats.US + attackerStats.GetSkillModifier(attackerStats.Ranged, rangedSkill) : attackerStats.WW + attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
         int[] results = CalculateSuccessLevel(attackerWeapon, rollOnAttack, skillValue, true, attackModifier);
         int attackerSuccessValue = results[0];
@@ -380,7 +417,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // ==================================================================
-        // 11) *** OBRONA *** (tylko jeśli to atak w zwarciu i nie chcemy możemy bronić się przed strzałem)
+        // 11) *** OBRONA *** (tylko jeśli to atak w zwarciu i lub mamy tarcze i możemy bronić się przed strzałem)
         // ==================================================================
         int defenceSuccessValue = 0;
         int defenceSuccessLevel = 0;
@@ -389,7 +426,12 @@ public class CombatManager : MonoBehaviour
         // Modyfikatory do parowania i uników
         int parryModifier = 0;
         int dodgeModifier = 0;
-        if (attackerWeapon.Wrap) parryModifier -= 10;
+        if(target.DefensiveBonus != 0) // Modyfikator za pozycję obronną
+        {
+            parryModifier += target.DefensiveBonus;
+            dodgeModifier += target.DefensiveBonus;
+        }
+        if (attackerWeapon.Wrap && _isTrainedWeaponCategory) parryModifier -= 10;
         if (attackerWeapon.Slow)
         {
             parryModifier += 10;
@@ -510,6 +552,12 @@ public class CombatManager : MonoBehaviour
                     targetStats.UnfortunateEvents++;
                 }
             }
+
+            //Resetujemy czas przeładowania broni celu ataku, bo ładowanie zostało zakłócone przez atak, przed którym musiał się bronić.
+            if (targetWeapon.ReloadLeft != 0)
+            {
+                ResetWeaponLoad(targetWeapon, targetStats);
+            } 
         }
 
         // 12) Teraz dopiero wiemy, ile wynoszą poziomy sukcesu atakującego i obrońcy
@@ -530,6 +578,8 @@ public class CombatManager : MonoBehaviour
             Debug.Log($"Przewaga {group} została zwiększona o <color=#4dd2ff>1</color>.");
         }
 
+        if (attackerWeapon.Type.Contains("no-damage")) yield break; //Jeśli broń nie powoduje obrażeń, np. arkan, to pomijamy dalszą część kodu
+        
         // 13) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
         int armor = CalculateArmor(targetStats, attackerWeapon);
@@ -605,7 +655,7 @@ public class CombatManager : MonoBehaviour
 
         if (successValue < 0) // Nieudany test
         {
-            if (weapon.Practical) // Uwzględnia zaletę przedmiotu "Praktyczny"
+            if (weapon.Practical && _isTrainedWeaponCategory) // Uwzględnia zaletę przedmiotu "Praktyczny"
             {
                 Debug.Log($"Używamy cechy Praktyczny i podnosimy PS z {successLevel} na {successLevel + 1}");
                 successLevel++;
@@ -618,7 +668,7 @@ public class CombatManager : MonoBehaviour
         }
         else if(isAttack) // Udany test
         {
-            if (weapon.Precise) // Uwzględnia zaletę przedmiotu "Precyzyjny"
+            if (weapon.Precise && _isTrainedWeaponCategory) // Uwzględnia zaletę przedmiotu "Precyzyjny"
             {
                 Debug.Log($"Używamy cechy Precyzyjny i podnosimy PS z {successLevel} na {successLevel + 1}");
                 successLevel++;
@@ -684,7 +734,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Sprawdza, czy cel nie znajduje się zbyt blisko
-        if (attackDistance <= 1.5f && !attackerWeapon.Type.Contains("Pistol"))
+        if (attackDistance <= 1.5f && !attackerWeapon.Pistol)
         {
             Debug.Log($"Jednostka stoi zbyt blisko celu, aby wykonać atak dystansowy.");
 
@@ -744,13 +794,13 @@ public class CombatManager : MonoBehaviour
         // Modyfikator za rozmiar
         if (attackerStats.Size < targetStats.Size) attackModifier += 10;
 
-        if (attackerStats.Size < targetStats.Size) Debug.Log($"modyfikatro za rozmiar +10");
+        if (attackerStats.Size < targetStats.Size) Debug.Log($"modyfikator za rozmiar +10");
 
         // Modyfikator za szarżę
         if (attackerUnit.IsCharging) attackModifier += 10;
 
         // Modyfikator za broń z cechą "Celny"
-        if (attackerWeapon.Accurate) attackModifier += 10;
+        if (attackerWeapon.Accurate && _isTrainedWeaponCategory) attackModifier += 10;
 
         // Utrudnienie za atak słabszą ręką
         if (attackerUnit.GetComponent<Inventory>().EquippedWeapons[0] == null || attackerWeapon.Name != attackerUnit.GetComponent<Inventory>().EquippedWeapons[0].Name)
@@ -876,7 +926,7 @@ public class CombatManager : MonoBehaviour
         int damage;
 
         // Uwzględnienie cechy broni "Przebijająca"
-        if ((attackerWeapon.Damaging || attackerStats.Size - targetStats.Size >= 1) && successLevel < attackRoll % 10 && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging))
+        if ((attackerWeapon.Damaging || attackerStats.Size - targetStats.Size >= 1) && successLevel < attackRoll % 10 && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) && _isTrainedWeaponCategory)
         {
             Debug.Log($"Używamy cechy Przebijająca i zamieniamy PS z {successLevel} na {attackRoll % 10}");
             successLevel = attackRoll % 10;
@@ -893,7 +943,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Uwzględnia cechę Druzgoczący
-        if (attackerWeapon.Impact && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 2) 
+        if (attackerWeapon.Impact && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 2 && _isTrainedWeaponCategory) 
         {
             damage += attackRoll % 10; // Dodaje liczbę jedności z rzutu na atak
         }
@@ -964,7 +1014,7 @@ public class CombatManager : MonoBehaviour
         //Sprawdza pole, w którym atakujący zatrzyma się po wykonaniu szarży
         GameObject targetTile = GetTileAdjacentToTarget(attacker, target);
 
-        Vector2 targetTilePosition = Vector2.zero;
+        Vector2 targetTilePosition;
 
         if(targetTile != null)
         {
@@ -980,7 +1030,7 @@ public class CombatManager : MonoBehaviour
         List<Vector2> path = MovementManager.Instance.FindPath(attacker.transform.position, targetTilePosition);
 
         //Sprawdza, czy postać jest wystarczająco daleko do wykonania szarży
-        if (path.Count >= attacker.GetComponent<Stats>().Sz / 2 && path.Count <= attacker.GetComponent<Stats>().TempSz)
+        if (path.Count >= attacker.GetComponent<Stats>().Sz / 2f && path.Count <= attacker.GetComponent<Stats>().TempSz)
         {
             //Zapisuje grę przed wykonaniem ruchu, aby użycie punktu szczęścia wczytywało pozycję przed wykonaniem szarży i można było wykonać ją ponownie
             SaveAndLoadManager.Instance.SaveUnits(UnitsManager.Instance.AllUnits, "autosave");
@@ -1199,8 +1249,9 @@ public class CombatManager : MonoBehaviour
         if(Unit.SelectedUnit == null) return;
 
         Weapon weapon = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons[0];
+        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
 
-        if(weapon == null || !weapon.Type.Contains("ranged")) 
+        if (weapon == null || !weapon.Type.Contains("ranged")) 
         {
             Debug.Log($"Wybrana broń nie wymaga ładowania.");
             return;
@@ -1208,23 +1259,36 @@ public class CombatManager : MonoBehaviour
 
         if(weapon.ReloadLeft > 0)
         {
-            if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction) return;
+            if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction)
+            {
+                Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
+                return;
+            }
 
             //Wykonuje akcję
             RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
 
-            weapon.ReloadLeft --;
+            //Ustalenie testowanej umiejętności w zależności od kategorii broni
+            RangedCategory rangedSkill = EnumConverter.ParseEnum<RangedCategory>(weapon.Category) ?? RangedCategory.Bow;
+
+            //Test Broni Zasięgowej danej kategorii
+            int successLevel = UnitsManager.Instance.TestSkill(rangedSkill.ToString(), "US", stats);
+            if(successLevel > 0)
+            {
+                weapon.ReloadLeft = Mathf.Max(0, weapon.ReloadLeft - successLevel);
+
+            }
 
             StartCoroutine(AnimationManager.Instance.PlayAnimation("reload", Unit.SelectedUnit));       
         }
         
         if(weapon.ReloadLeft == 0)
         {
-            Debug.Log($"Broń {Unit.SelectedUnit.GetComponent<Stats>().Name} załadowana.");
+            Debug.Log($"Broń {stats.Name} załadowana.");
         }
         else
         {
-            Debug.Log($"Ładowanie broni {Unit.SelectedUnit.GetComponent<Stats>().Name}. Pozostała/y {weapon.ReloadLeft} akcja/e do końca.");
+            Debug.Log($"{stats.Name} ładuje broń. Pozostał/y {weapon.ReloadLeft} PS do pełnego załadowania.");
         }  
 
         InventoryManager.Instance.DisplayReloadTime();    

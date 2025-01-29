@@ -604,6 +604,7 @@ GameObject:
   - component: {fileID: -2754630250583481522}
   - component: {fileID: 6267734093322851998}
   - component: {fileID: 8447459666408192081}
+  - component: {fileID: -2613873717699355788}
   - component: {fileID: -2147539621934683725}
   m_Layer: 6
   m_Name: Unit
@@ -753,12 +754,10 @@ MonoBehaviour:
   AimingBonus: 0
   CastingNumberBonus: 0
   DefensiveBonus: 0
-  GuardedAttackBonus: 0
-  CanAttack: 1
+  CanMove: 1
+  CanDoAction: 1
   CanCastSpell: 0
   Feinted: 0
-  CanParry: 1
-  CanDodge: 0
   Stats: {fileID: 0}
   NameDisplay: {fileID: 5344260523014033116}
   HealthDisplay: {fileID: 1306580773643467112}
@@ -780,31 +779,34 @@ MonoBehaviour:
   Exp: 0
   Name: 
   Race: 
+  Size: 0
   PrimaryWeaponIds: 
   WW: 0
   US: 0
-  K: 0
-  Odp: 0
+  S: 0
+  Wt: 0
+  I: 0
+  Zw: 0
   Zr: 0
   Int: 0
   SW: 0
   Ogd: 0
-  A: 0
-  S: 0
-  Wt: 0
   Sz: 0
   TempSz: 0
-  Mag: 0
   MaxHealth: 0
   TempHealth: 0
-  PO: 0
-  PP: 0
+  CriticalWounds: 0
+  CorruptionPoints: 0
   PS: 0
+  PP: 0
+  Resolve: 0
+  Resilience: 0
+  ExtraPoints: 0
+  Initiative: 0
   Armor_head: 0
   Armor_arms: 0
   Armor_torso: 0
   Armor_legs: 0
-  Initiative: 0
   Ambidextrous: 0
   ArmouredCasting: 0
   DaemonicAura: 0
@@ -831,6 +833,7 @@ MonoBehaviour:
   Terryfying: 0
   QuickDraw: 0
   WillOfIron: 0
+  Athletics: 0
   Channeling: 0
   Dodge: 0
   HighestDamageDealt: 0
@@ -862,20 +865,46 @@ MonoBehaviour:
   TwoHanded: 0
   NaturalWeapon: 0
   Quality: "Zwyk\u0142a"
+  Category: 
+  Encumbrance: 0
+  Damage: 0
   S: -4
   AttackRange: 1.5
   ReloadTime: 0
   ReloadLeft: 0
-  ArmourIgnoring: 0
-  ArmourPiercing: 0
-  Balanced: 0
+  AmmoMax: 0
+  AmmoLeft: 0
+  Accurate: 0
+  Blackpowder: 0
+  Blast: 0
+  Bulky: 0
+  Damaging: 0
+  Dangerous: 0
   Defensive: 0
+  Distract: 0
+  Durable: 0
+  Entangle: 0
   Fast: 0
+  Hack: 0
   Impact: 0
-  Pummelling: 0
+  Impale: 0
+  Imprecise: 0
+  Lightweight: 0
+  Penetrating: 0
+  Pistol: 0
+  Practical: 0
+  Precise: 0
+  Pummel: 0
   Slow: 0
-  Snare: 0
+  Shield: 0
+  Shoddy: 0
   Tiring: 0
+  TrapBlade: 0
+  Unbreakable: 0
+  Undamaging: 0
+  Unbalanced: 0
+  Unrielable: 0
+  Wrap: 0
 --- !u!114 &8447459666408192081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -889,12 +918,42 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AllWeapons: []
+  AllArmors: []
   EquippedWeapons:
   - {fileID: 0}
   - {fileID: 0}
+  EquippedArmors: []
   CopperCoins: 0
   SilverCoins: 0
   GoldCoins: 0
+--- !u!114 &-2613873717699355788
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2921409717819951567}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9a421797d8d31f41a7f2c4dfd6b205f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Id: 0
+  Name: 
+  Quality: 
+  Category: 
+  Encumbrance: 0
+  Damage: 0
+  Bulky: 0
+  Durable: 0
+  Flexible: 0
+  Impenetrable: 0
+  Lightweight: 0
+  Partial: 0
+  Practical: 0
+  Shoddy: 0
+  Unrielable: 0
+  WeakPoints: 0
 --- !u!114 &-2147539621934683725
 MonoBehaviour:
   m_ObjectHideFlags: 0

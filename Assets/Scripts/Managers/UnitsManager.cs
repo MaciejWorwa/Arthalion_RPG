@@ -1239,15 +1239,33 @@ public class UnitsManager : MonoBehaviour
             attributeValue = (int)attributeField.GetValue(stats);
         }
 
+        int successValue = skillValue + attributeValue + modifier - rollResult;
         int successLevel = (skillValue + attributeValue + modifier) / 10 - rollResult / 10;
 
-        if(modifier != 0)
+        // Określenie koloru na podstawie poziomu sukcesu
+        string successLevelColor = successValue > 0 ? "green" : "red";
+
+        // Tworzenie stringa dla modyfikatora
+        string modifierString = modifier != 0 ? $" Modifikator: {modifier}," : "";
+
+        // Wyświetlenie wyniku
+        Debug.Log($"Rzut na {skillName}: {rollResult}, Wartość umiejętności: {skillValue + attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");
+
+
+        //Pech i szczęście
+        if (rollResult >= 96)
         {
-            Debug.Log($"Rzut na {skillName}: {rollResult} Wartość umiejętności: {skillValue + attributeValue} Modifikator: {modifier} Poziomy sukcesu: {successLevel}");
+            Debug.Log($"{stats.Name} wyrzucił <color=red>PECHA</color>!");
+
+            //Aktualizuje osiągnięcia
+            stats.UnfortunateEvents++;
         }
-        else
+        else if (rollResult <= 5)
         {
-            Debug.Log($"Rzut na {skillName}: {rollResult} Wartość umiejętności: {skillValue + attributeValue} Poziomy sukcesu: {successLevel}");
+            Debug.Log($"{stats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
+
+            //Aktualizuje osiągnięcia
+            stats.FortunateEvents++;
         }
 
         return successLevel;
