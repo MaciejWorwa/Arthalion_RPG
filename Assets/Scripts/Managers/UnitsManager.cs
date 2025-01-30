@@ -1219,25 +1219,32 @@ public class UnitsManager : MonoBehaviour
         Debug.Log($"{stats.Name} wykonał test {attributeName}. Wynik rzutu: {rollResult} Wartość cechy: {value}{luckOrMisfortune} Modyfikator: {modifier}. {resultString} {successLevel}");
     }
 
-    public int TestSkill(string skillName, string skillAttribute, Stats stats, int modifier = 0)
+    public int TestSkill(string attributeName, Stats stats, string skillName = null, int modifier = 0)
     {
         int rollResult = UnityEngine.Random.Range(1, 101);
 
         // Pobieranie wartości umiejętności na podstawie nazwy
         int skillValue = 0;
-        var field = typeof(Stats).GetField(skillName);
-        if (field != null)
+        if(skillName != null)
         {
-            skillValue = (int)field.GetValue(stats);
+            var field = typeof(Stats).GetField(skillName);
+            if (field != null)
+            {
+                skillValue = (int)field.GetValue(stats);
+            }
         }
 
         // Pobieranie wartości atrybutu na podstawie nazwy
         int attributeValue = 0;
-        var attributeField = typeof(Stats).GetField(skillAttribute);
+        var attributeField = typeof(Stats).GetField(attributeName);
         if (attributeField != null)
         {
             attributeValue = (int)attributeField.GetValue(stats);
         }
+
+        // Modyfikator za wyczerpanie
+        if (stats.GetComponent<Unit>().Fatiqued > 0) modifier -= stats.GetComponent<Unit>().Fatiqued * 10;
+        else if(stats.GetComponent<Unit>().Poison > 0) modifier -= 10;
 
         int successValue = skillValue + attributeValue + modifier - rollResult;
         int successLevel = (skillValue + attributeValue + modifier) / 10 - rollResult / 10;
@@ -1249,8 +1256,14 @@ public class UnitsManager : MonoBehaviour
         string modifierString = modifier != 0 ? $" Modifikator: {modifier}," : "";
 
         // Wyświetlenie wyniku
-        Debug.Log($"Rzut na {skillName}: {rollResult}, Wartość umiejętności: {skillValue + attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");
-
+        if(skillName != null)
+        {
+            Debug.Log($"Rzut na {skillName}: {rollResult}, Wartość umiejętności: {skillValue + attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");
+        }
+        else
+        {
+            Debug.Log($"Rzut na {attributeName}: {rollResult}, Wartość cechy: {attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");   
+        }
 
         //Pech i szczęście
         if (rollResult >= 96)

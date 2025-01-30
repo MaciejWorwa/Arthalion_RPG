@@ -526,6 +526,20 @@ public class UnitData
     public bool IsTurnFinished; 
     public bool IsRunning; // Biegnie
     public bool IsCharging; // Szarżuje
+
+    public int Ablaze; // Podpalenie
+    public int Bleeding; // Krwawienie
+    public int Blinded; // Oślepienie
+    public int Broken; // Panika
+    public int Deafened; // Ogłuszenie
+    public int Entangled; // Pochwycenie
+    public int Fatiqued; // Wyczerpanie
+    public int Poison; // Zatrucie
+    public bool Prone; // Powalenie
+    public int Stunned; // Oszołomienie
+    public bool Surprised; // Zaskoczenie
+    public bool Unconscious; // Utrata Przytomności
+
     public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
     public bool IsScared; // Jest przestraszony
     public bool IsFearTestPassed; // Zdał test strachu
@@ -533,15 +547,15 @@ public class UnitData
     public int StunDuration; // Czas ogłuszenia (podany w rundach). Wartość 0 oznacza, że postać nie jest ogłuszona
     public bool Trapped; // Unieruchomiony
     public int TrappedUnitId; // Cel unieruchomienia
+
     public int AimingBonus;
     public int CastingNumberBonus;
     public int DefensiveBonus;
-    public int GuardedAttackBonus; //Modyfikator do uników i parowania za ostrożny atak
-    public bool CanAttack = true;
-    public bool CanCastSpell = false;
-    public bool Feinted = false; // Określa, czy postać wykonała w poprzedniej akcji udaną fintę
-    public bool CanParry = true;
-    public bool CanDodge = false;
+
+    public bool CanMove;
+    public bool CanAttack;
+    public bool CanCastSpell;
+
 
     public UnitData(Unit unit)
     {

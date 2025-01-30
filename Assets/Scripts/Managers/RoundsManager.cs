@@ -78,18 +78,9 @@ public class RoundsManager : MonoBehaviour
             unit.CanMove = true;
             MovementManager.Instance.SetCanMoveToggle(true);
 
-            if (unit.StunDuration > 0)
+            if (unit.Stunned > 0)
             {
-                unit.CanDoAction = false;
-                unit.CanMove = false;
-                unit.StunDuration--;
-
-                if(unit.StunDuration == 0)
-                {
-                    unit.CanDoAction = true;
-                    unit.CanMove = true;
-                }
-                    
+                unit.CanDoAction = false;              
             }
             if (unit.HelplessDuration > 0)
             {
@@ -239,9 +230,9 @@ public class RoundsManager : MonoBehaviour
             }
 
             //W przypadku ręcznego zadawania obrażeń, czekamy na wpisanie wartości obrażeń przed zmianą jednostki (jednostka jest wtedy zmieniana w funkcji ExecuteAttack w CombatManager)
-            if (!CombatManager.Instance.IsManualPlayerAttack)
+            if (!CombatManager.Instance.IsManualPlayerAttack && !unit.CanMove && !unit.CanDoAction)
             {
-                InitiativeQueueManager.Instance.SelectUnitByQueue();
+                FinishTurn();
             }
 
             return;
@@ -307,6 +298,9 @@ public class RoundsManager : MonoBehaviour
 
         Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
         unit.IsTurnFinished = true;
+
+        // Bierze pod uwagę efekty ewentualnych stanów postaci
+        StatesManager.Instance.HandleUnitStates(unit);
 
         InitiativeQueueManager.Instance.SelectUnitByQueue();
     }

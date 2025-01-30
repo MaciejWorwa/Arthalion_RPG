@@ -174,7 +174,7 @@ public class InitiativeQueueManager : MonoBehaviour
             {
                 ActiveUnit.SelectUnit();
             }
-            else if (GameManager.IsAutoSelectUnitMode && ActiveUnit == null && !GameManager.IsAutoCombatMode || GameManager.IsStatsHidingMode && ActiveUnit == null)
+            else if (GameManager.IsAutoSelectUnitMode && ActiveUnit == null && (!GameManager.IsAutoCombatMode || GameManager.IsStatsHidingMode))
             {
                 RoundsManager.Instance.NextRound();
             }     

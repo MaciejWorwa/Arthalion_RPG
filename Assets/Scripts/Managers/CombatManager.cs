@@ -431,6 +431,23 @@ public class CombatManager : MonoBehaviour
             parryModifier += target.DefensiveBonus;
             dodgeModifier += target.DefensiveBonus;
         }
+
+        if (target.Fatiqued > 0) // Modyfikator za wyczerpanie
+        {
+            parryModifier -= target.Fatiqued * 10;
+            dodgeModifier -= target.Fatiqued * 10;
+        }
+        else if(target.Stunned > 0) // Modyfikator za oszołomienie
+        {
+            parryModifier -= 10;
+            dodgeModifier -= 10;
+        }
+        else if(target.Poison > 0) // Modyfikator za zatrucie
+        {
+            parryModifier -= 10;
+            dodgeModifier -= 10;
+        }
+
         if (attackerWeapon.Wrap && _isTrainedWeaponCategory) parryModifier -= 10;
         if (attackerWeapon.Slow)
         {
@@ -576,6 +593,12 @@ public class CombatManager : MonoBehaviour
             InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, 1);
             string group = attacker.tag == "PlayerUnit" ? "sojuszników" : "przeciwników";
             Debug.Log($"Przewaga {group} została zwiększona o <color=#4dd2ff>1</color>.");
+        }
+
+        //W przypadku manualnego ataku sprawdzamy, czy postać powinna zakończyć turę
+        if (IsManualPlayerAttack && !attacker.CanMove && !attacker.CanDoAction)
+        {
+            RoundsManager.Instance.FinishTurn();
         }
 
         if (attackerWeapon.Type.Contains("no-damage")) yield break; //Jeśli broń nie powoduje obrażeń, np. arkan, to pomijamy dalszą część kodu
@@ -815,13 +838,21 @@ public class CombatManager : MonoBehaviour
         if (attackerWeapon.Quality == "Kiepska") attackModifier -= 5;
         else if (attackerWeapon.Quality == "Najlepsza" || attackerWeapon.Quality == "Magiczna") attackModifier += 5;
 
-        // Stany celu
-        if (targetUnit.StunDuration > 0) attackModifier += 20;
-        if (targetUnit.Trapped) attackModifier += 20;
+        // Modyfikator za stany celu
+        if (targetUnit.Deafened > 0 || targetUnit.Stunned > 0 || targetUnit.Blinded > 0) attackModifier += 10;
+        if (targetUnit.Surprised)
+        {
+            attackModifier += 20;
+            targetUnit.Surprised = false;
+        }
+  
+        // Modyfikator za wyczerpanie
+        if (attackerUnit.Fatiqued > 0) attackModifier -= attackerUnit.Fatiqued * 10;
+        else if(attackerUnit.Poison > 0) attackModifier -= 10;
 
-        // Modyfikator za dystans
         if (attackerWeapon.Type.Contains("ranged"))
         {
+            // Modyfikator za dystans
             attackModifier += attackDistance switch
             {
                 _ when attackDistance <= attackerWeapon.AttackRange / 10 => 40, // Bezpośredni dystans
@@ -830,6 +861,9 @@ public class CombatManager : MonoBehaviour
                 _ when attackDistance <= attackerWeapon.AttackRange * 3 => -30, // Bardzo daleki dystans
                 _ => 0 // Domyślny przypadek, jeśli żaden warunek nie zostanie spełniony
             };
+
+            //Modyfikator za oślepienie
+            if(attackerUnit.Blinded > 0 && attackerUnit.Fatiqued == 0 && attackerUnit.Poison == 0) attackModifier -= 10;
         }
 
         // Przewaga liczebna
@@ -1023,6 +1057,12 @@ public class CombatManager : MonoBehaviour
         else
         {
             Debug.Log($"Cel ataku stoi poza zasięgiem szarży.");
+            return;
+        }
+
+        if(attacker.GetComponent<Unit>().Prone)
+        {
+            Debug.Log("Jednostka w stanie powalenia nie może wykonywać szarży.");
             return;
         }
 
@@ -1272,7 +1312,7 @@ public class CombatManager : MonoBehaviour
             RangedCategory rangedSkill = EnumConverter.ParseEnum<RangedCategory>(weapon.Category) ?? RangedCategory.Bow;
 
             //Test Broni Zasięgowej danej kategorii
-            int successLevel = UnitsManager.Instance.TestSkill(rangedSkill.ToString(), "US", stats);
+            int successLevel = UnitsManager.Instance.TestSkill(rangedSkill.ToString(), stats, "US");
             if(successLevel > 0)
             {
                 weapon.ReloadLeft = Mathf.Max(0, weapon.ReloadLeft - successLevel);
@@ -1355,7 +1395,7 @@ public class CombatManager : MonoBehaviour
     }
 
     // Funkcja pomocnicza do sprawdzania jednostek w sąsiedztwie danej pozycji
-    private List<Unit> AdjacentOpponents(Vector2 center, string movingUnitTag)
+    public List<Unit> AdjacentOpponents(Vector2 center, string movingUnitTag)
     {
         Vector2[] positions = {
             center,

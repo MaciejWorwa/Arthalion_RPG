@@ -24,6 +24,20 @@ public class Unit : MonoBehaviour
     public bool IsRetreating; // Wycofuje się
 
     [Header("Stany")]
+    public int Ablaze; // Podpalenie
+    public int Bleeding; // Krwawienie
+    public int Blinded; // Oślepienie
+    public int Broken; // Panika
+    public int Deafened; // Ogłuszenie
+    public int Entangled; // Pochwycenie
+    public int Fatiqued; // Wyczerpanie
+    public int Poison; // Zatrucie
+    public bool Prone; // Powalenie
+    public int Stunned; // Oszołomienie
+    public bool Surprised; // Zaskoczenie
+    public bool Unconscious; // Utrata Przytomności
+
+    //STARE
     public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
     public bool IsScared; // Jest przestraszony
     public bool IsFearTestPassed; // Zdał test strachu
@@ -31,7 +45,6 @@ public class Unit : MonoBehaviour
     public int StunDuration; // Czas ogłuszenia (podany w rundach). Wartość 0 oznacza, że postać nie jest ogłuszona
     public bool Trapped; // Unieruchomiony
     public int TrappedUnitId; // Cel unieruchomienia
-    //public int TrappedDuration; // Czas unieruchomienia (podany w rundach). Wartość 0 oznacza, że postać nie jest unieruchomiona
 
     [Header("Modyfikatory")]
     public int AimingBonus;
@@ -42,7 +55,6 @@ public class Unit : MonoBehaviour
     public bool CanMove = true;
     public bool CanDoAction = true;
     public bool CanCastSpell = false;
-    public bool Feinted = false; // Określa, czy postać wykonała w poprzedniej akcji udaną fintę
 
     public Stats Stats;
     public TMP_Text NameDisplay;

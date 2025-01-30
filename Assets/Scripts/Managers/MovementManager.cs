@@ -78,6 +78,12 @@ public class MovementManager : MonoBehaviour
                 unit.CanMove = false;
                 SetCanMoveToggle(false);
                 Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a ruch. </color>");
+
+                //Sprawdzamy, czy postać powinna zakończyć turę
+                if (!unit.CanDoAction)
+                {
+                    RoundsManager.Instance.FinishTurn();
+                }
             }
             else
             {
@@ -289,6 +295,12 @@ public class MovementManager : MonoBehaviour
     #region Charge and Run modes
     public void Run()
     {
+        if(Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Unit>().Prone)
+        {
+            Debug.Log("Jednostka w stanie powalenia nie może wykonywać biegu.");
+            return;
+        }
+
         UpdateMovementRange(2);
         Retreat(false); // Zresetowanie bezpiecznego odwrotu
     }
@@ -357,8 +369,11 @@ public class MovementManager : MonoBehaviour
         {
             // DODAĆ TUTAJ OPCJE DLA MANUALNEGO RZUCANIA KOŚĆMI
             
-            stats.TempSz += UnitsManager.Instance.TestSkill("Athletics", "Zw", stats, 20) / 2;
+            stats.TempSz += UnitsManager.Instance.TestSkill("Athletics", stats, "Zw", 20) / 2;
         }
+
+        // Uwzględnia ogłuszenie i powalenie
+        if(unit.Stunned > 0 || unit.Prone)  stats.TempSz /= 2;
 
         ChangeButtonColor(modifier, unit.IsCharging);
 
