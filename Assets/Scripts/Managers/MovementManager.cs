@@ -77,7 +77,18 @@ public class MovementManager : MonoBehaviour
             {
                 unit.CanMove = false;
                 SetCanMoveToggle(false);
-                Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a ruch. </color>");
+
+                if(unit.IsRetreating) // Odwrót
+                {
+                    //Zaktualizowanie przewagi
+                    InitiativeQueueManager.Instance.CalculateAdvantage(unit.tag, -2);
+                    string group = unit.tag == "PlayerUnit" ? "sojuszników" : "przeciwników";
+                    Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a odwrót. Przewaga {group} została zmniejszona o 2.</color>");
+                }
+                else
+                {
+                    Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a ruch. </color>");
+                }
 
                 //Sprawdzamy, czy postać powinna zakończyć turę
                 if (!unit.CanDoAction)
@@ -369,7 +380,7 @@ public class MovementManager : MonoBehaviour
         {
             // DODAĆ TUTAJ OPCJE DLA MANUALNEGO RZUCANIA KOŚĆMI
             
-            stats.TempSz += UnitsManager.Instance.TestSkill("Athletics", stats, "Zw", 20) / 2;
+            stats.TempSz += UnitsManager.Instance.TestSkill("Zw", stats, "Athletics", 20) / 20;
         }
 
         // Uwzględnia ogłuszenie i powalenie
@@ -387,12 +398,20 @@ public class MovementManager : MonoBehaviour
         if (Unit.SelectedUnit == null) return;
         Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
 
-        //DODAĆ NOWE ZASADY ODWROTU: a) gdy ma więcej przewag niż każdy przeciwnik od którego odchodzi to przewagi się zerują i ma do wykonania ruch oraz akcję, b) gdy ma tyle samo lub mniej przewag może użyć akcję na unik (przeciwstawny test unik/broń biała). Wygrana strona dostaje +1 przewagi, jak unikający wygra to może wykonać ruch bez okazyjki.
-        // Czyli sama akcja odwrotu nie aktywuje się przy ruchu, tylko w momencie kliknięcia na nią. Potem gracz decyduje, czy się ruszyć, czy nie - ale zna już wynik akcji Odwrotu.
+        int advantage = 0;
 
-        if(value == true && !unit.CanDoAction) //Sprawdza, czy jednostka może wykonać akcję podwójną
+        if(unit.tag == "PlayerUnit")
         {
-            Debug.Log("Ta jednostka nie może w tej rundzie wykonać akcji podwójnej.");
+            advantage = InitiativeQueueManager.Instance.PlayersAdvantage;
+        }
+        else if (unit.tag == "EnemyUnit")
+        {
+            advantage = InitiativeQueueManager.Instance.EnemiesAdvantage;
+        }
+
+        if (value == true && (!unit.CanMove || advantage < 2)) //Sprawdza, czy jednostka może wykonać ruch
+        {
+            Debug.Log("Ta jednostka nie może w tej rundzie wykonać odwrotu.");
             return;
         }
 

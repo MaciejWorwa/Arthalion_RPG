@@ -82,18 +82,16 @@ public class RoundsManager : MonoBehaviour
             {
                 unit.CanDoAction = false;              
             }
-            if (unit.HelplessDuration > 0)
+            if (unit.Unconscious)
             {
                 unit.CanDoAction = false;
                 unit.CanMove = false;
-                unit.HelplessDuration--;
-
-                if(unit.HelplessDuration == 0)
-                {
-                    unit.CanDoAction = true;
-                    unit.CanMove = true;
-                }
             }
+            if (unit.Entangled > 0)
+            {
+                unit.CanMove = false;
+            }
+
             if (unit.SpellDuration > 0)
             {
                 unit.SpellDuration--;
@@ -103,29 +101,22 @@ public class RoundsManager : MonoBehaviour
                     MagicManager.Instance.ResetSpellEffect(unit);
                 }
             }
-            if(unit.IsScared)
-            {
-                unit.CanDoAction = false;
-                unit.CanMove = false;
-            }
 
-            if (unit.TrappedUnitId != 0)
+            if (unit.EntangledUnitId != 0)
             {
-                bool trappedUnitExist = false;
+                bool entangledUnitExist = false;
 
                 foreach (var u in UnitsManager.Instance.AllUnits)
                 {
-                    if(u.UnitId == unit.TrappedUnitId && unit.Trapped == true)
+                    if(u.UnitId == unit.EntangledUnitId && u.Entangled > 0)
                     {
-                        u.CanDoAction = false;
-                        u.CanMove = false;
-                        trappedUnitExist = true;
+                        entangledUnitExist = true;
                     }
                 }
 
-                if (!trappedUnitExist)
+                if (!entangledUnitExist)
                 {
-                    unit.TrappedUnitId = 0;
+                    unit.EntangledUnitId = 0;
                 }
             }
 
@@ -300,7 +291,7 @@ public class RoundsManager : MonoBehaviour
         unit.IsTurnFinished = true;
 
         // Bierze pod uwagę efekty ewentualnych stanów postaci
-        StatesManager.Instance.HandleUnitStates(unit);
+        StatesManager.Instance.UpdateUnitStates(unit);
 
         InitiativeQueueManager.Instance.SelectUnitByQueue();
     }

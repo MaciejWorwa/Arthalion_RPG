@@ -37,6 +37,8 @@ public class Unit : MonoBehaviour
     public bool Surprised; // Zaskoczenie
     public bool Unconscious; // Utrata Przytomności
 
+    public int EntangledUnitId; // Cel unieruchomienia
+
     //STARE
     public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
     public bool IsScared; // Jest przestraszony
@@ -44,7 +46,6 @@ public class Unit : MonoBehaviour
     public int SpellDuration; // Czas trwania zaklęcia mającego wpływ na tą jednostkę
     public int StunDuration; // Czas ogłuszenia (podany w rundach). Wartość 0 oznacza, że postać nie jest ogłuszona
     public bool Trapped; // Unieruchomiony
-    public int TrappedUnitId; // Cel unieruchomienia
 
     [Header("Modyfikatory")]
     public int AimingBonus;
@@ -128,14 +129,15 @@ public class Unit : MonoBehaviour
         }
         else
         {
-            CombatManager.Instance.ChangeAttackType(); // Resetuje wybrany typ ataku
-            MovementManager.Instance.UpdateMovementRange(1); //Resetuje szarżę lub bieg, jeśli były aktywne   
-            MovementManager.Instance.Retreat(false); //Resetuje bezpieczny odwrót    
             SelectedUnit.GetComponent<Unit>().IsSelected = false;
 
             ChangeUnitColor(SelectedUnit);
             LastSelectedUnit = SelectedUnit;
             SelectedUnit = this.gameObject;
+
+            CombatManager.Instance.ChangeAttackType(); // Resetuje wybrany typ ataku
+            MovementManager.Instance.UpdateMovementRange(1); //Resetuje szarżę lub bieg, jeśli były aktywne   
+            MovementManager.Instance.Retreat(false); //Resetuje bezpieczny odwrót    
 
             CombatManager.Instance.UpdateDefensiveStanceButtonColor();
 
@@ -152,9 +154,15 @@ public class Unit : MonoBehaviour
 
         //Aktualizuje panel ze statystykami jednostki
         UnitsManager.Instance.UpdateUnitPanel(SelectedUnit);
+        StatesManager.Instance.LoadUnitStates();
 
         //Zaznacza lub odznacza jednostkę na kolejce inicjatywy
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
+
+        if(Broken > 0)
+        {
+            Debug.Log($"{Stats.Name} jest w stanie paniki. Poziom paniki: {Broken}");
+        }
 
         //Zresetowanie rzucania zaklęć
         MagicManager.Instance.ResetSpellCasting();

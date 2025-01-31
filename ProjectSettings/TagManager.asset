@@ -14,6 +14,7 @@ TagManager:
   - WeaponAttribute
   - TileCover
   - Achievement
+  - State
   layers:
   - Default
   - TransparentFX

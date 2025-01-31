@@ -38,11 +38,8 @@ public class UnitsManager : MonoBehaviour
     [SerializeField] private GameObject _unitPanel;
     [SerializeField] private GameObject _spellbookButton;
     [SerializeField] private GameObject _spellListPanel;
-    [SerializeField] private GameObject _actionsPanel;
-    [SerializeField] private GameObject _statesPanel; //Panel opisujący obecny stan postaci, np. unieruchomienie
     [SerializeField] private TMP_Text _raceDisplay;
     [SerializeField] private TMP_Text _healthDisplay;
-    [SerializeField] private TMP_InputField _unitStateDurationInputField;
     [SerializeField] private UnityEngine.UI.Slider _healthBar;
     [SerializeField] private UnityEngine.UI.Image _tokenDisplay;
     [SerializeField] private GameObject _unitPrefab;
@@ -433,11 +430,11 @@ public class UnitsManager : MonoBehaviour
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
         //Uwolnienie jednostki uwięzionej przez jednostkę, która umiera
-        if(unit.GetComponent<Unit>().TrappedUnitId != 0)
+        if(unit.GetComponent<Unit>().EntangledUnitId != 0)
         {
             foreach (var u in AllUnits)
             {
-                if (u.UnitId == unit.GetComponent<Unit>().TrappedUnitId && u.Trapped == true)
+                if (u.UnitId == unit.GetComponent<Unit>().EntangledUnitId && u.Trapped == true)
                 {
                     u.Trapped = false;
                 }
@@ -488,81 +485,6 @@ public class UnitsManager : MonoBehaviour
             }
             Debug.Log("Zaznacz jednostki na wybranym obszarze przy użyciu myszy. Klikając Ctrl+C możesz je skopiować, a następnie wkleić przy pomocy Ctrl+V.");
         }
-    }
-
-    public void SetSelectedUnitState(string state)
-    {
-        if(Unit.SelectedUnit == null) return;
-
-        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
-
-        if(state == "scared")
-        {
-            unit.IsScared = true;
-            Debug.Log("Jednostka została wprowadzona w stan strachu.");
-        }    
-        else if(state == "trapped")
-        {
-            unit.Trapped = true;
-            Debug.Log("Jednostka została wprowadzona w stan unieruchomienia.");
-        }
-        else if(state == "helpless")
-        {
-            if (!int.TryParse(_unitStateDurationInputField.text, out int helplessDuration) || helplessDuration <= 0)
-            {
-                Debug.Log("Dla stanu bezbronności wymagane jest ustalenie czasu trwania.");
-                return;
-            }
-            unit.HelplessDuration = helplessDuration;
-            Debug.Log($"Jednostka została wprowadzona w stan bezbronności na {helplessDuration} rund/y.");
-        }
-        else if(state == "stunned")
-        {
-            if (!int.TryParse(_unitStateDurationInputField.text, out int stunDuration) || stunDuration <= 0)
-            {
-                Debug.Log("Dla stanu ogłuszenia wymagane jest ustalenie czasu trwania.");
-                return;
-            }
-            unit.StunDuration = stunDuration;
-            Debug.Log($"Jednostka została wprowadzona w stan ogłuszenia na {stunDuration} rund/y.");
-        }
-
-        _unitStateDurationInputField.text = "";
-
-        unit.CanDoAction = false;
-        unit.CanMove = false;
-
-        UpdateUnitPanel(Unit.SelectedUnit);
-    }
-
-    public void ResetSelectedUnitState()
-    {
-        if(Unit.SelectedUnit == null) return;
-
-        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
-
-        unit.StunDuration = 0; 
-        unit.HelplessDuration = 0;
-        unit.TrappedUnitId = 0;
-        unit.IsScared = false;
-        unit.IsFearTestPassed = true;
-
-        if(unit.Trapped == true)
-        {
-            unit.Trapped = false;
-
-            foreach (var u in AllUnits)
-            {
-                if(unit.UnitId == u.TrappedUnitId)
-                {
-                    u.TrappedUnitId = 0;
-                }
-            }
-        } 
-
-        unit.CanDoAction = true;
-
-        UpdateUnitPanel(Unit.SelectedUnit);
     }
     #endregion
 
@@ -876,9 +798,6 @@ public class UnitsManager : MonoBehaviour
     #region Update unit panel (at the top of the screen)
     public void UpdateUnitPanel(GameObject unit)
     {
-        _actionsPanel.SetActive(false);
-        _statesPanel.SetActive(false);
-
         if (unit == null || SaveAndLoadManager.Instance.IsLoading)
         {
             _unitPanel.SetActive(false);
@@ -889,7 +808,7 @@ public class UnitsManager : MonoBehaviour
             _unitPanel.SetActive(true);
 
             //W trybie ukrywania statystyk, panel wrogich jednostek pozostaje wyłączony
-            if(GameManager.IsStatsHidingMode && unit.CompareTag("EnemyUnit"))
+            if (GameManager.IsStatsHidingMode && unit.CompareTag("EnemyUnit"))
             {
                 _unitPanel.transform.Find("VerticalLayoutGroup/Stats_Panel/Stats_display").gameObject.SetActive(false);
             }
@@ -897,9 +816,9 @@ public class UnitsManager : MonoBehaviour
             {
                 _unitPanel.transform.Find("VerticalLayoutGroup/Stats_Panel/Stats_display").gameObject.SetActive(true);
             }
-            
+
             //Ukrywa lub pokazuje nazwę jednostki w panelu
-            if(GameManager.IsNamesHidingMode && !MultiScreenDisplay.Instance.PlayersCamera.gameObject.activeSelf && Display.displays.Length == 1)
+            if (GameManager.IsNamesHidingMode && !MultiScreenDisplay.Instance.PlayersCamera.gameObject.activeSelf && Display.displays.Length == 1)
             {
                 _unitPanel.transform.Find("Name_input").gameObject.SetActive(false);
             }
@@ -909,53 +828,6 @@ public class UnitsManager : MonoBehaviour
             }
 
             Unit unitComponent = unit.GetComponent<Unit>();
-
-            if(unitComponent.StunDuration == 0 && unitComponent.HelplessDuration == 0 && unitComponent.Trapped == false && unitComponent.IsScared == false && unitComponent.TrappedUnitId == 0)
-            {
-                _actionsPanel.SetActive(true);
-            }
-            else
-            {
-                _statesPanel.SetActive(true);
-
-                string state = "";
-                int duration = 0;
-
-                if(unitComponent.StunDuration > 0)
-                {
-                    state = "ogłuszenia";
-                    duration = unitComponent.StunDuration;
-                }
-                else if (unitComponent.HelplessDuration > 0)
-                {
-                    state = "bezbronności";
-                    duration = unitComponent.HelplessDuration;
-                }
-                else if (unitComponent.Trapped)
-                {
-                    state = "unieruchomienia";
-                    duration = 0;
-                }
-                else if (unitComponent.IsScared)
-                {
-                    state = "strachu";
-                    duration = 0;
-                }
-                else if (unitComponent.TrappedUnitId != 0)
-                {
-                    state = "unieruchamiania innej jednostki swoją bronią.";
-                }
-
-                string currentStateString = $"Wybrana jednostka nie może wykonywać akcji, ponieważ jest w stanie {state}.";
-                string currentStateDurationString = $" Stan ten potrwa jeszcze {duration} rund/y.";
-
-                if(duration == 0)
-                {
-                    currentStateDurationString = "";
-                }
-
-                _statesPanel.GetComponentInChildren<TMP_Text>().text = currentStateString + currentStateDurationString;
-            }
         }
 
         Stats stats = unit.GetComponent<Stats>();
@@ -1219,18 +1091,33 @@ public class UnitsManager : MonoBehaviour
         Debug.Log($"{stats.Name} wykonał test {attributeName}. Wynik rzutu: {rollResult} Wartość cechy: {value}{luckOrMisfortune} Modyfikator: {modifier}. {resultString} {successLevel}");
     }
 
-    public int TestSkill(string attributeName, Stats stats, string skillName = null, int modifier = 0)
+    public int TestSkill(string attributeName, Stats stats, string skillName = null, int modifier = 0, int rollResult = 0)
     {
-        int rollResult = UnityEngine.Random.Range(1, 101);
+        if(rollResult == 0)
+        {
+            rollResult = UnityEngine.Random.Range(1, 101);
+        }
 
         // Pobieranie wartości umiejętności na podstawie nazwy
         int skillValue = 0;
         if(skillName != null)
         {
-            var field = typeof(Stats).GetField(skillName);
-            if (field != null)
+            // Jeśli skillName dotyczy broni białej lub dystansowej, pobierz go ze słownika
+            if (Enum.TryParse(skillName, out MeleeCategory meleeCategory) && stats.Melee.ContainsKey(meleeCategory))
             {
-                skillValue = (int)field.GetValue(stats);
+                skillValue = stats.GetSkillModifier(stats.Melee, meleeCategory);
+            }
+            else if (Enum.TryParse(skillName, out RangedCategory rangedCategory) && stats.Ranged.ContainsKey(rangedCategory))
+            {
+                skillValue = stats.GetSkillModifier(stats.Ranged, rangedCategory);
+            }
+            else
+            {
+                var field = typeof(Stats).GetField(skillName);
+                if (field != null)
+                {
+                    skillValue = (int)field.GetValue(stats);
+                }
             }
         }
 
@@ -1258,11 +1145,11 @@ public class UnitsManager : MonoBehaviour
         // Wyświetlenie wyniku
         if(skillName != null)
         {
-            Debug.Log($"Rzut na {skillName}: {rollResult}, Wartość umiejętności: {skillValue + attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");
+            Debug.Log($"{stats.Name} rzuca na {skillName}: {rollResult}, Wartość umiejętności: {skillValue + attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");
         }
         else
         {
-            Debug.Log($"Rzut na {attributeName}: {rollResult}, Wartość cechy: {attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");   
+            Debug.Log($"{stats.Name} rzuca na {attributeName}: {rollResult}, Wartość cechy: {attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");   
         }
 
         //Pech i szczęście
@@ -1281,7 +1168,7 @@ public class UnitsManager : MonoBehaviour
             stats.FortunateEvents++;
         }
 
-        return successLevel;
+        return successValue;
     }
     #endregion
 

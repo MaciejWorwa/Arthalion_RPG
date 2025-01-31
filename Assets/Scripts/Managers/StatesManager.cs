@@ -1,4 +1,8 @@
+using System.Reflection;
+using System;
+using TMPro;
 using UnityEngine;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 
 public class StatesManager : MonoBehaviour
 {
@@ -25,9 +29,11 @@ public class StatesManager : MonoBehaviour
         }
     }
 
-    public void HandleUnitStates(Unit unit)
+    public void UpdateUnitStates(Unit unit)
     {
+        Ablaze(unit); // Podpalenie
         Bleeding(unit); // Krwawienie
+        Blinded(unit); // Oślepienie
         Broken(unit); // Panika
         Deafened(unit); // Ogłuszenie
         Poison(unit); // Zatrucie
@@ -35,34 +41,67 @@ public class StatesManager : MonoBehaviour
         unit.Surprised = false;
     }
 
+    private void Ablaze(Unit unit)
+    {
+        if (unit.Ablaze == 0) return;
+        Stats stats = unit.GetComponent<Stats>();
+
+        // Obrażenia od ognia
+        int damage = unit.Ablaze - 1 + UnityEngine.Random.Range(1, 11);
+
+        // Znalezienie najmniejszej wartości pancerza spośród wszystkich części ciała
+        int minArmor = Mathf.Min(stats.Armor_head, stats.Armor_arms, stats.Armor_torso, stats.Armor_legs);
+
+        stats.TempHealth -= Mathf.Max(0, damage - minArmor - stats.Wt / 10);
+        Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Bleeding} punktów żywotności w wyniku podpalenia.</color>");
+
+        Debug.Log($"Obrazenia od ognia: {unit.Ablaze - 1} + losowa liczba. Łącznie {damage}");
+        Debug.Log($"minimalna zbroja: {minArmor} bonus z WT: {stats.Wt / 10}");
+    }
+
     private void Bleeding(Unit unit)
     {
-        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
+        if (unit.Bleeding == 0) return;
+        Stats stats = unit.GetComponent<Stats>();
 
-        if(stats.TempHealth > 0)
+        if (stats.TempHealth > 0)
         {
             stats.TempHealth -= unit.Bleeding;
+            Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Bleeding} punktów żywotności w wyniku krwawienia.</color>");
         }
         else
         {
             unit.Unconscious = true; // Utrata Przytomności
+            Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność w wyniku krwawienia.</color>");
         }
+    }
+    private void Blinded(Unit unit)
+    {
+        if (unit.Blinded > 0) unit.Blinded--;
     }
 
     private void Broken(Unit unit)
     {
-        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
+        Stats stats = unit.GetComponent<Stats>();
         bool isEngagedInCombat = CombatManager.Instance.AdjacentOpponents(unit.transform.position, unit.tag).Count > 0 ? true : false;
 
         if(unit.Broken > 0 && !isEngagedInCombat)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("SW", stats);
+            int successLevel = UnitsManager.Instance.TestSkill("SW", stats) / 10;
             if(successLevel > 0)
             {
                 unit.Broken = Mathf.Max(0, unit.Broken - successLevel);
             }
 
-            if(unit.Broken == 0) unit.Fatiqued ++; // Zwiększenie Wyczerpania
+            if (unit.Broken == 0)
+            {
+                unit.Fatiqued++; // Zwiększenie Wyczerpania
+                Debug.Log($"<color=#FF7F50>{stats.Name} udało się opanować panikę. Poziom wyczerpania wzrasta o 1.</color>");
+            }
+            else
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} próbuje opanować panikę. Pozostałe poziomy paniki: {unit.Broken}.</color>");
+            }
         }
     }
 
@@ -73,52 +112,209 @@ public class StatesManager : MonoBehaviour
 
     private void Poison(Unit unit)
     {
-        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
+        if (unit.Poison == 0) return;
+        Stats stats = unit.GetComponent<Stats>();
 
         if(unit.Poison > 0)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("Odp", stats);
+            int successLevel = UnitsManager.Instance.TestSkill("Odp", stats) / 10;
             if(successLevel > 0)
             {
                 unit.Poison = Mathf.Max(0, unit.Poison - successLevel);
             }
 
-            if(unit.Poison == 0) unit.Fatiqued ++; // Zwiększenie Wyczerpania
+            if (unit.Poison == 0)
+            {
+                unit.Fatiqued++; // Zwiększenie Wyczerpania
+                Debug.Log($"<color=#FF7F50>{stats.Name} udało się wygrać z zatruciem. Poziom wyczerpania wzrasta o 1.</color>");
+            }
+            else
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} walczy z zatruciem. Pozostałe poziomy zatrucia: {unit.Poison}.</color>");
+            }
         }
 
         if(stats.TempHealth > 0)
         {
             stats.TempHealth -= unit.Poison;
+            Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Poison} punktów żywotności w wyniku zatrucia.</color>");
         }
         else
         {
             unit.Unconscious = true; // Utrata Przytomności
+            Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność w wyniku zatrucia.</color>");
+        }
+    }
+
+    public void Entangled(Unit unit, int value = 0)
+    {
+        if (value > 0)
+        {
+            unit.Entangled += value;
         }
 
+        if(unit.Entangled > 0) unit.CanMove = false;
+    }
 
+    public void EscapeFromEntanglement(Stats attackerStats, Stats targetStats)
+    {
+        Unit targetUnit = targetStats.GetComponent<Unit>();
+
+        if (targetUnit.Entangled > 0)
+        {
+            // Przeciwstawny test Siły
+            int targetSuccessValue = UnitsManager.Instance.TestSkill("S", targetStats);
+            int attackerSuccessValue = UnitsManager.Instance.TestSkill("S", attackerStats);
+            int targetSuccessLevel = UnitsManager.Instance.TestSkill("S", targetStats) / 10;
+            int attackerSuccessLevel = UnitsManager.Instance.TestSkill("S", attackerStats) / 10;
+
+            if (targetSuccessValue > attackerSuccessValue)
+            {
+                targetUnit.Entangled = Mathf.Max(0, targetUnit.Entangled - (targetSuccessLevel - attackerSuccessLevel + 1));
+
+                if (targetUnit.Entangled == 0)
+                {
+                    Debug.Log($"<color=#FF7F50>{targetStats.Name} uwolnił się z pochwycenia przez {attackerStats.Name}.</color>");
+                }
+                else
+                {
+                    Debug.Log($"<color=#FF7F50>{targetStats.Name} próbuje się uwolnić z pochwycenia przez {attackerStats.Name}. Poziom pochwycenia maleje o {targetSuccessLevel - attackerSuccessLevel + 1} i wynosi {targetUnit.Entangled}.</color>");
+                }
+            }
+            else
+            {
+                Debug.Log($"<color=#FF7F50>{targetStats.Name} bezskutecznie próbuje się uwolnić z pochwycenia przez {attackerStats.Name}. Poziom pochwycenia: {targetUnit.Entangled}.</color>");
+            }
+        }
+    }
+
+    public void Prone(Unit unit, bool value = true)
+    {
+        Stats stats = unit.GetComponent<Stats>();
+
+        unit.Prone = value;
+        if (unit.Unconscious)
+        {
+            Debug.Log($"<color=#FF7F50>{stats.Name} zostaje powalony.</color>");
+        }
+        else
+        {
+            unit.Prone = false;
+            unit.CanMove = false;
+            MovementManager.Instance.SetCanMoveToggle(false);
+            Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} podnosi się z ziemi.</color>");
+        }
     }
 
     private void Stunned(Unit unit)
     {
-        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
+        Stats stats = unit.GetComponent<Stats>();
 
         if(unit.Stunned > 0)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("Odp", stats);
+            int successLevel = UnitsManager.Instance.TestSkill("Odp", stats) / 10;
             if(successLevel > 0)
             {
                 unit.Stunned = Mathf.Max(0, unit.Stunned - successLevel);
             }
 
-            if(unit.Stunned == 0) unit.Fatiqued ++; // Zwiększenie Wyczerpania
+            if (unit.Stunned == 0)
+            {
+                unit.Fatiqued++; // Zwiększenie Wyczerpania
+                Debug.Log($"<color=#FF7F50>{stats.Name} udało się wyjść ze stanu oszołomienia. Poziom wyczerpania wzrasta o 1.</color>");
+            }
+            else
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} walczy z oszołomieniem. Pozostałe poziomy oszołomienia: {unit.Stunned}.</color>");
+            }
         }
     }
 
-    public void StandUp(Unit unit)
+    public void Unconscious(Unit unit, bool value = true)
     {
-        unit.Prone = false;
-        unit.CanMove = false;
-        MovementManager.Instance.SetCanMoveToggle(false);
-        Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} podnosi się z ziemi.</color>");
+        Stats stats = unit.GetComponent<Stats>();
+
+        unit.Unconscious = value;
+        if(unit.Unconscious)
+        {
+            Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność.</color>");
+        }
+        else
+        {
+            Debug.Log($"<color=#FF7F50>{stats.Name} odzyskuje przytomność.</color>");
+        }
+    }
+
+    public void SetUnitState(GameObject textInput)
+    {
+        if (Unit.SelectedUnit == null) return;
+
+        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
+
+        // Pobiera nazwę cechy z nazwy obiektu InputField (bez "_input")
+        string stateName = textInput.name.Replace("_input", "");
+        
+        // Szukamy pola
+        FieldInfo field = unit.GetType().GetField(stateName);
+
+        // Jeżeli pole nie istnieje, kończymy metodę
+        if (field == null)
+        {
+            Debug.Log($"Nie znaleziono pola '{stateName}'.");
+            return;
+        }
+
+        // Zależnie od typu pola...
+        if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() == null)
+        {
+            // int przez InputField
+            int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int inputValue) ? inputValue : 0;
+
+            field.SetValue(unit, value);
+        }
+        else if (field.FieldType == typeof(bool))
+        {
+            bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn;
+            field.SetValue(unit, boolValue);
+        }
+        else
+        {
+            Debug.Log($"Nie udało się zmienić wartości stanu '{stateName}'.");
+        }
+
+        //UnitsManager.Instance.UpdateUnitPanel(unit);
+    }
+
+    public void LoadUnitStates()
+    {
+        if (Unit.SelectedUnit == null) return;
+        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
+
+        GameObject[] statesInputFields = GameObject.FindGameObjectsWithTag("State");
+
+        foreach (var inputField in statesInputFields)
+        {
+            // Wyciągamy nazwę stanu z nazwy obiektu InputField
+            string stateName = inputField.name.Replace("_input", "");
+
+            FieldInfo field = unit.GetType().GetField(stateName);
+            if (field == null)
+                continue;
+
+            if (field.FieldType == typeof(int))
+            {
+                int value = (int)field.GetValue(unit);
+
+                if (inputField.GetComponent<TMPro.TMP_InputField>() != null)
+                {
+                    inputField.GetComponent<TMPro.TMP_InputField>().text = value.ToString();
+                }
+            }
+            else if (field.FieldType == typeof(bool))
+            {
+                bool value = (bool)field.GetValue(unit);
+                inputField.GetComponent<UnityEngine.UI.Toggle>().isOn = value;
+            }
+        }
     }
 }
