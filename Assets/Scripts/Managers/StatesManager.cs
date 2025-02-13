@@ -156,37 +156,6 @@ public class StatesManager : MonoBehaviour
         if(unit.Entangled > 0) unit.CanMove = false;
     }
 
-    public void EscapeFromEntanglement(Stats attackerStats, Stats targetStats)
-    {
-        Unit targetUnit = targetStats.GetComponent<Unit>();
-
-        if (targetUnit.Entangled > 0)
-        {
-            // Przeciwstawny test Siły
-            int targetSuccessValue = UnitsManager.Instance.TestSkill("S", targetStats);
-            int attackerSuccessValue = UnitsManager.Instance.TestSkill("S", attackerStats);
-            int targetSuccessLevel = UnitsManager.Instance.TestSkill("S", targetStats) / 10;
-            int attackerSuccessLevel = UnitsManager.Instance.TestSkill("S", attackerStats) / 10;
-
-            if (targetSuccessValue > attackerSuccessValue)
-            {
-                targetUnit.Entangled = Mathf.Max(0, targetUnit.Entangled - (targetSuccessLevel - attackerSuccessLevel + 1));
-
-                if (targetUnit.Entangled == 0)
-                {
-                    Debug.Log($"<color=#FF7F50>{targetStats.Name} uwolnił się z pochwycenia przez {attackerStats.Name}.</color>");
-                }
-                else
-                {
-                    Debug.Log($"<color=#FF7F50>{targetStats.Name} próbuje się uwolnić z pochwycenia przez {attackerStats.Name}. Poziom pochwycenia maleje o {targetSuccessLevel - attackerSuccessLevel + 1} i wynosi {targetUnit.Entangled}.</color>");
-                }
-            }
-            else
-            {
-                Debug.Log($"<color=#FF7F50>{targetStats.Name} bezskutecznie próbuje się uwolnić z pochwycenia przez {attackerStats.Name}. Poziom pochwycenia: {targetUnit.Entangled}.</color>");
-            }
-        }
-    }
 
     public void Prone(Unit unit, bool value = true)
     {

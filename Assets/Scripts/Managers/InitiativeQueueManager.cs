@@ -162,7 +162,7 @@ public class InitiativeQueueManager : MonoBehaviour
             yield return new WaitForSeconds(0.05f);
 
             //Czeka ze zmianą postaci, aż obecna postać zakończy ruch
-            while (MovementManager.Instance.IsMoving == true)
+            while (MovementManager.Instance.IsMoving == true || CombatManager.Instance.IsWaitingForRoll)
             {
                 yield return null; // Czekaj na następną klatkę
             }
@@ -236,6 +236,9 @@ public class InitiativeQueueManager : MonoBehaviour
             EnemiesAdvantage = Mathf.Max(0, EnemiesAdvantage + value);
             _enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
         }
+
+        string group = unitTag == "PlayerUnit" ? "sojuszników" : "przeciwników";
+        Debug.Log($"Przewaga {group} została zwiększona o <color=#4dd2ff>{value}</color>.");
     }
 
     public void SetAdvantageByInput(TMP_InputField inputField)

@@ -53,23 +53,30 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _disarmButton;
     public Dictionary<string, bool> AttackTypes = new Dictionary<string, bool>();
 
-    [Header("Panele do manualnego zarządzania")]
+    [Header("Panele do manualnego zarządzania rzutami")]
     [SerializeField] private GameObject _parryAndDodgePanel;
     [SerializeField] private UnityEngine.UI.Button _dodgeButton;
     [SerializeField] private UnityEngine.UI.Button _parryButton;
     [SerializeField] private UnityEngine.UI.Button _getDamageButton;
     [SerializeField] private UnityEngine.UI.Button _cancelButton;
+
     private string _parryOrDodge;
     [SerializeField] private GameObject _applyDefenceRollResultPanel;
     [SerializeField] private GameObject _applyRollResultPanel;
     [SerializeField] private TMP_InputField _rollInputField;
     [SerializeField] private TMP_InputField _defenceRollInputField;
 
+    private string _grapplingActionChoice = "";    // Zmienna do przechowywania wyboru akcji przy grapplingu
+    [SerializeField] private GameObject _grapplingActionPanel;
+    [SerializeField] private UnityEngine.UI.Button _grapplingAttackButton;
+    [SerializeField] private UnityEngine.UI.Button _improveGrappleButton;
+    [SerializeField] private UnityEngine.UI.Button _escapeGrappleButton;
+
     private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
 
     // Zmienne do przechowywania wyniku
     private int _manualRollResult;
-    private bool _isWaitingForRoll;
+    public bool IsWaitingForRoll;
     public bool IsManualPlayerAttack;
 
     private List<string> _greenskinsList = new List<string> { "Goblin", "Hobgoblin", "Ork zwyczajny", "Czarny ork", "Dziki ork" }; //Lista string wszystkich zielonoskórych
@@ -84,6 +91,10 @@ public class CombatManager : MonoBehaviour
         _parryButton.onClick.AddListener(() => ParryOrDodgeButtonClick("parry"));
         _getDamageButton.onClick.AddListener(() => ParryOrDodgeButtonClick(""));
         _cancelButton.onClick.AddListener(() => ParryOrDodgeButtonClick("cancel"));
+
+        _grapplingAttackButton.onClick.AddListener(() => GrapplingActionButtonClick("attack"));
+        _improveGrappleButton.onClick.AddListener(() => GrapplingActionButtonClick("improve"));
+        _escapeGrappleButton.onClick.AddListener(() => GrapplingActionButtonClick("escape"));
     }
 
     void Update()
@@ -303,8 +314,6 @@ public class CombatManager : MonoBehaviour
         int skillModifier = attackerWeapon.Type.Contains("ranged") ? attackerStats.GetSkillModifier(attackerStats.Ranged, rangedSkill) : attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
         _isTrainedWeaponCategory = skillModifier > 0 ? true : false;
 
-        Debug.Log("Czy jednostka jest wyszkolona w tej broni: " + _isTrainedWeaponCategory);
-
         if (attackerWeapon.Type.Contains("ranged") && !_isTrainedWeaponCategory && attackerWeapon.Category != "crossbow" && attackerWeapon.Category != "throwing")
         {
             Debug.Log("Wybrana jednostka nie może walczyć przy użyciu broni z tej kategorii.");
@@ -419,7 +428,7 @@ public class CombatManager : MonoBehaviour
         string successLevelColor = results[0] >= 0 ? "green" : "red";
         string modifierString = attackModifier != 0 ? $" Modyfikator: {attackModifier}," : "";
 
-        if (AttackTypes["Grappling"] == true)
+        if (AttackTypes["Grappling"] == true && attacker.EntangledUnitId != target.UnitId)
         {
             Debug.Log($"{attackerStats.Name} próbuje pochwycić przeciwnika. Wynik rzutu: {rollOnAttack}, Wartość umiejętności: {skillValue},{modifierString} PS: <color={successLevelColor}>{attackerSuccessLevel}</color>");
         }
@@ -498,7 +507,8 @@ public class CombatManager : MonoBehaviour
                 defenceRollResult = UnityEngine.Random.Range(1, 101);
             }
 
-            defenceSuccessValue = UnitsManager.Instance.TestSkill("S", targetStats, null, -10, defenceRollResult);
+            int modifier = target.Entangled > 0 ? 10 : 0;
+            defenceSuccessValue = UnitsManager.Instance.TestSkill("S", targetStats, null, modifier, defenceRollResult);
             defenceSuccessLevel = defenceSuccessValue / 10;
         }
         else // Zwykły atak bronią
@@ -671,8 +681,6 @@ public class CombatManager : MonoBehaviour
         {
             //Zaktualizowanie przewagi
             InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, 1);
-            string group = attacker.tag == "PlayerUnit" ? "sojuszników" : "przeciwników";
-            Debug.Log($"Przewaga {group} została zwiększona o <color=#4dd2ff>1</color>.");
         }
 
         //W przypadku manualnego ataku sprawdzamy, czy postać powinna zakończyć turę
@@ -684,7 +692,7 @@ public class CombatManager : MonoBehaviour
         if (attackerWeapon.Type.Contains("no-damage")) yield break; //Jeśli broń nie powoduje obrażeń, np. arkan, to pomijamy dalszą część kodu
 
         // Udana próba pochwycenia przeciwnika
-        if(AttackTypes["Grappling"] == true && attacker.EntangledUnitId != target.UnitId)
+        if (AttackTypes["Grappling"] == true && attacker.EntangledUnitId != target.UnitId)
         {
             attacker.EntangledUnitId = target.UnitId;
             target.Entangled++;
@@ -697,7 +705,7 @@ public class CombatManager : MonoBehaviour
 
             yield break;
         }
-        
+
         // 13) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
         int armor = CalculateArmor(targetStats, attackerWeapon);
@@ -976,19 +984,19 @@ public class CombatManager : MonoBehaviour
         // Przewaga liczebna
         attackModifier += CountOutnumber(attackerUnit, targetUnit);
 
-        // Bijatyka
-        if (attackerWeapon.Type.Contains("melee") &&
-            (attackerWeapon.Id == 0 || attackerWeapon.Id == 11) &&
-            attackerStats.StreetFighting)
-        {
-            attackModifier += 10;
-        }
+        //// Bijatyka
+        //if (attackerWeapon.Type.Contains("melee") &&
+        //    (attackerWeapon.Id == 0 || attackerWeapon.Id == 11) &&
+        //    attackerStats.StreetFighting)
+        //{
+        //    attackModifier += 10;
+        //}
 
-        //Zapiekła nienawiść
-        if (attackerStats.GrudgeBornFury == true && _greenskinsList.Contains(targetStats.Race))
-        {
-            attackModifier += 5;
-        }
+        ////Zapiekła nienawiść
+        //if (attackerStats.GrudgeBornFury == true && _greenskinsList.Contains(targetStats.Race))
+        //{
+        //    attackModifier += 5;
+        //}
 
         return attackModifier;
     }
@@ -1266,11 +1274,223 @@ public class CombatManager : MonoBehaviour
     #region Grappling
     public void Grappling(Unit attacker, Unit target)
     {
-        // JEŻELI ATAKUJĄCY JUŻ MA W CHWYCIE CEL TO DODAĆ TUTAJ OKNO WYBORU (JAK PRZY PAROWANIU I UNIKU) W KTÓRYM ATAKUJĄCY WYBIERA, CZY CHCE ZADAĆ OBRAZENIA W CHWYCIE, CZY POCHWYCIĆ PRZECIWNIKA MOCNIEJ.
-        // DO WYBORU: ZAATAKUJ, POPRAW CHWYT, UWOLNIJ SIĘ
+        // Sprawdzamy, czy atakujący może wykonać akcję
+        if (!attacker.CanDoAction)
+        {
+            Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
+            return;
+        }
 
-        //TYMCZASOWO PO PROSTU ATAK
-        Attack(attacker, target);
+        // Sprawdzamy, czy mamy sytuację grapplingu (czy jedna z jednostek już jest w kontakcie)
+        if (attacker.EntangledUnitId == target.UnitId || attacker.UnitId == target.EntangledUnitId)
+        {
+            StartCoroutine(GrapplingActionCoroutine(attacker, target));
+        }
+        else
+        {
+            // Jeśli nie ma grapplingu, wykonujemy zwykły atak
+            Attack(attacker, target);
+        }
+    }
+
+    private IEnumerator GrapplingActionCoroutine(Unit attacker, Unit target)
+    {
+        // Ustalamy role:
+        // Jeśli attacker.EntangledUnitId == target.UnitId => attacker jest chwytającym (grappler)
+        // Jeśli attacker.UnitId == target.EntangledUnitId => attacker jest pochwyconym (grappled)
+        bool isGrappler = (attacker.EntangledUnitId == target.UnitId);
+        bool isGrappled = (attacker.UnitId == target.EntangledUnitId);
+
+        //// Jeśli obie relacje są prawdziwe, traktujemy jednostkę jako pochwyconą.
+        //if (isGrappler && isGrappled)
+        //{
+        //    isGrappler = false;
+        //}
+
+        // Jeśli żadna z relacji nie występuje – wychodzimy i wykonujemy atak
+        if (!isGrappler && !isGrappled)
+        {
+            Attack(attacker, target);
+            yield break;
+        }
+
+        // Pobieramy statystyki obu jednostek
+        Stats attackerStats = attacker.Stats;
+        Stats targetStats = target.Stats;
+
+        // Ustawiamy widoczność przycisków w panelu wyboru akcji:
+        // Załóżmy, że masz osobne przyciski: _attackGrappleButton, _improveGrappleButton, _escapeGrappleButton
+        if (isGrappler)
+        {
+            // Jako chwytający, attacker może:
+            // - Atakować (próba przejęcia kontroli nad celem, jeśli jeszcze go nie trzyma)
+            // - Poprawić chwyt
+            // - Uciec – opcja dostępna tylko, gdy attacker sam ma Entangled > 0
+            _improveGrappleButton.gameObject.SetActive(true);
+            _escapeGrappleButton.gameObject.SetActive(attacker.Entangled > 0);
+        }
+        else if (isGrappled)
+        {
+            // Jako pochwycony, attacker może:
+            // - Atakować (próbując odwrócić sytuację, czyli „pochwycić” osobę chwytającą)
+            // - Uciekać (opcję escape pokazujemy zawsze)
+            _improveGrappleButton.gameObject.SetActive(false);
+            _escapeGrappleButton.gameObject.SetActive(true);
+        }
+
+        // Wyświetlenie panelu akcji i oczekiwanie na wybór gracza
+        _grapplingActionChoice = "";
+        if (_grapplingActionPanel != null)
+        {
+            _grapplingActionPanel.SetActive(true);
+        }
+        yield return new WaitUntil(() => !string.IsNullOrEmpty(_grapplingActionChoice));
+        if (_grapplingActionPanel != null)
+        {
+            _grapplingActionPanel.SetActive(false);
+        }
+
+        switch (_grapplingActionChoice)
+        {
+            case "attack":
+                Debug.Log($"{attackerStats.Name} decyduje się na atak (w ramach zapasów).");
+                Attack(attacker, target);
+                break;
+
+            case "improve":
+                Debug.Log($"{attackerStats.Name} próbuje poprawić chwyt na {targetStats.Name}.");
+                RoundsManager.Instance.DoAction(attacker);
+
+                // Każda jednostka wykonuje swój oddzielny rzut
+                int attackerRoll = 0;
+                if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
+                {
+                    yield return StartCoroutine(WaitForRollValue());
+                    attackerRoll = _manualRollResult;
+                }
+                else
+                {
+                    attackerRoll = UnityEngine.Random.Range(1, 101);
+                }
+
+                int targetRoll = 0;
+                if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
+                {
+                    yield return StartCoroutine(WaitForRollValue());
+                    targetRoll = _manualRollResult;
+                }
+                else
+                {
+                    targetRoll = UnityEngine.Random.Range(1, 101);
+                }
+
+                // Przeciwstawny test siły – osobno dla obu jednostek
+                int attackerSuccessValue = UnitsManager.Instance.TestSkill("S", attackerStats, null, 0, attackerRoll);
+                int targetSuccessValue = UnitsManager.Instance.TestSkill("S", targetStats, null, 0, targetRoll);
+                int attackerSuccessLevel = attackerSuccessValue / 10;
+                int targetSuccessLevel = targetSuccessValue / 10;
+
+                if (attackerSuccessLevel > targetSuccessLevel)
+                {
+                    // Udało się – poprawiamy chwyt: zwiększamy poziom pochwycenia celu
+                    StatesManager.Instance.Entangled(target, 1);
+                    InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, 1);
+                    Debug.Log($"<color=#FF7F50>{attackerStats.Name} poprawia chwyt na {targetStats.Name}. Poziom pochwycenia wzrasta o 1 i wynosi {target.Entangled}.</color>");
+                }
+                else
+                {
+                    Debug.Log($"<color=#FF7F50>{attackerStats.Name} nie udaje się poprawić chwytu na {targetStats.Name}. Pochwycenie pozostaje na poziomie {target.Entangled}.</color>");
+                }
+                break;
+
+            case "escape":
+                Debug.Log($"{attackerStats.Name} próbuje uciec z pochwycenia.");
+                RoundsManager.Instance.DoAction(attacker);
+
+                // W przypadku ucieczki priorytetowo traktujemy jednostkę jako pochwyconą, jeśli taka relacja występuje
+                if (isGrappled)
+                {
+                    // attacker jest pochwycony – więc przekazujemy: entanglingUnit = target, entangledUnit = attacker
+                    yield return StartCoroutine(EscapeFromEntanglement(targetStats, attackerStats));
+                }
+                else if (isGrappler)
+                {
+                    // attacker jest chwytający – przekazujemy: entanglingUnit = attacker, entangledUnit = target
+                    yield return StartCoroutine(EscapeFromEntanglement(attackerStats, targetStats));
+                }
+                break;
+
+            default:
+                Debug.Log("Nie wybrano poprawnej akcji w grapplingu. Wykonuję domyślny atak.");
+                Attack(attacker, target);
+                break;
+        }
+    }
+
+    private void GrapplingActionButtonClick(string action)
+    {
+        _grapplingActionChoice = action;
+    }
+    public IEnumerator EscapeFromEntanglement(Stats entanglingUnitStats, Stats entangledUnitStats)
+    {
+        Unit entangledUnit = entangledUnitStats.GetComponent<Unit>();
+        Unit entanglingUnit = entanglingUnitStats.GetComponent<Unit>();
+
+        if (entangledUnit.Entangled > 0)
+        {
+            int targetRoll;
+            int attackerRoll;
+
+            // Dla pochwyconego: jeśli to gracz, pobieramy ręczny wynik, w przeciwnym razie losujemy
+            if (!GameManager.IsAutoDiceRollingMode && entangledUnit.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(WaitForRollValue());
+                targetRoll = _manualRollResult;
+            }
+            else
+            {
+                targetRoll = UnityEngine.Random.Range(1, 101);
+            }
+
+            // Dla pochwytującego: sprawdzamy, czy ma tag "PlayerUnit"
+            Unit attackerUnit = entanglingUnitStats.GetComponent<Unit>();
+            if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(WaitForRollValue());
+                attackerRoll = _manualRollResult;
+            }
+            else
+            {
+                attackerRoll = UnityEngine.Random.Range(1, 101);
+            }
+
+            // Wywołanie testów siły – przekazujemy wynik rzutu tylko dla jednostki, która była manualna
+            int targetSuccessValue = UnitsManager.Instance.TestSkill("S", entangledUnitStats, null, 0, targetRoll);
+            int attackerSuccessValue = UnitsManager.Instance.TestSkill("S", entanglingUnitStats, null, 0, attackerRoll);
+
+            int targetSuccessLevel = targetSuccessValue / 10;
+            int attackerSuccessLevel = attackerSuccessValue / 10;
+
+            if (targetSuccessValue > attackerSuccessValue)
+            {
+                // Zmniejszamy poziom pochwycenia o różnicę poziomów + 1
+                entangledUnit.Entangled = Mathf.Max(0, entangledUnit.Entangled - (targetSuccessLevel - attackerSuccessLevel + 1));
+
+                if (entangledUnit.Entangled == 0)
+                {
+                    entanglingUnit.EntangledUnitId = 0;
+                    Debug.Log($"<color=#FF7F50>{entangledUnitStats.Name} uwolnił się z pochwycenia przez {entanglingUnitStats.Name}.</color>");
+                }
+                else
+                {
+                    Debug.Log($"<color=#FF7F50>{entangledUnitStats.Name} próbuje się uwolnić z pochwycenia przez {entanglingUnitStats.Name}. Poziom pochwycenia maleje o {targetSuccessLevel - attackerSuccessLevel + 1} i wynosi {entangledUnit.Entangled}.</color>");
+                }
+            }
+            else
+            {
+                Debug.Log($"<color=#FF7F50>{entangledUnitStats.Name} bezskutecznie próbuje się uwolnić z pochwycenia przez {entanglingUnitStats.Name}. Poziom pochwycenia: {entangledUnit.Entangled}.</color>");
+            }
+        }
     }
     #endregion
 
@@ -1321,7 +1541,7 @@ public class CombatManager : MonoBehaviour
     // Korutyna czekająca na wpisanie wyniku rzutu obronnego przez użytkownika
     private IEnumerator WaitForDefenceRollValue()
     {
-        _isWaitingForRoll = true;
+        IsWaitingForRoll = true;
         _manualRollResult = 0;
 
         // Wyświetl panel do wpisania wyniku
@@ -1337,7 +1557,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Czekaj aż użytkownik wpisze wartość i kliknie Submit
-        while (_isWaitingForRoll)
+        while (IsWaitingForRoll)
         {
             yield return null; // Czekaj na następną ramkę
         }
@@ -1349,9 +1569,9 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator WaitForRollValue()
+    public IEnumerator WaitForRollValue()
     {
-        _isWaitingForRoll = true;
+        IsWaitingForRoll = true;
         _manualRollResult = 0;
 
         // Wyświetl panel do wpisania wyniku
@@ -1367,7 +1587,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Czekaj aż użytkownik wpisze wartość i kliknie Submit
-        while (_isWaitingForRoll)
+        while (IsWaitingForRoll)
         {
             yield return null; // Czekaj na następną ramkę
         }
@@ -1384,14 +1604,14 @@ public class CombatManager : MonoBehaviour
         if (_rollInputField != null && int.TryParse(_rollInputField.text, out int result))
         {
             _manualRollResult = result;
-            _isWaitingForRoll = false; // Przerywamy oczekiwanie
+            IsWaitingForRoll = false; // Przerywamy oczekiwanie
             _rollInputField.text = ""; // Czyścimy pole
         }
 
         if (_defenceRollInputField != null && int.TryParse(_defenceRollInputField.text, out int defenceResult))
         {
             _manualRollResult = defenceResult;
-            _isWaitingForRoll = false; // Przerywamy oczekiwanie
+            IsWaitingForRoll = false; // Przerywamy oczekiwanie
             _defenceRollInputField.text = ""; // Czyścimy pole
         }
     }

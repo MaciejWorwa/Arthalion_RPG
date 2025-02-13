@@ -97,7 +97,14 @@ public class Unit : MonoBehaviour
                 return;
             }
 
-            CombatManager.Instance.Attack(SelectedUnit.GetComponent<Unit>(), this, false);
+            if(CombatManager.Instance.AttackTypes["Grappling"])
+            {
+                CombatManager.Instance.Grappling(SelectedUnit.GetComponent<Unit>(), this);
+            }
+            else
+            {
+                CombatManager.Instance.Attack(SelectedUnit.GetComponent<Unit>(), this, false);
+            }
         }
         else if (Input.GetMouseButtonDown(1) && SelectedUnit != null && MagicManager.IsTargetSelecting)
         {
