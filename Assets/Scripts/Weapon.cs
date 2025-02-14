@@ -64,7 +64,13 @@ public class Weapon : MonoBehaviour
     public int AmmoMax; // Maksymalna ilość amunicji w magazynku broni ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int AmmoLeft; // Aktualna ilość amunicji w magazynku broni ---------------------- (MECHANIKA DO WPROWADZENIA)
 
-    [Header("Cechy")]
+    [Header("Cechy ogólne")]
+    public int Durable; // Wytrzymały (str. 292) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
+    public bool Shoddy; //Tandetny  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
+
+    [Header("Cechy broni")]
     public bool Accurate; // Celny (+10 do trafienia)
     public bool Blackpowder; // Prochowa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Blast; // Wybuchowa ---------------------- (MECHANIKA DO WPROWADZENIA)
@@ -72,7 +78,6 @@ public class Weapon : MonoBehaviour
     public bool Dangerous; // Niebezpieczna ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Defensive; // Parujący
     public bool Distract; // Dekoncentrujący (Powoduje cofanie się) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public int Durable; // Wytrzymały (str. 292) ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Entangle; // Unieruchamiający
     public bool Fast; // Szybka ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Hack; // Rąbiąca ---------------------- (MECHANIKA DO WPROWADZENIA)
@@ -81,13 +86,11 @@ public class Weapon : MonoBehaviour
     public bool Imprecise; // Nieprecyzyjna (zmiejsza poziom testu ataku o 1)
     public bool Penetrating; // Przekłuwająca ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Pistol; // Pistolet
-    public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
     public bool Precise; // Precyzyjna (zwiększa poziom udanego testu ataku o 1)
     public bool Pummel; // Ogłuszający ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Slash; // Sieczna ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Slow; // Powolny ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Shield; // Tarcza
-    public bool Shoddy; // Tandetny  ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Spread; // Rozrzucająca  ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Tiring; // Ciężka
     public bool TrapBlade; // Łamacz mieczy ---------------------- (MECHANIKA DO WPROWADZENIA)
@@ -95,8 +98,16 @@ public class Weapon : MonoBehaviour
     public bool Unbreakable; // Niełamliwa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Undamaging; // Tępy
     public bool Unbalanced; // Niewyważona
-    public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
     public bool Wrap; // Plącząca (utrudnia parowanie o 1 PS)
+
+    [Header("Cechy pancerza")]
+    public int Armor;
+    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Flexible; // Giętki  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Impenetrable; // Nieprzebijalny ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Lightweight; // Poręczny (redukuje obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Partial; // Częściowy  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool WeakPoints; // Wrażliwe punkty  ---------------------- (MECHANIKA DO WPROWADZENIA)
 
     public Dictionary<int, int> WeaponsWithReloadLeft = new Dictionary<int, int>(); // słownik zawierający wszystkie posiadane przez postać bronie wraz z ich ReloadLeft
 

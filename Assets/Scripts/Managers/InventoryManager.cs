@@ -52,6 +52,9 @@ public class InventoryManager : MonoBehaviour
     [SerializeField] private TMP_InputField _silverCoinsInput;
     [SerializeField] private TMP_InputField _goldCoinsInput;
 
+    [SerializeField] private GameObject _weaponAttributes;
+    [SerializeField] private GameObject _armorAttributes;
+
     void Start()
     {
         //Wczytuje listę wszystkich broni
@@ -100,7 +103,7 @@ public class InventoryManager : MonoBehaviour
         DataManager.Instance.LoadAndUpdateWeapons();
 
         //Jeśli wybieramy opcję "Dodaj i wyposaż" to od razu wyposażamy jednostkę w wybraną broń
-        if(grabAfterLoad == true && Unit.SelectedUnit != null)
+        if (grabAfterLoad == true && Unit.SelectedUnit != null)
         {
             //Znajdujemy index z listy ekwipunku dla wybranej broni
             int weaponIndex = Unit.SelectedUnit.GetComponent<Inventory>().AllWeapons.FindIndex(b => b.Id == Unit.SelectedUnit.GetComponent<Weapon>().Id);
@@ -236,23 +239,42 @@ public class InventoryManager : MonoBehaviour
     #region Grabing weapons
     public void GrabWeapon(int selectedIndex = 0)
     {
-        if(Unit.SelectedUnit == null || InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons.Count == 0) return;
+        if (Unit.SelectedUnit == null || InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons.Count == 0) return;
         if (InventoryScrollViewContent.GetComponent<CustomDropdown>().SelectedButton == null && selectedIndex == 0) return;
 
         GameObject unit = Unit.SelectedUnit;
-        if(selectedIndex == 0)
+        if (selectedIndex == 0)
         {
             selectedIndex = InventoryScrollViewContent.GetComponent<CustomDropdown>().GetSelectedIndex();
         }
 
         if (selectedIndex == 0)
         {
-            Debug.Log("Musisz wybrać broń, w którą chcesz się wyposażyć.");
+            Debug.Log("Musisz wybrać przedmiot, w który chcesz się wyposażyć.");
             return;
         }
 
-        //Wybiera broń z ekwipunku na podstawie wartości dropdowna
+        // Wybiera przedmiot z ekwipunku
         Weapon selectedWeapon = unit.GetComponent<Inventory>().AllWeapons[selectedIndex - 1];
+
+        // Sprawdzamy, czy to element pancerza
+        if (selectedWeapon.Type.Any(t => t == "head" || t == "torso" || t == "arms" || t == "legs"))
+        {
+            List<Weapon> equippedArmors = unit.GetComponent<Inventory>().EquippedArmors;
+
+            if (equippedArmors.Contains(selectedWeapon))
+            {
+                equippedArmors.Remove(selectedWeapon);
+                Debug.Log($"{unit.GetComponent<Stats>().Name} zdjął {selectedWeapon.Name}.");
+            }
+            else
+            {
+                equippedArmors.Add(selectedWeapon);
+                Debug.Log($"{unit.GetComponent<Stats>().Name} założył {selectedWeapon.Name}.");
+            }
+            CheckForEquippedWeapons();
+            return;
+        }
 
         //Odniesienie do trzymanych przez postać broni
         Weapon[] equippedWeapons = unit.GetComponent<Inventory>().EquippedWeapons;
@@ -578,9 +600,6 @@ public class InventoryManager : MonoBehaviour
 
         GameObject unit = Unit.SelectedUnit;
 
-        // Wyszukuje wszystkie pola tekstowe i przyciski do ustalania statystyk broni wewnatrz gry
-        GameObject[] attributeInputFields = GameObject.FindGameObjectsWithTag("WeaponAttribute");
-
         int selectedIndex = InventoryScrollViewContent.GetComponent<CustomDropdown>().GetSelectedIndex();
         if (selectedIndex == 0)
         {
@@ -590,6 +609,16 @@ public class InventoryManager : MonoBehaviour
 
         //Wybiera broń z ekwipunku na podstawie wartości dropdowna
         Weapon selectedWeapon = unit.GetComponent<Inventory>().AllWeapons[selectedIndex - 1];
+
+        // Sprawdza, czy to pancerz czy broń
+        bool isArmor = selectedWeapon.Type.Any(t => t == "head" || t == "torso" || t == "arms" || t == "legs");
+
+        // Aktywuje odpowiedni panel
+        _armorAttributes.SetActive(isArmor);
+        _weaponAttributes.SetActive(!isArmor);
+
+        // Wyszukuje wszystkie pola tekstowe i przyciski do ustalania statystyk broni wewnatrz gry
+        GameObject[] attributeInputFields = GameObject.FindGameObjectsWithTag("WeaponAttribute");
 
         foreach (var inputField in attributeInputFields)
         {
@@ -733,25 +762,51 @@ public class InventoryManager : MonoBehaviour
 
     public void CheckForEquippedWeapons()
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
         List<UnityEngine.UI.Button> allWeaponButtons = InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons;
         Weapon[] equippedWeapons = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons;
+        List<Weapon> equippedArmors = Unit.SelectedUnit.GetComponent<Inventory>().EquippedArmors;
+        Stats unitStats = Unit.SelectedUnit.GetComponent<Stats>();
+
+        // Resetowanie wartości pancerza
+        unitStats.Armor_head = 0;
+        unitStats.Armor_arms = 0;
+        unitStats.Armor_torso = 0;
+        unitStats.Armor_legs = 0;
+
+        if(equippedArmors.Count > 0)
+        {
+            // Sumowanie wartości pancerza
+            foreach (Weapon armor in equippedArmors)
+            {
+                if (armor.Type.Contains("head")) unitStats.Armor_head += armor.Armor;
+                if (armor.Type.Contains("arms")) unitStats.Armor_arms += armor.Armor;
+                if (armor.Type.Contains("torso")) unitStats.Armor_torso += armor.Armor;
+                if (armor.Type.Contains("legs")) unitStats.Armor_legs += armor.Armor;
+            }
+
+            UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
+        }
 
         for (int i = 0; i < allWeaponButtons.Count; i++)
         {
-            //Tekst przycisku
+            // Tekst przycisku
             string buttonText = allWeaponButtons[i].GetComponentInChildren<TextMeshProUGUI>().text;
-            
-            //Jeśli broń jest w rękach to ustawia ja jako aktywną
-            if(equippedWeapons[0] != null && equippedWeapons[0].Name == buttonText || equippedWeapons[1] != null &&  equippedWeapons[1].Name == buttonText)
+
+            // Sprawdza, czy przedmiot jest aktualnie wyposażony jako broń lub pancerz
+            bool isEquippedWeapon = (equippedWeapons[0] != null && equippedWeapons[0].Name == buttonText) ||
+                                    (equippedWeapons[1] != null && equippedWeapons[1].Name == buttonText);
+            bool isEquippedArmor = equippedArmors.Any(armor => armor.Name == buttonText);
+
+            if (isEquippedWeapon || isEquippedArmor)
             {
-                //Ustawia kolor przycisku na aktywny
+                // Ustawia kolor przycisku na aktywny
                 InventoryScrollViewContent.GetComponent<CustomDropdown>().MakeOptionActive(i + 1);
             }
             else
             {
-                //Resetuje kolor przycisku
+                // Resetuje kolor przycisku
                 InventoryScrollViewContent.GetComponent<CustomDropdown>().ResetColor(i + 1);
             }
         }

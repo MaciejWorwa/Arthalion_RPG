@@ -7,6 +7,9 @@ public class Armor : MonoBehaviour
     [Header("Nazwa")]
     public string Name;
 
+    [Header("Lokacja")]
+    public string[] Location;
+
     [Header("Jakoœæ")]
     public string Quality;
 

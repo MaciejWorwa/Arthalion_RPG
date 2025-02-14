@@ -396,6 +396,33 @@
       "S": 4,
       "Encumbrance": 2,
       "Impale": true
+    },
+    {
+      "Id": 37,
+      "Name": "Skórzana kurta",
+      "Type": ["arms", "torso"],
+      "Category": "leather",
+      "Armor": 1,
+      "Encumbrance": 1
+    },
+    {
+      "Id": 38,
+      "Name": "Nogawice kolcze",
+      "Type": ["legs"],
+      "Category": "chain",
+      "Armor": 2,
+      "Encumbrance": 3,
+      "Flexible": true
+    },
+    {
+      "Id": 39,
+      "Name": "Hełm",
+      "Type": ["head"],
+      "Category": "plate",
+      "Armor": 2,
+      "Encumbrance": 2,
+      "Impenetrable": true,
+      "WeakPoints": true
     }
   ]
 }

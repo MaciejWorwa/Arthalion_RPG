@@ -45,6 +45,9 @@ public class DataManager : MonoBehaviour
     [SerializeField] private TMP_InputField _searchInputFieldForUnits;
     [SerializeField] private TMP_InputField _searchInputFieldForWeapons;
 
+    [SerializeField] private UnityEngine.UI.Toggle _weaponToggle;
+    [SerializeField] private UnityEngine.UI.Toggle _armorToggle;
+
     public List<string> TokensPaths = new List<string>();
 
     #region Loading units stats
@@ -71,21 +74,39 @@ public class DataManager : MonoBehaviour
 
         if (scrollViewContent == null) return;
 
-        string searchText = listName == "unitList" ? _searchInputFieldForUnits.text.ToLower() : _searchInputFieldForWeapons.text.ToLower();
+        string searchText = listName == "unitList"
+            ? _searchInputFieldForUnits.text.ToLower()
+            : _searchInputFieldForWeapons.text.ToLower();
+
+        bool applyWeaponFilter = listName == "weaponList"; // Filtr działa tylko dla listy broni
 
         foreach (Transform child in scrollViewContent)
         {
             var buttonText = child.GetComponentInChildren<TextMeshProUGUI>();
-
             if (buttonText == null) continue;
 
-            // Sprawdzaj, czy tekst zawiera wyszukiwaną frazę
             bool matchesSearch = buttonText.text.ToLower().Contains(searchText);
+            bool passesFilter = true;
 
-            // Ukryj/wyświetl przycisk na podstawie wyniku wyszukiwania
-            child.gameObject.SetActive(matchesSearch);
+            if (applyWeaponFilter)
+            {
+                // Pobieramy dane broni na podstawie jej nazwy
+                WeaponData weapon = InventoryManager.Instance.AllWeaponData
+                    .FirstOrDefault(w => w.Name == buttonText.text);
+
+                if (weapon != null)
+                {
+                    bool isArmor = weapon.Type.Any(t => t == "head" || t == "torso" || t == "arms" || t == "legs");
+
+                    if (_weaponToggle.isOn && isArmor) passesFilter = false;
+                    if (_armorToggle.isOn && !isArmor) passesFilter = false;
+                }
+            }
+
+            child.gameObject.SetActive(matchesSearch && passesFilter);
         }
     }
+
 
     public void LoadAndUpdateStats(GameObject unitObject = null)
     {
@@ -350,9 +371,9 @@ public class DataManager : MonoBehaviour
             //Gdy wczytujemy ekwipunek postaci to przerywamy funkcję, żeby na liście dostępnych broni nie pojawiały się customowe przedmioty
             if(weaponData != null) return;
 
-            bool buttonExists = _weaponScrollViewContent.GetComponentsInChildren<TextMeshProUGUI>().Any(t => t.text == weapon.Name);
+            bool buttonExists = _weaponScrollViewContent.GetComponentsInChildren<TextMeshProUGUI>(true).Any(t => t.text == weapon.Name);
 
-            if(buttonExists == false)
+            if (buttonExists == false)
             {
                 //Dodaje broń do ScrollViewContent w postaci buttona
                 GameObject buttonObj = Instantiate(_buttonPrefab, _weaponScrollViewContent);
@@ -374,6 +395,8 @@ public class DataManager : MonoBehaviour
                 });
             }
         }
+
+        FilterList("weaponList");
     }
     #endregion
 
@@ -754,6 +777,15 @@ public class WeaponData
     public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
     public bool Wrap; // Plącząca (utrudnia parowanie o 1 PS)
 
+    //PANCERZ
+    public int Armor;
+    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Flexible; // Giętki  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Impenetrable; // Nieprzebijalny ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Lightweight; // Poręczny (redukuje obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Partial; // Częściowy  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool WeakPoints; // Wrażliwe punkty  ---------------------- (MECHANIKA DO WPROWADZENIA)
+
     public WeaponData(Weapon weapons)
     {
         // Pobiera wszystkie pola (zmienne) z klasy Stats
@@ -862,7 +894,7 @@ public class InventoryData
 {
     public List<WeaponData> AllWeapons = new List<WeaponData>(); //Wszystkie posiadane przez postać bronie
     public List<ArmorData> AllArmors = new List<ArmorData>(); //Wszystkie posiadane przez postać elementy zbroi
-    public List<ArmorData> EquippedArmors = new List<ArmorData>(); //Wszystkie ubrane przez postać elementy zbroi
+    public List<int> EquippedArmorsId = new List<int>(); //Wszystkie ubrane przez postać elementy zbroi
     public int[] EquippedWeaponsId = new int[2]; // Tablica identyfikatorów broni trzymanych w rękach
     public int CopperCoins;
     public int SilverCoins;
@@ -885,16 +917,16 @@ public class InventoryData
             }
         }
 
-        foreach (var armor in inventory.AllArmors)
-        {
-            ArmorData armorData = new ArmorData(armor);
-            AllArmors.Add(armorData);
-        }
+        //foreach (var armor in inventory.AllArmors)
+        //{
+        //    ArmorData armorData = new ArmorData(armor);
+        //    AllArmors.Add(armorData);
+        //}
 
         foreach (var armor in inventory.EquippedArmors)
         {
-            ArmorData armorData = new ArmorData(armor);
-            EquippedArmors.Add(armorData);
+            WeaponData armorData = new WeaponData(armor);
+            EquippedArmorsId.Add(armorData.Id);
         }
 
         CopperCoins = inventory.CopperCoins;

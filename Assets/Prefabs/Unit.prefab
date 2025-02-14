@@ -602,8 +602,8 @@ GameObject:
   - component: {fileID: 9100103260709899381}
   - component: {fileID: -8601941481920871024}
   - component: {fileID: -2754630250583481522}
-  - component: {fileID: 6267734093322851998}
   - component: {fileID: 8447459666408192081}
+  - component: {fileID: 6267734093322851998}
   - component: {fileID: -2613873717699355788}
   - component: {fileID: -2147539621934683725}
   m_Layer: 6
@@ -744,20 +744,31 @@ MonoBehaviour:
   IsRunning: 0
   IsCharging: 0
   IsRetreating: 0
+  Ablaze: 0
+  Bleeding: 0
+  Blinded: 0
+  Broken: 0
+  Deafened: 0
+  Entangled: 0
+  Fatiqued: 0
+  Poison: 0
+  Prone: 0
+  Stunned: 0
+  Surprised: 0
+  Unconscious: 0
+  EntangledUnitId: 0
   HelplessDuration: 0
   IsScared: 0
   IsFearTestPassed: 0
   SpellDuration: 0
   StunDuration: 0
   Trapped: 0
-  TrappedUnitId: 0
   AimingBonus: 0
   CastingNumberBonus: 0
   DefensiveBonus: 0
   CanMove: 1
   CanDoAction: 1
   CanCastSpell: 0
-  Feinted: 0
   Stats: {fileID: 0}
   NameDisplay: {fileID: 5344260523014033116}
   HealthDisplay: {fileID: 1306580773643467112}
@@ -846,6 +857,27 @@ MonoBehaviour:
   RoundsPlayed: 0
   FortunateEvents: 0
   UnfortunateEvents: 0
+--- !u!114 &8447459666408192081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2921409717819951567}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64b00dd6635355a42b01278c9c612552, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  AllWeapons: []
+  AllArmors: []
+  EquippedWeapons:
+  - {fileID: 0}
+  - {fileID: 0}
+  EquippedArmors: []
+  CopperCoins: 0
+  SilverCoins: 0
+  GoldCoins: 0
 --- !u!114 &6267734093322851998
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -877,7 +909,6 @@ MonoBehaviour:
   Accurate: 0
   Blackpowder: 0
   Blast: 0
-  Bulky: 0
   Damaging: 0
   Dangerous: 0
   Defensive: 0
@@ -889,43 +920,24 @@ MonoBehaviour:
   Impact: 0
   Impale: 0
   Imprecise: 0
-  Lightweight: 0
   Penetrating: 0
   Pistol: 0
   Practical: 0
   Precise: 0
   Pummel: 0
+  Slash: 0
   Slow: 0
   Shield: 0
   Shoddy: 0
+  Spread: 0
   Tiring: 0
   TrapBlade: 0
+  Trip: 0
   Unbreakable: 0
   Undamaging: 0
   Unbalanced: 0
   Unrielable: 0
   Wrap: 0
---- !u!114 &8447459666408192081
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2921409717819951567}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 64b00dd6635355a42b01278c9c612552, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AllWeapons: []
-  AllArmors: []
-  EquippedWeapons:
-  - {fileID: 0}
-  - {fileID: 0}
-  EquippedArmors: []
-  CopperCoins: 0
-  SilverCoins: 0
-  GoldCoins: 0
 --- !u!114 &-2613873717699355788
 MonoBehaviour:
   m_ObjectHideFlags: 0

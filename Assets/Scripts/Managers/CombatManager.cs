@@ -770,6 +770,15 @@ public class CombatManager : MonoBehaviour
                 }
                 target.DisplayUnitHealthPoints();
             }
+            else if (targetStats.TempHealth >= 0)
+            {
+                Debug.Log($"{targetStats.Name} został zraniony.");
+            }
+
+            if ((targetStats.TempHealth < 0 && GameManager.IsHealthPointsHidingMode) || (targetStats.TempHealth < 0 && targetStats.gameObject.CompareTag("EnemyUnit") && GameManager.IsStatsHidingMode))
+            {
+                Debug.Log($"Żywotność {targetStats.Name} spadła poniżej zera i wynosi <color=red>{targetStats.TempHealth}</color>.");
+            }
 
             StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, target.gameObject, finalDamage));
         }
@@ -1083,25 +1092,27 @@ public class CombatManager : MonoBehaviour
 
         if (attackerWeapon.Type.Contains("melee") || attackerWeapon.Type.Contains("strength-based")) //Oblicza łączne obrażenia dla ataku w zwarciu
         {
-            Debug.Log($"succesLevel {successLevel} siła atakującego: {attackerStats.S / 10} siła broni: {Math.Max(0, attackerWeapon.S - attackerWeapon.Damage)}");
+            Debug.Log($"Łączny poziom sukcesu: {successLevel}. Siła atakującego: {attackerStats.S / 10}. Siła broni: {Math.Max(0, attackerWeapon.S - attackerWeapon.Damage)}");
             damage = successLevel + attackerStats.S / 10 + Math.Max(0, attackerWeapon.S - attackerWeapon.Damage);
         }
         else //Oblicza łączne obrażenia dla ataku dystansowego
         {
-            damage = successLevel + attackerWeapon.S;
+            Debug.Log($"Poziom sukcesu: {successLevel}. Siła broni: {Math.Max(0, attackerWeapon.S - attackerWeapon.Damage)}");
+            damage = successLevel + Math.Max(0, attackerWeapon.S - attackerWeapon.Damage);
         }
 
         // Uwzględnia cechę Druzgoczący
         if (attackerWeapon.Impact && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 2 && _isTrainedWeaponCategory) 
         {
             damage += attackRoll % 10; // Dodaje liczbę jedności z rzutu na atak
+            Debug.Log($"Dodatkowe obrażenia za cechę Druzgoczący: {attackRoll % 10}");
         }
 
         // Uwzględnia przewagę rozmiaru
-        if (attackerStats.Size > targetStats.Size)
+        if (attackerStats.Size > targetStats.Size && (attackerStats.Size - targetStats.Size) > 1)
         {
             damage *= attackerStats.Size - targetStats.Size;
-            Debug.Log($"modyfikator obrazeń za rozmiar atakujący rozmiar {attackerStats.Size} cel rozmiar {targetStats.Size} mnożnik obrażeń {attackerStats.Size - targetStats.Size}");
+            Debug.Log($"Modyfikator obrażeń za rozmiar. Rozmiar atakującego: {attackerStats.Size}. Rozmiar celu: {targetStats.Size}. Obrażenia zostały pomnożone x{attackerStats.Size - targetStats.Size}.");
         }
 
         if (damage < 0) damage = 0;

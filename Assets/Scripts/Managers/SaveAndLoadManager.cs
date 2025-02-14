@@ -566,6 +566,10 @@ public class SaveAndLoadManager : MonoBehaviour
                 {
                     inventory.EquippedWeapons[1] = weapon;
                 }
+                if (inventoryData.EquippedArmorsId.Contains(weapon.Id))
+                {
+                    inventory.EquippedArmors.Add(weapon);
+                }
             }
             InventoryManager.Instance.CheckForEquippedWeapons();
 

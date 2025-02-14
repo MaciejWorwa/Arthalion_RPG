@@ -252,7 +252,7 @@ public class Unit : MonoBehaviour
         {
             gameObject.transform.Find("Canvas/Dead_image").gameObject.SetActive(true);
         }
-        else if(Stats.TempHealth <= 3)
+        else if(Stats.TempHealth <= Stats.MaxHealth / 3)
         {
             gameObject.transform.Find("Canvas/Heavy_wounded_image").gameObject.SetActive(true);
         }

@@ -85,6 +85,40 @@
       "PP": 0,
       "Resilience": 2,
       "ExtraPoints": 3
+    },
+    {
+      "Id": 5,
+      "Race": "Smok",
+      "Size": 5,
+      "PrimaryWeaponIds": [5, 25],
+      "WW": 65,
+      "US": 60,
+      "S": 65,
+      "Wt": 65,
+      "I": 60,
+      "Zw": 25,
+      "Zr": 15,
+      "Int": 45,
+      "SW": 85,
+      "Ogd": 25,
+      "Sz": 6
+    },
+    {
+      "Id": 6,
+      "Race": "Gołąb",
+      "Size": 0,
+      "PrimaryWeaponIds": [5, 25],
+      "WW": 65,
+      "US": 60,
+      "S": 5,
+      "Wt": 15,
+      "I": 60,
+      "Zw": 25,
+      "Zr": 15,
+      "Int": 45,
+      "SW": 20,
+      "Ogd": 25,
+      "Sz": 6
     }
   ]
 }

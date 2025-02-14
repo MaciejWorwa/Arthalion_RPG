@@ -9,6 +9,7 @@ using System;
 using System.IO;
 using static UnityEngine.GraphicsBuffer;
 using System.Linq;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 
 public class UnitsManager : MonoBehaviour
 {
@@ -342,8 +343,8 @@ public class UnitsManager : MonoBehaviour
                 newUnit.GetComponent<Stats>().IsBig = false;
             }
 
-            //Losuje początkowe statystyki dla człowieka, elfa, krasnoluda i niziołka
-            if (newUnit.GetComponent<Stats>().Id <= 4 && !IsSavedUnitsManaging)
+            //Losuje początkowe statystyki dla każdej jednostki
+            if (!IsSavedUnitsManaging)
             {
                 newUnit.GetComponent<Stats>().RollForBaseStats();
             }
@@ -766,6 +767,18 @@ public class UnitsManager : MonoBehaviour
                 string value = textInput.GetComponent<TMP_InputField>().text;
                 field.SetValue(unit.GetComponent<Stats>(), value);
             }
+            else if (field.FieldType.IsEnum && textInput.GetComponent<TMP_Dropdown>() != null)
+            {
+                // Obsługa TMP_Dropdown dla enumów
+                TMP_Dropdown dropdown = textInput.GetComponent<TMP_Dropdown>();
+                Array enumValues = Enum.GetValues(field.FieldType);
+
+                if (dropdown.value >= 0 && dropdown.value < enumValues.Length)
+                {
+                    object selectedEnumValue = enumValues.GetValue(dropdown.value);
+                    field.SetValue(unit.GetComponent<Stats>(), selectedEnumValue);
+                }
+            }
             else
             {
                 Debug.Log($"Nie udało się zmienić wartości cechy '{attributeName}'.");
@@ -899,34 +912,24 @@ public class UnitsManager : MonoBehaviour
         GameObject unit = Unit.SelectedUnit;
         LoadAchievements(unit);
     }
-    
 
     public void LoadAttributes(GameObject unit)
     {
-        // Wyszukuje wszystkie pola tekstowe i przyciski do ustalania statystyk postaci wewnatrz gry
         GameObject[] attributeInputFields = GameObject.FindGameObjectsWithTag("Attribute");
 
         foreach (var inputField in attributeInputFields)
         {
-            // Wyciągamy nazwę cechy z nazwy obiektu InputField
             string attributeName = inputField.name.Replace("_input", "");
+            Stats stats = unit.GetComponent<Stats>();
 
             if (attributeName.StartsWith("Melee_"))
             {
                 string categoryName = attributeName.Replace("Melee_", "");
                 if (Enum.TryParse<MeleeCategory>(categoryName, out var category))
                 {
-                    int meleeValue = unit.GetComponent<Stats>().Melee.ContainsKey(category)
-                        ? unit.GetComponent<Stats>().Melee[category]
-                        : 0;
-
-                    if (inputField.GetComponent<TMPro.TMP_InputField>() != null)
-                    {
-                        inputField.GetComponent<TMPro.TMP_InputField>().text = meleeValue.ToString();
-                    }
+                    int meleeValue = stats.Melee.ContainsKey(category) ? stats.Melee[category] : 0;
+                    SetInputFieldValue(inputField, meleeValue);
                 }
-
-                // Po obsłużeniu Melee, przechodzimy do kolejnego inputField
                 continue;
             }
             else if (attributeName.StartsWith("Ranged_"))
@@ -934,59 +937,70 @@ public class UnitsManager : MonoBehaviour
                 string categoryName = attributeName.Replace("Ranged_", "");
                 if (Enum.TryParse<RangedCategory>(categoryName, out var category))
                 {
-                    int rangedValue = unit.GetComponent<Stats>().Ranged.ContainsKey(category)
-                        ? unit.GetComponent<Stats>().Ranged[category]
-                        : 0;
-
-                    if (inputField.GetComponent<TMPro.TMP_InputField>() != null)
-                    {
-                        inputField.GetComponent<TMPro.TMP_InputField>().text = rangedValue.ToString();
-                    }
+                    int rangedValue = stats.Ranged.ContainsKey(category) ? stats.Ranged[category] : 0;
+                    SetInputFieldValue(inputField, rangedValue);
                 }
-
                 continue;
             }
 
-            // Jeżeli to nie Melee/Ranged, to wtedy bierzemy się za zwykłe pola
-            FieldInfo field = unit.GetComponent<Stats>().GetType().GetField(attributeName);
+            FieldInfo field = stats.GetType().GetField(attributeName);
             if (field == null)
                 continue;
 
+            object value = field.GetValue(stats);
+
             if (field.FieldType == typeof(int))
             {
-                int value = (int)field.GetValue(unit.GetComponent<Stats>());
-
-                if (inputField.GetComponent<TMPro.TMP_InputField>() != null)
-                {
-                    inputField.GetComponent<TMPro.TMP_InputField>().text = value.ToString();
-                }
-                else if (inputField.GetComponent<UnityEngine.UI.Slider>() != null)
-                {
-                    inputField.GetComponent<UnityEngine.UI.Slider>().value = value;
-                }
+                SetInputFieldValue(inputField, (int)value);
             }
             else if (field.FieldType == typeof(bool))
             {
-                bool value = (bool)field.GetValue(unit.GetComponent<Stats>());
-                inputField.GetComponent<UnityEngine.UI.Toggle>().isOn = value;
+                SetToggleValue(inputField, (bool)value);
             }
             else if (field.FieldType == typeof(string))
             {
-                string value = (string)field.GetValue(unit.GetComponent<Stats>());
-                if (inputField.GetComponent<TMPro.TMP_InputField>() != null)
-                {
-                    inputField.GetComponent<TMPro.TMP_InputField>().text = value;
-                }
+                SetInputFieldValue(inputField, (string)value);
+            }
+            else if (field.FieldType.IsEnum)
+            {
+                SetDropdownValue(inputField, value);
+                continue;
             }
 
             if (attributeName == "Initiative")
             {
-                InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] 
-                    = unit.GetComponent<Stats>().Initiative;
+                InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] = stats.Initiative;
                 InitiativeQueueManager.Instance.UpdateInitiativeQueue();
             }
         }
+    }
 
+    private void SetInputFieldValue(GameObject inputField, int value)
+    {
+        var tmpField = inputField.GetComponent<TMPro.TMP_InputField>();
+        if (tmpField != null) tmpField.text = value.ToString();
+
+        var slider = inputField.GetComponent<UnityEngine.UI.Slider>();
+        if (slider != null) slider.value = value;
+    }
+    private void SetInputFieldValue(GameObject inputField, string value)
+    {
+        var tmpField = inputField.GetComponent<TMPro.TMP_InputField>();
+        if (tmpField != null) tmpField.text = value;
+    }
+    private void SetToggleValue(GameObject inputField, bool value)
+    {
+        var toggle = inputField.GetComponent<UnityEngine.UI.Toggle>();
+        if (toggle != null) toggle.isOn = value;
+    }
+    private void SetDropdownValue(GameObject inputField, object enumValue)
+    {
+        var dropdown = inputField.GetComponent<TMPro.TMP_Dropdown>();
+        if (dropdown != null)
+        {
+            int index = Array.IndexOf(Enum.GetValues(enumValue.GetType()), enumValue);
+            if (index >= 0) dropdown.value = index;
+        }
     }
 
     public void ChangeTemporaryHealthPoints(int amount)

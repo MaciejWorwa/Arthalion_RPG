@@ -140,23 +140,60 @@ public class Stats : MonoBehaviour
 
     public void RollForBaseStats()
     {
-        WW += UnityEngine.Random.Range(2, 21);
-        US += UnityEngine.Random.Range(2, 21);
-        S += UnityEngine.Random.Range(2, 21);
-        Wt += UnityEngine.Random.Range(2, 21);
-        I += UnityEngine.Random.Range(2, 21);
-        Zw += UnityEngine.Random.Range(2, 21);
-        Zr += UnityEngine.Random.Range(2, 21);
-        Int += UnityEngine.Random.Range(2, 21);
-        SW += UnityEngine.Random.Range(2, 21);
-        Ogd += UnityEngine.Random.Range(2, 21);
+        WW = RollStat(WW);
+        US = RollStat(US);
+        S = RollStat(S);
+        Wt = RollStat(Wt);
+        I = RollStat(I);
+        Zw = RollStat(Zw);
+        Zr = RollStat(Zr);
+        Int = RollStat(Int);
+        SW = RollStat(SW);
+        Ogd = RollStat(Ogd);
 
-        MaxHealth = S / 10 + (2 * Wt / 10) + SW / 10;
-        if (Race == "Niziołek") MaxHealth -= S / 10;
+        CalculateMaxHealth();
         TempHealth = MaxHealth;
+
+        // Rozdzielanie punktów ExtraPoints losowo pomiędzy PP i Resilience
+        for (int i = 0; i < ExtraPoints; i++)
+        {
+            if (UnityEngine.Random.value < 0.5f)
+                PP++;
+            else
+                Resilience++;
+        }
+        ExtraPoints = 0;
 
         PS = PP;
         Resolve = Resilience; // Punkty Determinacji są Równe Punktom Bohatera
+    }
+    private int RollStat(int statsValue)
+    {
+        if (statsValue == 0) return 0; // Jeśli wartość początkowa to 0, pozostaje 0
+        if (statsValue < 10) return UnityEngine.Random.Range(1, 11); // Jeśli statystyka < 10, ustalamy wartość na 1-10
+
+        int rollResult = UnityEngine.Random.Range(2, 21); // Losowanie 2-20
+        if (Id > 4) statsValue -= 10; // Jeśli Id > 4 (czyli nie jest to człowiek, kranoslud, elf ani niziołek), odejmujemy 10
+
+        return statsValue + rollResult;
+    }
+
+    public void CalculateMaxHealth()
+    {
+        if (Size == SizeCategory.Tiny)
+            MaxHealth = 1;
+        else if (Size == SizeCategory.Little)
+            MaxHealth = Wt / 10;
+        else if (Size == SizeCategory.Small)
+            MaxHealth = 2 * (Wt / 10) + SW / 10;
+        else if (Size == SizeCategory.Average)
+            MaxHealth = S / 10 + 2 * (Wt / 10) + SW / 10;
+        else if (Size == SizeCategory.Large)
+            MaxHealth = (S / 10 + 2 * (Wt / 10) + SW / 10) * 2;
+        else if (Size == SizeCategory.Enormous)
+            MaxHealth = (S / 10 + 2 * (Wt / 10) + SW / 10) * 4;
+        else if (Size == SizeCategory.Monstrous)
+            MaxHealth = (S / 10 + 2 * (Wt / 10) + SW / 10) * 8;
     }
 
     // Pobieranie modyfikatora za umiejętność dla danej kategorii broni

@@ -1,0 +1,28 @@
+{
+  "Weapons": [
+    {
+      "Id": 1,
+      "Name": "Skórzana kurta",
+      "Location": ["arms", "torso"],
+      "Category": "leather",
+      "Encumbrance": 1
+    },
+    {
+      "Id": 2,
+      "Name": "Nogawice kolcze",
+      "Location": ["legs"],
+      "Category": "chain",
+      "Encumbrance": 3,
+      "Flexible": true
+    },
+    {
+      "Id": 3,
+      "Name": "Hełm",
+      "Location": ["head"],
+      "Category": "plate",
+      "Encumbrance": 2,
+      "Impenetrable": true,
+      "WeakPoints": true
+    }
+  ]
+}
