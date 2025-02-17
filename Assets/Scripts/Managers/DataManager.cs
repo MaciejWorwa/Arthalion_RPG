@@ -640,6 +640,7 @@ public class StatsData
     public int Resilience; // Punkty Bohatera
     public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
     public int Initiative;
+    public int MaxEncumbrance; // Maksymalny udźwig
     public int Armor_head;
     public int Armor_arms;
     public int Armor_torso;
@@ -673,6 +674,7 @@ public class StatsData
     public int Athletics; // Atletyka
     public int Channeling; // Splatanie magii
     public int Dodge; // Unik
+    public int Endurance; // Odporność
     public List<Pair> MeleeSerialized = new List<Pair>();
     public List<Pair> RangedSerialized = new List<Pair>();
     public int HighestDamageDealt; // Największe zadane obrażenia
@@ -954,11 +956,22 @@ public class GridManagerData
 public class RoundsManagerData
 {
     public int RoundNumber;
-    public List<UnitNameAndActionsLeft> Entries = new List<UnitNameAndActionsLeft>();
-
-    public RoundsManagerData(List<Unit> units)
+    public RoundsManagerData()
     {
         RoundNumber = RoundsManager.RoundNumber;
+    }
+}
+
+[System.Serializable]
+public class InitiativeQueueManagerData
+{
+    public int PlayersAdvantage;
+    public int EnemiesAdvantage;
+
+    public InitiativeQueueManagerData()
+    {
+        PlayersAdvantage = InitiativeQueueManager.Instance.PlayersAdvantage;
+        EnemiesAdvantage = InitiativeQueueManager.Instance.EnemiesAdvantage;
     }
 }
 

@@ -5,6 +5,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine.UI;
 using UnityEditor.Experimental.GraphView;
+using System;
 
 public class MovementManager : MonoBehaviour
 {
@@ -333,6 +334,26 @@ public class MovementManager : MonoBehaviour
             modifier = 1;
         }
 
+        Debug.Log($"max obciazenie {stats.MaxEncumbrance}");
+        int currentEncumbrance = InventoryManager.Instance.CalculateEncumbrance(stats);
+
+        if (stats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < stats.MaxEncumbrance * 2)
+        {
+            stats.TempSz = Math.Max(3, stats.Sz - 1);
+        }
+        else if (stats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < stats.MaxEncumbrance * 3)
+        {
+            stats.TempSz = Math.Max(2, stats.Sz - 2);
+        }
+        else if (currentEncumbrance > stats.MaxEncumbrance * 3)
+        {
+            stats.TempSz = 0;
+        }
+        else
+        {
+            stats.TempSz = stats.Sz;
+        }
+
         //Sprawdza, czy jednostka może wykonać bieg lub szarże
         if ((modifier == 2 || modifier == 3) && !unit.CanDoAction)
         {
@@ -354,33 +375,14 @@ public class MovementManager : MonoBehaviour
             CombatManager.Instance.ChangeAttackType("StandardAttack"); //Resetuje szarże jako obecny typ ataku i ustawia standardowy atak
         }
 
-        //Sprawdza, czy zbroja nie jest wynikiem zaklęcia Pancerz Eteru
-        bool etherArmor = false;
-        if(MagicManager.Instance.UnitsStatsAffectedBySpell != null && MagicManager.Instance.UnitsStatsAffectedBySpell.Count > 0)
-        {
-            //Przeszukanie statystyk jednostek, na które działają zaklęcia czasowe
-            for (int i = 0; i < MagicManager.Instance.UnitsStatsAffectedBySpell.Count; i++)
-            {
-                //Jeżeli wcześniejsza wartość zbroi (w tym przypadku na głowie, ale to może być dowolna lokalizacja) jest inna niż obecna, świadczy to o użyciu Pancerzu Eteru
-                if (MagicManager.Instance.UnitsStatsAffectedBySpell[i].Name == stats.Name && MagicManager.Instance.UnitsStatsAffectedBySpell[i].Armor_head != stats.Armor_head)
-                {
-                    etherArmor = true;
-                }
-            }
-        }
-        //Uwzględnia karę do Szybkości za zbroję płytową
-        bool has_plate_armor = stats.Armor_head >= 5 || stats.Armor_torso >= 5 || stats.Armor_arms >= 5 || stats.Armor_legs >= 5;
-        bool is_sturdy = stats.Sturdy;
-        int movement_armor_penalty = (has_plate_armor && !is_sturdy && !etherArmor) ? 1 : 0;
-
         //Oblicza obecną szybkość
-        stats.TempSz = (stats.Sz - movement_armor_penalty) * modifier;
+        stats.TempSz *= modifier;
 
         if(unit.IsRunning)
         {
             // DODAĆ TUTAJ OPCJE DLA MANUALNEGO RZUCANIA KOŚĆMI
             
-            stats.TempSz += UnitsManager.Instance.TestSkill("Zw", stats, "Athletics", 20) / 20;
+            stats.TempSz += UnitsManager.Instance.TestSkill("Zw", stats, "Athletics", 20)[1] / 2;
         }
 
         // Uwzględnia ogłuszenie i powalenie

@@ -51,6 +51,7 @@ public class InventoryManager : MonoBehaviour
     [SerializeField] private TMP_InputField _copperCoinsInput;
     [SerializeField] private TMP_InputField _silverCoinsInput;
     [SerializeField] private TMP_InputField _goldCoinsInput;
+    [SerializeField] private TMP_Text _encumbranceDisplay; // Wyświetlenie aktualnego obciążenia postaci
 
     [SerializeField] private GameObject _weaponAttributes;
     [SerializeField] private GameObject _armorAttributes;
@@ -149,6 +150,7 @@ public class InventoryManager : MonoBehaviour
         }
 
         UpdateInventoryDropdown(unit.GetComponent<Inventory>().AllWeapons, true);
+        CalculateEncumbrance(unit.GetComponent<Stats>());
     }
     #endregion
 
@@ -193,6 +195,7 @@ public class InventoryManager : MonoBehaviour
         }
 
         UpdateInventoryDropdown(unit.GetComponent<Inventory>().AllWeapons, true);
+        CalculateEncumbrance(unit.GetComponent<Stats>());
 
         Debug.Log($"Przedmiot {selectedWeapon.Name} został usunięty z ekwipunku {unit.GetComponent<Stats>().Name}.");
     }
@@ -273,6 +276,7 @@ public class InventoryManager : MonoBehaviour
                 Debug.Log($"{unit.GetComponent<Stats>().Name} założył {selectedWeapon.Name}.");
             }
             CheckForEquippedWeapons();
+            CalculateEncumbrance(unit.GetComponent<Stats>());
             return;
         }
 
@@ -368,11 +372,11 @@ public class InventoryManager : MonoBehaviour
 
             if(difference >= 0)
             { 
-                InitiativeQueueManager.Instance.CalculateDominance(difference, 0, Unit.SelectedUnit.tag);
+                InitiativeQueueManager.Instance.CalculateDominance();
             }
             else
             {
-                InitiativeQueueManager.Instance.CalculateDominance(difference, 0, Unit.SelectedUnit.tag);
+                InitiativeQueueManager.Instance.CalculateDominance();
             }
         }
     }
@@ -517,6 +521,36 @@ public class InventoryManager : MonoBehaviour
             button.transform.Find("hand_text").gameObject.SetActive(false);
         }
     }
+    #endregion
+
+    #region Encumbrance
+    public int CalculateEncumbrance(Stats stats)
+    {
+        Inventory inventory = stats.GetComponent<Inventory>();
+        int totalEncumbrance = 0;
+
+        foreach (var weapon in inventory.AllWeapons)
+        {
+            int encumbrance = weapon.Encumbrance;
+
+            // Jeśli jest to element pancerza założony na siebie, zmniejszamy obciążenie o 1, ale nie poniżej 0
+            if (inventory.EquippedArmors.Contains(weapon))
+            {
+                encumbrance = Mathf.Max(0, encumbrance - 1);
+            }
+
+            totalEncumbrance += encumbrance;
+        }
+
+        Debug.Log($"niesione obciążenie przez {stats.Name} to {totalEncumbrance}");
+
+        string color = "<color=white>";
+        if (totalEncumbrance > stats.MaxEncumbrance) color = "<color=red>";
+        _encumbranceDisplay.text = $"{color}{totalEncumbrance.ToString()}</color> / {stats.MaxEncumbrance}";
+
+        return totalEncumbrance;
+    }
+
     #endregion
 
     #region Edit weapon stats

@@ -64,7 +64,7 @@ public class InitiativeQueueManager : MonoBehaviour
         //Aktualizuje pasek przewagi w bitwie
         unit.GetComponent<Stats>().Overall = unit.GetComponent<Stats>().CalculateOverall();
 
-        CalculateDominance(unit.GetComponent<Stats>().Overall, 0, unit.tag);
+        CalculateDominance();
     }
 
     public void RemoveUnitFromInitiativeQueue(Unit unit)
@@ -73,7 +73,7 @@ public class InitiativeQueueManager : MonoBehaviour
 
         //Aktualizuje pasek przewagi w bitwie
         unit.GetComponent<Stats>().Overall = unit.GetComponent<Stats>().CalculateOverall();
-        CalculateDominance(0, unit.GetComponent<Stats>().Overall, unit.tag);
+        CalculateDominance();
     }
 
     public void UpdateInitiativeQueue()
@@ -181,26 +181,36 @@ public class InitiativeQueueManager : MonoBehaviour
         }
     }
     #endregion
-    
-    public void CalculateDominance(int addedOverall, int substractedOverall, string unitTag)
+
+    public void CalculateDominance()
     {
-        // Aktualizacja maksymalnej wartości przewagi
-        if(DominanceBar.maxValue == 1) // Początkowa wartość Slidera (nie da sie ustawić na 0)
-        { 
-            DominanceBar.maxValue = addedOverall;
-        }
-        else
+        int playerTotal = 0;
+        int enemyTotal = 0;
+
+        // Przechodzimy przez całą kolejkę inicjatywy i sumujemy "Overall" dla obu stron
+        foreach (var unit in InitiativeQueue.Keys)
         {
-            DominanceBar.maxValue += addedOverall - substractedOverall;
+            Stats unitStats = unit.GetComponent<Stats>();
+
+            if (unit.CompareTag("PlayerUnit"))
+                playerTotal += unitStats.Overall;
+            else if (unit.CompareTag("EnemyUnit"))
+                enemyTotal += unitStats.Overall;
         }
 
-        // Aktualizacja wartości przewagi gracza (tylko jeśli jednostka należy do gracza)
-        if (unitTag == "PlayerUnit")
+        int totalPower = playerTotal + enemyTotal;
+        if (totalPower == 0)
         {
-            DominanceBar.value += addedOverall - substractedOverall;
+            DominanceBar.maxValue = 1; // Zapobiega dzieleniu przez 0
+            DominanceBar.value = 0;
+            DominanceBar.gameObject.SetActive(false);
+            return;
         }
 
-        // Aktywacja paska, jeśli ma sens go wyświetlać
+        DominanceBar.maxValue = totalPower;
+        DominanceBar.value = playerTotal;
+
+        // Aktywujemy pasek, jeśli ma sens go wyświetlać
         if (DominanceBar.maxValue > 1 && !DominanceBar.gameObject.activeSelf && !GameManager.IsStatsHidingMode)
         {
             DominanceBar.gameObject.SetActive(true);
@@ -209,18 +219,23 @@ public class InitiativeQueueManager : MonoBehaviour
 
     public void CalculateAdvantageBasedOnDominance()
     {
-        // Zaktualizowanie przewag grupowych za różnicę sił
-        if(DominanceBar.value < DominanceBar.maxValue / 3)
+        float dominanceThreshold = DominanceBar.maxValue * 0.10f; // 10% maksymalnej wartości
+        float difference = Mathf.Abs(DominanceBar.value - (DominanceBar.maxValue / 2));
+
+        if (difference >= dominanceThreshold)
         {
-            CalculateAdvantage("PlayerUnit", -1);
-            CalculateAdvantage("EnemyUnit", 1);
-            Debug.Log($"Przewaga przeciwników została zwiększona, a sojuszników zmniejszona o 1.");
-        }
-        else if(DominanceBar.value * 3 > DominanceBar.maxValue * 2)
-        {
-            CalculateAdvantage("EnemyUnit", -1);
-            CalculateAdvantage("PlayerUnit", 1);
-            Debug.Log($"Przewaga sojuszników została zwiększona, a przeciwników zmniejszona o 1.");
+            if (DominanceBar.value < DominanceBar.maxValue / 2)
+            {
+                CalculateAdvantage("PlayerUnit", -1);
+                CalculateAdvantage("EnemyUnit", 1);
+                Debug.Log($"Przewaga przeciwników została zwiększona, a sojuszników zmniejszona o 1.");
+            }
+            else
+            {
+                CalculateAdvantage("EnemyUnit", -1);
+                CalculateAdvantage("PlayerUnit", 1);
+                Debug.Log($"Przewaga sojuszników została zwiększona, a przeciwników zmniejszona o 1.");
+            }
         }
     }
 
@@ -251,5 +266,14 @@ public class InitiativeQueueManager : MonoBehaviour
         {
             EnemiesAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
         }
+    }
+
+    public void LoadInitiativeQueueManagerData(InitiativeQueueManagerData data)
+    {
+        PlayersAdvantage = data.PlayersAdvantage;
+        EnemiesAdvantage = data.EnemiesAdvantage;
+
+        _playersAdvantageInput.text = PlayersAdvantage.ToString();
+        _enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
     }
 }

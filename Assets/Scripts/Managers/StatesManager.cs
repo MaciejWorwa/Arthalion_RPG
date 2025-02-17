@@ -3,6 +3,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using static UnityEngine.GraphicsBuffer;
 
 public class StatesManager : MonoBehaviour
 {
@@ -53,7 +54,8 @@ public class StatesManager : MonoBehaviour
         int minArmor = Mathf.Min(stats.Armor_head, stats.Armor_arms, stats.Armor_torso, stats.Armor_legs);
 
         stats.TempHealth -= Mathf.Max(0, damage - minArmor - stats.Wt / 10);
-        Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Bleeding} punktów żywotności w wyniku podpalenia.</color>");
+        Debug.Log($"<color=#FF7F50>{stats.Name} traci {Mathf.Max(0, damage - minArmor - stats.Wt / 10)} punktów żywotności w wyniku podpalenia.</color>");
+        unit.DisplayUnitHealthPoints();
 
         Debug.Log($"Obrazenia od ognia: {unit.Ablaze - 1} + losowa liczba. Łącznie {damage}");
         Debug.Log($"minimalna zbroja: {minArmor} bonus z WT: {stats.Wt / 10}");
@@ -68,6 +70,7 @@ public class StatesManager : MonoBehaviour
         {
             stats.TempHealth -= unit.Bleeding;
             Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Bleeding} punktów żywotności w wyniku krwawienia.</color>");
+            unit.DisplayUnitHealthPoints();
         }
         else
         {
@@ -87,10 +90,11 @@ public class StatesManager : MonoBehaviour
 
         if(unit.Broken > 0 && !isEngagedInCombat)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("SW", stats) / 10;
+            int successLevel = UnitsManager.Instance.TestSkill("SW", stats)[1];
             if(successLevel > 0)
             {
                 unit.Broken = Mathf.Max(0, unit.Broken - successLevel);
+                Debug.Log(successLevel + " " + unit.Broken);
             }
 
             if (unit.Broken == 0)
@@ -117,7 +121,7 @@ public class StatesManager : MonoBehaviour
 
         if(unit.Poison > 0)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("Odp", stats) / 10;
+            int successLevel = UnitsManager.Instance.TestSkill("Wt", stats, "Endurance")[1];
             if(successLevel > 0)
             {
                 unit.Poison = Mathf.Max(0, unit.Poison - successLevel);
@@ -138,6 +142,7 @@ public class StatesManager : MonoBehaviour
         {
             stats.TempHealth -= unit.Poison;
             Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Poison} punktów żywotności w wyniku zatrucia.</color>");
+            unit.DisplayUnitHealthPoints();
         }
         else
         {
@@ -181,7 +186,7 @@ public class StatesManager : MonoBehaviour
 
         if(unit.Stunned > 0)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("Odp", stats) / 10;
+            int successLevel = UnitsManager.Instance.TestSkill("Wt", stats, "Endurance")[1];
             if(successLevel > 0)
             {
                 unit.Stunned = Mathf.Max(0, unit.Stunned - successLevel);

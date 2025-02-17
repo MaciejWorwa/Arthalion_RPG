@@ -62,6 +62,7 @@ public class Stats : MonoBehaviour
     public int Resilience; // Punkty Bohatera
     public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
     public int Initiative; // Inicjatywa w walce
+    public int MaxEncumbrance; // Maksymalny udźwig
 
     [Header("Punkty zbroi")]
     public int Armor_head;
@@ -101,6 +102,7 @@ public class Stats : MonoBehaviour
     public int Athletics;
     public int Channeling; // Splatanie magii
     public int Dodge; // Unik
+    public int Endurance; // Odporność
     public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
@@ -116,10 +118,8 @@ public class Stats : MonoBehaviour
     public int FortunateEvents; // Ilość "Szczęść"
     public int UnfortunateEvents; // Ilość "Pechów"
 
-    private void Start()
+    private void Awake()
     {
-        Overall = CalculateOverall();
-
         // Inicjalizacja domyślnych wartości TYLKO DO TESTÓW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Melee = new Dictionary<MeleeCategory, int>
         {
@@ -136,6 +136,8 @@ public class Stats : MonoBehaviour
             { RangedCategory.Bow, 13 },
             { RangedCategory.Crossbow, 21 }
         };
+
+        Overall = CalculateOverall();
     }
 
     public void RollForBaseStats()
@@ -166,6 +168,9 @@ public class Stats : MonoBehaviour
 
         PS = PP;
         Resolve = Resilience; // Punkty Determinacji są Równe Punktom Bohatera
+
+        // Aktualizuje udźwig
+        MaxEncumbrance = (S + Wt) / 10;
     }
     private int RollStat(int statsValue)
     {
@@ -229,47 +234,71 @@ public class Stats : MonoBehaviour
             Debug.Log($"{Name} zregenerował {woundsToHeal} żywotności.");
         }
     }
-    
+
     public int CalculateOverall()
     {
-        // Wyznacza większą wartość między WW i US
-        int maxWWorUS = Mathf.Max(WW, US);
-        int minWWorUS = Mathf.Min(WW, US);
+        // Sumowanie wszystkich cech głównych
+        int primaryStatsSum = WW + US + S + Wt + I + Zw + Zr + Int + SW + Ogd;
+        //Debug.Log("primaryStatsSum " + primaryStatsSum);
 
-        // Sumowanie cech pierwszorzędowych z uwzględnieniem mnożenia większej wartości (WW lub US) przez ilość Ataków
-        int primaryStatsSum = maxWWorUS + minWWorUS;
+        // Uwzględnienie rozmiaru (większy rozmiar = większy mnożnik)
+        float sizeMultiplier = (1f + ((int)Size)) / 10; // Każdy poziom rozmiaru zwiększa overall
+        //Debug.Log("sizeMultiplier " + sizeMultiplier);
 
         // Sumowanie zbroi i wytrzymałości
         int totalArmor = Armor_head + Armor_arms + Armor_torso + Armor_legs + (Wt / 10 * 4);
+        //Debug.Log("totalArmor " + totalArmor);
 
-        int weaponPower = 0;
+        // Uwzględnienie umiejętności
+        int skillSum = Athletics + Channeling + Dodge;
+        //Debug.Log("skillSum " + skillSum);
 
-        Weapon weapon = InventoryManager.Instance.ChooseWeaponToAttack(this.gameObject);
-        if(weapon != null)
+        // Sumowanie umiejętności broni białej
+        if (Melee != null)
         {
-            if(weapon.Type.Contains("ranged"))
+            skillSum += Melee.Values.Sum();
+            //Debug.Log("Melee.Values.Sum() " + Melee.Values.Sum());
+        }
+
+        // Sumowanie umiejętności broni dystansowej
+        if (Ranged != null)
+        {
+            skillSum += Ranged.Values.Sum();
+            //Debug.Log("Ranged.Values.Sum() " + Ranged.Values.Sum());
+        }
+
+        // Uwzględnienie mocy broni
+        int weaponPower = 0;
+        Weapon weapon = InventoryManager.Instance.ChooseWeaponToAttack(this.gameObject);
+        if (weapon != null)
+        {
+            if (weapon.Type.Contains("ranged"))
             {
                 weaponPower += weapon.S * 8;
             }
-            else if(weapon.Type.Contains("melee"))
+            else if (weapon.Type.Contains("melee"))
             {
-                weaponPower += weapon.S + S / 10 * 8;
+                weaponPower += weapon.S + (S / 10 * 8);
             }
-
-            if(weapon.Impact == true) weaponPower += maxWWorUS / 2;  
+           // Debug.Log("weaponPower " + weaponPower);
         }
 
-        // Zliczanie aktywnych zdolności
-        int activeAbilitiesCount = GetType()
+        // Zliczanie aktywnych talentów
+        int activeTalentsCount = GetType()
             .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
             .Where(field => field.FieldType == typeof(bool) && (bool)field.GetValue(this))
             .Count();
 
-        // Obliczanie Overall
-        int overall = (primaryStatsSum / 3) + weaponPower + MaxHealth + Sz + totalArmor * 2 + activeAbilitiesCount + Channeling + (Dodge * Zr / 5) + (SW / 5);
+       // Debug.Log("activeTalentsCount " + activeTalentsCount);
+
+        // Obliczanie Overall z uwzględnieniem mnożnika rozmiaru
+        int overall = Mathf.RoundToInt(((primaryStatsSum / 3) + weaponPower + MaxHealth + Sz + totalArmor * 2 + activeTalentsCount + skillSum / 3) * sizeMultiplier);
+
+        //Debug.Log($"Overall {Name} to {overall}");
 
         return overall;
     }
+
 
     //Zwraca kopię tej klasy
     public Stats Clone()

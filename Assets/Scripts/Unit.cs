@@ -6,6 +6,8 @@ using UnityEngine;
 using System.Reflection;
 using System.IO;
 using static UnityEngine.UI.CanvasScaler;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using static UnityEngine.GraphicsBuffer;
 
 public class Unit : MonoBehaviour
 {
@@ -61,6 +63,8 @@ public class Unit : MonoBehaviour
     public TMP_Text NameDisplay;
     public TMP_Text HealthDisplay;
 
+    public Stats LastAttackerStats; // Ostatni przeciwnik, który zadał obrażenia tej jednostce (jest to niezbędne do aktualizowania osiągnięcia "Najsilniejszy pokonany przeciwnik" poza trybem automatycznej śmierci)
+
     void Start()
     {
         Stats = gameObject.GetComponent<Stats>();
@@ -97,7 +101,12 @@ public class Unit : MonoBehaviour
                 return;
             }
 
-            if(CombatManager.Instance.AttackTypes["Grappling"])
+            if(Unconscious && Unit.SelectedUnit != null) // Gdy jednostka jest nieprzytomna to atak automatycznie oznacza śmierć
+            {
+                LastAttackerStats = Unit.SelectedUnit.GetComponent<Stats>();
+                CombatManager.Instance.HandleDeath(Stats, gameObject, Unit.SelectedUnit.GetComponent<Stats>());
+            }
+            else if(CombatManager.Instance.AttackTypes["Grappling"])
             {
                 CombatManager.Instance.Grappling(SelectedUnit.GetComponent<Unit>(), this);
             }
@@ -146,6 +155,7 @@ public class Unit : MonoBehaviour
             MovementManager.Instance.UpdateMovementRange(1); //Resetuje szarżę lub bieg, jeśli były aktywne   
             MovementManager.Instance.Retreat(false); //Resetuje bezpieczny odwrót    
 
+            CombatManager.Instance.UpdateAimButtonColor();
             CombatManager.Instance.UpdateDefensiveStanceButtonColor();
 
             //Odświeża listę ekwipunku

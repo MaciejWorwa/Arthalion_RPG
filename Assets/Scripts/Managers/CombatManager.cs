@@ -376,9 +376,16 @@ public class CombatManager : MonoBehaviour
         int attackModifier = CalculateAttackModifier(attacker, attackerWeapon, target, attackDistance);
 
         //Zwiększenie modyfikatora do ataku za atak okazyjny
-        if(opportunityAttack) attackModifier += 20;
+        if (opportunityAttack) attackModifier += 20;
         if(attackModifier > 60) attackModifier = 60; // Górny limit modyfikatora
         if(attackModifier < -30) attackModifier = -30; // Dolny limit modyfikatora
+
+        //Zresetowanie celowania, jeżeli było aktywne
+        if (attacker.AimingBonus != 0)
+        {
+            attacker.AimingBonus = 0;
+            UpdateAimButtonColor();
+        }
 
         int rollOnAttack;
         if (IsManualPlayerAttack)
@@ -488,11 +495,13 @@ public class CombatManager : MonoBehaviour
         }
 
         // ==================================================================
-        // 11) *** OBRONA *** (tylko jeśli to atak w zwarciu i lub mamy tarcze i możemy bronić się przed strzałem)
+        // 11) *** OBRONA *** (tylko jeśli to atak w zwarciu lub mamy tarcze i możemy bronić się przed strzałem)
         // ==================================================================
         int defenceSuccessValue = 0;
         int defenceSuccessLevel = 0;
         int defenceRollResult = 0;
+        int parryValue = 0;
+        int dodgeValue = 0;
 
         if (AttackTypes["Grappling"]) // Zapasy
         {
@@ -508,8 +517,9 @@ public class CombatManager : MonoBehaviour
             }
 
             int modifier = target.Entangled > 0 ? 10 : 0;
-            defenceSuccessValue = UnitsManager.Instance.TestSkill("S", targetStats, null, modifier, defenceRollResult);
-            defenceSuccessLevel = defenceSuccessValue / 10;
+            int[] defenceTest = UnitsManager.Instance.TestSkill("S", targetStats, null, modifier, defenceRollResult);
+            defenceSuccessValue = defenceTest[0];
+            defenceSuccessLevel = defenceTest[1];
         }
         else // Zwykły atak bronią
         {
@@ -538,6 +548,26 @@ public class CombatManager : MonoBehaviour
                 dodgeModifier -= 10;
             }
 
+            //Modyfikator za przeciążenie
+            int currentEncumbrance = InventoryManager.Instance.CalculateEncumbrance(targetStats);
+            int encumbrancePenalty = 0;
+            if (targetStats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < targetStats.MaxEncumbrance * 2)
+            {
+                encumbrancePenalty = 10;
+            }
+            else if (targetStats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < targetStats.MaxEncumbrance * 3)
+            {
+                encumbrancePenalty = 20;
+            }
+
+            // Sprawdzamy, czy Zw nie spadnie poniżej 10
+            if (targetStats.Zw - encumbrancePenalty < 10)
+            {
+                encumbrancePenalty = targetStats.Zw - 10;
+            }
+
+            dodgeModifier -= encumbrancePenalty;
+
             if (attackerWeapon.Wrap && _isTrainedWeaponCategory) parryModifier -= 10;
             if (attackerWeapon.Slow)
             {
@@ -549,6 +579,7 @@ public class CombatManager : MonoBehaviour
             if (attackerStats.Size > targetStats.Size) parryModifier -= (attackerStats.Size - targetStats.Size) * 20; // Kara do parowania za rozmiar
             if (attackerStats.Size > targetStats.Size) Debug.Log($"modyfikator parowania za rozmiar -{(attackerStats.Size - targetStats.Size) * 20}");
             if (parryModifier < -30) parryModifier = -30; // Dolny limit modyfikatora
+            if (dodgeModifier < -30) dodgeModifier = -30; // Dolny limit modyfikatora
 
             string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
             string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
@@ -559,8 +590,8 @@ public class CombatManager : MonoBehaviour
 
             // Obliczamy sumaryczną wartość parowania i uniku
             MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
-            int parryValue = targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill) + parryModifier;
-            int dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
+            parryValue = targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill) + parryModifier;
+            dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
 
 
             if (canParry || canDodge)
@@ -670,17 +701,18 @@ public class CombatManager : MonoBehaviour
         // 12) Teraz dopiero wiemy, ile wynoszą poziomy sukcesu atakującego i obrońcy
         // Następuje finalne rozstrzygnięcie
         int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
-        if (combinedSuccessLevel <= 0 && attackerWeapon.Type.Contains("melee") || combinedSuccessLevel < 0 && attackerWeapon.Type.Contains("ranged"))
+
+        if (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue)))
+        {
+            //Zaktualizowanie przewagi
+            InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, 1);
+        }
+        else
         {
             // Atak chybił
             Debug.Log($"Atak {attackerStats.Name} chybił.");
             StartCoroutine(AnimationManager.Instance.PlayAnimation("miss", null, target.gameObject));
             yield break;
-        }
-        else
-        {
-            //Zaktualizowanie przewagi
-            InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, 1);
         }
 
         //W przypadku manualnego ataku sprawdzamy, czy postać powinna zakończyć turę
@@ -763,10 +795,11 @@ public class CombatManager : MonoBehaviour
                 if (targetStats.TempHealth < 0)
                 {
                     Debug.Log($"Punkty żywotności {targetStats.Name}: <color=red>{targetStats.TempHealth}</color><color=#4dd2ff>/{targetStats.MaxHealth}</color>");
+                    target.Prone = true; // Powalenie
                 }
                 else
                 {
-                    Debug.Log($"Punkty żywotności {targetStats.Name}: <color=red>{targetStats.TempHealth}</color><color=#4dd2ff>/{targetStats.MaxHealth}</color>");
+                    Debug.Log($"Punkty żywotności {targetStats.Name}: <color=#4dd2ff>{targetStats.TempHealth}/{targetStats.MaxHealth}</color>");
                 }
                 target.DisplayUnitHealthPoints();
             }
@@ -778,7 +811,10 @@ public class CombatManager : MonoBehaviour
             if ((targetStats.TempHealth < 0 && GameManager.IsHealthPointsHidingMode) || (targetStats.TempHealth < 0 && targetStats.gameObject.CompareTag("EnemyUnit") && GameManager.IsStatsHidingMode))
             {
                 Debug.Log($"Żywotność {targetStats.Name} spadła poniżej zera i wynosi <color=red>{targetStats.TempHealth}</color>.");
+                target.Prone = true; // Powalenie
             }
+
+            target.LastAttackerStats = attackerStats;
 
             StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, target.gameObject, finalDamage));
         }
@@ -787,7 +823,13 @@ public class CombatManager : MonoBehaviour
             Debug.Log("Atak nie przebił pancerza i nie zadał obrażeń.");
             StartCoroutine(AnimationManager.Instance.PlayAnimation("parry", null, target.gameObject));
         }
-    }
+
+        // Zaktualizowanie osiągnięć
+        attackerStats.TotalDamageDealt += finalDamage;
+        if (attackerStats.HighestDamageDealt < finalDamage) attackerStats.HighestDamageDealt = finalDamage;
+        targetStats.TotalDamageTaken += finalDamage;
+        if (targetStats.HighestDamageTaken < finalDamage) targetStats.HighestDamageTaken = finalDamage;
+}
 
     private int[] CalculateSuccessLevel(Weapon weapon, int rollResult, int skillValue, bool isAttack, int modifier = 0)
     {
@@ -834,14 +876,6 @@ public class CombatManager : MonoBehaviour
         }
 
         StartCoroutine(AnimationManager.Instance.PlayAnimation("kill", attackerStats.gameObject, target));
-
-        //Aktualizuje osiągnięcia
-        attackerStats.OpponentsKilled++;
-        if (attackerStats.StrongestDefeatedOpponentOverall < targetStats.Overall)
-        {
-            attackerStats.StrongestDefeatedOpponentOverall = targetStats.Overall;
-            attackerStats.StrongestDefeatedOpponent = targetStats.Name;
-        }
 
         // Usuwanie jednostki
         UnitsManager.Instance.DestroyUnit(target);
@@ -931,6 +965,9 @@ public class CombatManager : MonoBehaviour
 
         Stats attackerStats = attackerUnit.GetComponent<Stats>();
         Stats targetStats = targetUnit.GetComponent<Stats>();
+
+        // Modyfikator za celowanie
+        attackModifier += attackerUnit.AimingBonus;
 
         // Modyfikator za rozmiar
         if (attackerStats.Size < targetStats.Size) attackModifier += 10;
@@ -1396,10 +1433,12 @@ public class CombatManager : MonoBehaviour
                 }
 
                 // Przeciwstawny test siły – osobno dla obu jednostek
-                int attackerSuccessValue = UnitsManager.Instance.TestSkill("S", attackerStats, null, 0, attackerRoll);
-                int targetSuccessValue = UnitsManager.Instance.TestSkill("S", targetStats, null, 0, targetRoll);
-                int attackerSuccessLevel = attackerSuccessValue / 10;
-                int targetSuccessLevel = targetSuccessValue / 10;
+                int[] attackerTest = UnitsManager.Instance.TestSkill("S", attackerStats, null, 0, attackerRoll);
+                int[] targetTest = UnitsManager.Instance.TestSkill("S", targetStats, null, 0, targetRoll);
+                int attackerSuccessValue = attackerTest[0];
+                int targetSuccessValue = targetTest[0];
+                int attackerSuccessLevel = attackerTest[1];
+                int targetSuccessLevel = targetTest[1];
 
                 if (attackerSuccessLevel > targetSuccessLevel)
                 {
@@ -1476,11 +1515,14 @@ public class CombatManager : MonoBehaviour
             }
 
             // Wywołanie testów siły – przekazujemy wynik rzutu tylko dla jednostki, która była manualna
-            int targetSuccessValue = UnitsManager.Instance.TestSkill("S", entangledUnitStats, null, 0, targetRoll);
-            int attackerSuccessValue = UnitsManager.Instance.TestSkill("S", entanglingUnitStats, null, 0, attackerRoll);
+            int[] targetTest = UnitsManager.Instance.TestSkill("S", entangledUnitStats, null, 0, targetRoll);
+            int[] attackerTest = UnitsManager.Instance.TestSkill("S", entanglingUnitStats, null, 0, attackerRoll);
 
-            int targetSuccessLevel = targetSuccessValue / 10;
-            int attackerSuccessLevel = attackerSuccessValue / 10;
+            int targetSuccessValue = targetTest[0];
+            int attackerSuccessValue = attackerTest[0];
+
+            int targetSuccessLevel = targetTest[1];
+            int attackerSuccessLevel = attackerTest[1];
 
             if (targetSuccessValue > attackerSuccessValue)
             {
@@ -1677,7 +1719,7 @@ public class CombatManager : MonoBehaviour
             }
 
             //Test Broni Zasięgowej danej kategorii
-            int successLevel = UnitsManager.Instance.TestSkill("US", stats, rangedSkill.ToString(), 0, reloadRollResult) / 10;
+            int successLevel = UnitsManager.Instance.TestSkill("US", stats, rangedSkill.ToString(), 0, reloadRollResult)[1];
             if(successLevel > 0)
             {
                 weapon.ReloadLeft = Mathf.Max(0, weapon.ReloadLeft - successLevel);
@@ -1726,6 +1768,60 @@ public class CombatManager : MonoBehaviour
         InventoryManager.Instance.DisplayReloadTime();
     }
     #endregion
+
+    #region Aiming
+    public void SetAim()
+    {
+        if (Unit.SelectedUnit == null) return;
+
+        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
+
+        //Sprawdza, czy postać już celuje i chce przestać, czy chce dopiero przycelować
+        if (unit.AimingBonus != 0)
+        {
+            unit.AimingBonus = 0;
+        }
+        else
+        {
+            // Sprawdzamy, czy atakujący może wykonać akcję
+            if (!unit.CanDoAction)
+            {
+                Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
+                return;
+            }
+
+            //Wykonuje akcję
+            RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
+
+            Weapon attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(unit.gameObject);
+            if (attackerWeapon == null)
+            {
+                attackerWeapon = unit.GetComponent<Weapon>();
+            }
+
+            //Dodaje modyfikator do trafienia uzwględniając strzał mierzony w przypadku ataków dystansowych
+            unit.AimingBonus += 20;
+
+            Debug.Log($"{unit.GetComponent<Stats>().Name} przycelowuje.");
+
+            StartCoroutine(AnimationManager.Instance.PlayAnimation("aim", Unit.SelectedUnit));
+        }
+
+        UpdateAimButtonColor();
+    }
+    public void UpdateAimButtonColor()
+    {
+        if (Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Unit>().AimingBonus != 0)
+        {
+            _aimButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.green;
+        }
+        else
+        {
+            _aimButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.white;
+        }
+    }
+    #endregion
+
 
     #region Opportunity attack
     // Sprawdza czy ruch powoduje atak okazyjny
@@ -1790,4 +1886,5 @@ public class CombatManager : MonoBehaviour
         return units;
     }
     #endregion
+
 }

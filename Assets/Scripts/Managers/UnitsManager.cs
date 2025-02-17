@@ -414,16 +414,19 @@ public class UnitsManager : MonoBehaviour
             Debug.Log("Wybierz jednostkę, którą chcesz usunąć. Możesz również zaznaczyć obszar, wtedy zostaną usunięte wszystkie znajdujące się w nim jednostki.");
         }
     }
-    public void DestroyUnit(GameObject unit = null)
+    public void DestroyUnit(GameObject unitObject = null)
     {
-        if(unit == null)
+        if(unitObject == null)
         {
-            unit = Unit.SelectedUnit;
+            unitObject = Unit.SelectedUnit;
         }
-        else if (unit == Unit.SelectedUnit)
+        else if (unitObject == Unit.SelectedUnit)
         {
-            unit.GetComponent<Unit>().SelectUnit();
+            unitObject.GetComponent<Unit>().SelectUnit();
         }
+
+        Unit unit = unitObject.GetComponent<Unit>();
+        Stats stats = unit.Stats;
 
         //Usunięcie jednostki z kolejki inicjatywy
         InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(unit.GetComponent<Unit>());
@@ -448,7 +451,18 @@ public class UnitsManager : MonoBehaviour
         //Resetuje Tile, żeby nie było uznawane jako zajęte
         GridManager.Instance.ResetTileOccupancy(unit.transform.position);
 
-        Destroy(unit);
+        // Aktualizuje osiągnięcia
+        if (unit.LastAttackerStats != null)
+        {
+            unit.LastAttackerStats.OpponentsKilled++;
+            if (unit.LastAttackerStats.StrongestDefeatedOpponentOverall < stats.Overall)
+            {
+                unit.LastAttackerStats.StrongestDefeatedOpponentOverall = stats.Overall;
+                unit.LastAttackerStats.StrongestDefeatedOpponent = stats.Name;
+            }
+        }
+
+        Destroy(unitObject);
 
         //Resetuje kolor przycisku usuwania jednostek
         _removeUnitButton.GetComponent<UnityEngine.UI.Image>().color = Color.white;
@@ -636,6 +650,9 @@ public class UnitsManager : MonoBehaviour
             //Aktualizuje aktualną żywotność
             stats.TempHealth = stats.MaxHealth;
 
+            // Aktualizuje udźwig
+            stats.MaxEncumbrance = (stats.S + stats.Wt) / 10;
+
             //Ustala inicjatywę i aktualizuje kolejkę inicjatywy
             stats.Initiative = stats.I + UnityEngine.Random.Range(1, 11);
             InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(unit.GetComponent<Unit>());
@@ -789,6 +806,10 @@ public class UnitsManager : MonoBehaviour
                 unit.GetComponent<Stats>().TempHealth = unit.GetComponent<Stats>().MaxHealth;
                 unit.GetComponent<Unit>().DisplayUnitHealthPoints();
             }
+            else if(attributeName == "S" || attributeName == "Wt")
+            {
+                unit.GetComponent<Stats>().MaxEncumbrance = (unit.GetComponent<Stats>().S + unit.GetComponent<Stats>().Wt) / 10;
+            }
             else if(attributeName == "Name")
             {
                 unit.GetComponent<Unit>().DisplayUnitName();
@@ -803,7 +824,7 @@ public class UnitsManager : MonoBehaviour
             int newOverall = unit.GetComponent<Stats>().CalculateOverall();
             int difference = newOverall - unit.GetComponent<Stats>().Overall;
 
-            InitiativeQueueManager.Instance.CalculateDominance(difference, 0, unit.tag);
+            InitiativeQueueManager.Instance.CalculateDominance();
         }
     }
     #endregion
@@ -1076,24 +1097,43 @@ public class UnitsManager : MonoBehaviour
 
         string resultString;
 
-        // Szczęście lub Pech
+        //// Szczęście lub Pech
         string luckOrMisfortune = "";
-        if (rollResult <= 5)
+        //if (rollResult <= 5)
+        //{
+        //    luckOrMisfortune = ". <color=green>SZCZĘŚCIE!</color>";
+
+        //    //Aktualizuje osiągnięcia
+        //    stats.FortunateEvents ++;
+        //}
+        //else if (rollResult >= 96)
+        //{
+        //    luckOrMisfortune = ". <color=red>PECH!</color>";
+
+        //    //Aktualizuje osiągnięcia
+        //    stats.UnfortunateEvents ++;
+        //}
+
+        //Pech i szczęście
+        if (IsDoubleDigit(rollResult))
         {
-            luckOrMisfortune = ". <color=green>SZCZĘŚCIE!</color>";
+            if (successLevel >= 0)
+            {
+                luckOrMisfortune = ". <color=green>SZCZĘŚCIE!</color>";
 
-            //Aktualizuje osiągnięcia
-            stats.FortunateEvents ++;
+                //Aktualizuje osiągnięcia
+                stats.FortunateEvents++;
+            }
+            else
+            {
+                luckOrMisfortune = ". <color=red>PECH!</color>";
+
+                //Aktualizuje osiągnięcia
+                stats.UnfortunateEvents++;
+            }
         }
-        else if (rollResult >= 96)
-        {
-            luckOrMisfortune = ". <color=red>PECH!</color>";
 
-            //Aktualizuje osiągnięcia
-            stats.UnfortunateEvents ++;
-        }
-
-        if((rollResult <= value + modifier || rollResult <= 5) && rollResult < 96)
+        if ((rollResult <= value + modifier || rollResult <= 5) && rollResult < 96)
         {
             resultString = "<color=green>Test zdany.</color> Poziomy sukcesu:";
         }
@@ -1105,7 +1145,7 @@ public class UnitsManager : MonoBehaviour
         Debug.Log($"{stats.Name} wykonał test {attributeName}. Wynik rzutu: {rollResult} Wartość cechy: {value}{luckOrMisfortune} Modyfikator: {modifier}. {resultString} {successLevel}");
     }
 
-    public int TestSkill(string attributeName, Stats stats, string skillName = null, int modifier = 0, int rollResult = 0)
+    public int[] TestSkill(string attributeName, Stats stats, string skillName = null, int modifier = 0, int rollResult = 0)
     {
         if(rollResult == 0)
         {
@@ -1141,6 +1181,32 @@ public class UnitsManager : MonoBehaviour
         if (attributeField != null)
         {
             attributeValue = (int)attributeField.GetValue(stats);
+
+            // Modyfikator za przeciążenie
+            if (attributeName == "Zw")
+            {
+                int currentEncumbrance = InventoryManager.Instance.CalculateEncumbrance(stats);
+
+                Debug.Log($"max obciazenie {stats.MaxEncumbrance}, currentEncumbrance {currentEncumbrance}");
+
+                int encumbrancePenalty = 0;
+                if (stats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < stats.MaxEncumbrance * 2)
+                {
+                    encumbrancePenalty = 10;
+                }
+                else if (stats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < stats.MaxEncumbrance * 3)
+                {
+                    encumbrancePenalty = 20;
+                }
+
+                // Sprawdzamy, czy Zw nie spadnie poniżej 10
+                if (attributeValue - encumbrancePenalty < 10)
+                {
+                    encumbrancePenalty = attributeValue - 10;
+                }
+
+                modifier -= encumbrancePenalty;
+            }
         }
 
         // Modyfikator za wyczerpanie
@@ -1167,22 +1233,42 @@ public class UnitsManager : MonoBehaviour
         }
 
         //Pech i szczęście
-        if (rollResult >= 96)
+        if (IsDoubleDigit(rollResult))
         {
-            Debug.Log($"{stats.Name} wyrzucił <color=red>PECHA</color>!");
+            if (successValue >= 0)
+            {
+                Debug.Log($"{stats.Name} wyrzucił <color=green>FUKSA</color>!");
 
-            //Aktualizuje osiągnięcia
-            stats.UnfortunateEvents++;
+                //Aktualizuje osiągnięcia
+                stats.FortunateEvents++;
+            }
+            else
+            {
+                Debug.Log($"{stats.Name} wyrzucił <color=red>PECHA</color>!");
+
+                //Aktualizuje osiągnięcia
+                stats.UnfortunateEvents++;
+            }
         }
-        else if (rollResult <= 5)
+
+        return new int[] { successValue, successLevel };
+    }
+
+    // Funkcja sprawdzająca, czy liczba ma dwie identyczne cyfry
+    private bool IsDoubleDigit(int number)
+    {
+        // Jeśli wynik to dokładnie 100, również spełnia warunek
+        if (number == 100) return true;
+
+        // Sprawdzenie dla liczb dwucyfrowych
+        if (number >= 10 && number <= 99)
         {
-            Debug.Log($"{stats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
-
-            //Aktualizuje osiągnięcia
-            stats.FortunateEvents++;
+            int tens = number / 10;  // Cyfra dziesiątek
+            int ones = number % 10; // Cyfra jedności
+            return tens == ones;    // Sprawdzenie, czy cyfry są takie same
         }
 
-        return successValue;
+        return false;
     }
     #endregion
 

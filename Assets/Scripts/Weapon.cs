@@ -27,7 +27,6 @@ public enum RangedCategory
     Throwing
 }
 
-
 public class Weapon : MonoBehaviour
 {
     public int Id;
