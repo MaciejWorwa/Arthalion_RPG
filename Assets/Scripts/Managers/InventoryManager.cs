@@ -9,6 +9,7 @@ using UnityEngine.UI;
 using UnityEngine.UIElements;
 using UnityEngine.Windows;
 using UnityEngine.TextCore.Text;
+using Unity.VisualScripting;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -76,9 +77,17 @@ public class InventoryManager : MonoBehaviour
                 && !UnityEngine.Input.GetKey(KeyCode.LeftCommand) 
                 && !UnityEngine.Input.GetKey(KeyCode.RightCommand))
         {
-            GameManager.Instance.HideActivePanels();
-            GameManager.Instance.ShowPanel(_inventoryPanel);
+            OpenInventory();
         }
+    }
+
+    public void OpenInventory()
+    {
+        GameManager.Instance.HideActivePanels();
+        GameManager.Instance.ShowPanel(_inventoryPanel);
+        //Odświeża listę ekwipunku
+        InventoryScrollViewContent.GetComponent<CustomDropdown>().SelectedIndex = 0;
+        UpdateInventoryDropdown(Unit.SelectedUnit.GetComponent<Inventory>().AllWeapons, true);
     }
 
     public void HideInventory()
@@ -361,7 +370,7 @@ public class InventoryManager : MonoBehaviour
         //Aktualizuje kolor broni w ekwipunku na aktywny
         CheckForEquippedWeapons();
 
-        if(!SaveAndLoadManager.Instance.IsLoading)
+        if (!SaveAndLoadManager.Instance.IsLoading)
         {
             Debug.Log($"{unit.GetComponent<Stats>().Name} dobył {selectedWeapon.Name}.");
 
@@ -542,8 +551,6 @@ public class InventoryManager : MonoBehaviour
             totalEncumbrance += encumbrance;
         }
 
-        Debug.Log($"niesione obciążenie przez {stats.Name} to {totalEncumbrance}");
-
         string color = "<color=white>";
         if (totalEncumbrance > stats.MaxEncumbrance) color = "<color=red>";
         _encumbranceDisplay.text = $"{color}{totalEncumbrance.ToString()}</color> / {stats.MaxEncumbrance}";
@@ -610,6 +617,19 @@ public class InventoryManager : MonoBehaviour
         else if (field.FieldType == typeof(string) && textInput.GetComponent<TMP_Dropdown>() != null)
         {
             string value = textInput.GetComponent<TMP_Dropdown>().options[textInput.GetComponent<TMP_Dropdown>().value].text;
+
+            if (attributeName == "AmmoType")
+            {
+                selectedWeapon = ChooseWeaponToAttack(unit);
+
+                if (!selectedWeapon.Type.Contains("ranged") || selectedWeapon.Category == "entangling" || selectedWeapon.Category == "throwing")
+                {
+                    Debug.Log("Aktualnie dobyta broń nie korzysta z amunicji.");
+                    value = "Brak";
+                    textInput.GetComponent<TMP_Dropdown>().value = 0;
+                }
+            }
+
             field.SetValue(selectedWeapon, value);
         }
         else if (field.FieldType == typeof(string))
@@ -659,7 +679,6 @@ public class InventoryManager : MonoBehaviour
             // Pobiera pole ze statystyk postaci o nazwie takiej samej jak nazwa textInputa (z wyłączeniem słowa "input")
             string attributeName = inputField.name.Replace("_input", "");
             FieldInfo field = selectedWeapon.GetType().GetField(attributeName);
-
             if (field == null) continue;
 
             // Jeśli znajdzie takie pole, to zmienia wartość wyświetlanego tekstu na wartość tej cechy
@@ -694,13 +713,25 @@ public class InventoryManager : MonoBehaviour
                 inputField.GetComponent<UnityEngine.UI.Toggle>().isOn = value;
             }
             else if (field.FieldType == typeof(string) && inputField.GetComponent<TMP_Dropdown>() != null) // to działa dla cech opisywanych dropdownem
-            {
+            {   
+                if(attributeName == "AmmoType")
+                {
+                    selectedWeapon = ChooseWeaponToAttack(unit);
+                }
+
                 string value = (string)field.GetValue(selectedWeapon);
                 TMP_Dropdown dropdown = inputField.GetComponent<TMP_Dropdown>();
 
                 if (string.IsNullOrEmpty(value)) // Sprawdza, czy wartość jest pusta
                 {
-                    dropdown.value = 1; // Ustawia na zwykłą jakość (index 1)
+                    if(attributeName == "Quality")
+                    {
+                        dropdown.value = 1; // Ustawia na zwykłą jakość (index 1)
+                    }
+                    else if(attributeName == "AmmoType")
+                    {
+                        dropdown.value = 0; // Ustawia typ amunicji na "Brak"
+                    }
                 }
                 else
                 {
@@ -844,6 +875,8 @@ public class InventoryManager : MonoBehaviour
                 InventoryScrollViewContent.GetComponent<CustomDropdown>().ResetColor(i + 1);
             }
         }
+
+        LoadWeaponAttributes();
     }
     #endregion
 
@@ -935,6 +968,39 @@ public class InventoryManager : MonoBehaviour
             _reloadBar.gameObject.SetActive(false);
         }
     }
+
+    #region Ammo managing
+    public Weapon ApplyAmmoModifiers(Weapon weapon)
+    {
+        if (!Ammo.Ammos.TryGetValue(weapon.AmmoType, out Ammo effect))
+        {
+            Debug.LogWarning($"Nie znaleziono efektów dla amunicji: {weapon.AmmoType}");
+            return weapon; // Jeśli brak efektów, zwracamy oryginalną broń
+        }
+
+        // Tworzymy kopię broni, aby nie modyfikować oryginału
+        Weapon modifiedWeapon = Instantiate(weapon);
+
+        // Nakładamy efekty amunicji na kopię broni
+        if (effect.S.HasValue) modifiedWeapon.S += effect.S.Value;
+        if (effect.AttackRange.HasValue) modifiedWeapon.AttackRange += effect.AttackRange.Value;
+        if (effect.ReloadTime.HasValue) modifiedWeapon.ReloadTime += effect.ReloadTime.Value;
+        if (effect.Accurate.HasValue) modifiedWeapon.Accurate = effect.Accurate.Value;
+        if (effect.Penetrating.HasValue) modifiedWeapon.Penetrating = effect.Penetrating.Value;
+        if (effect.Impale.HasValue) modifiedWeapon.Impale = effect.Impale.Value;
+        if (effect.Slash.HasValue) modifiedWeapon.Slash = effect.Slash.Value;
+        if (effect.Undamaging.HasValue) modifiedWeapon.Undamaging = effect.Undamaging.Value;
+        if (effect.Imprecise.HasValue) modifiedWeapon.Imprecise = effect.Imprecise.Value;
+        if (effect.Dangerous.HasValue) modifiedWeapon.Dangerous = effect.Dangerous.Value;
+        if (effect.Pummel.HasValue) modifiedWeapon.Pummel = effect.Pummel.Value;
+        if (effect.Impact.HasValue) modifiedWeapon.Impact = effect.Impact.Value;
+        if (effect.Spread.HasValue) modifiedWeapon.Spread = effect.Spread.Value;
+        if (effect.Precise.HasValue) modifiedWeapon.Precise = effect.Precise.Value;
+        if (effect.Blast.HasValue) modifiedWeapon.Blast = effect.Blast.Value;
+
+        return modifiedWeapon; // Zwracamy tymczasowy obiekt broni
+    }
+    #endregion
 
     #region Money managing
     public void UpdateMoneyAmount(TMP_InputField inputField)

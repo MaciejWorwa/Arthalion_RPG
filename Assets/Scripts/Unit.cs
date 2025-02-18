@@ -8,6 +8,7 @@ using System.IO;
 using static UnityEngine.UI.CanvasScaler;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using static UnityEngine.GraphicsBuffer;
+using UnityEditor.Experimental.GraphView;
 
 public class Unit : MonoBehaviour
 {
@@ -101,16 +102,30 @@ public class Unit : MonoBehaviour
                 return;
             }
 
-            if(Unconscious && Unit.SelectedUnit != null) // Gdy jednostka jest nieprzytomna to atak automatycznie oznacza śmierć
+            if(Unconscious && SelectedUnit != null) // Gdy jednostka jest nieprzytomna to atak automatycznie oznacza śmierć
             {
-                LastAttackerStats = Unit.SelectedUnit.GetComponent<Stats>();
-                CombatManager.Instance.HandleDeath(Stats, gameObject, Unit.SelectedUnit.GetComponent<Stats>());
+                // Sprawdzamy, czy atakujący może wykonać akcję
+                if (!SelectedUnit.GetComponent<Unit>().CanDoAction)
+                {
+                    Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
+                    return;
+                }
+
+                RoundsManager.Instance.DoAction(SelectedUnit.GetComponent<Unit>());
+                Debug.Log($"{SelectedUnit.GetComponent<Stats>().Name} atakuje {Stats.Name} w stanie nieprzytomności. <color=red>{Stats.Name} ginie.</color>");
+
+                LastAttackerStats = SelectedUnit.GetComponent<Stats>();
+
+                if (GameManager.IsAutoKillMode && !(GameManager.IsStatsHidingMode && Stats.gameObject.CompareTag("PlayerUnit")))
+                {
+                    CombatManager.Instance.HandleDeath(Stats, gameObject, SelectedUnit.GetComponent<Stats>());
+                }
             }
-            else if(CombatManager.Instance.AttackTypes["Grappling"])
+            else if(CombatManager.Instance.AttackTypes["Grappling"]) // Zapasy
             {
                 CombatManager.Instance.Grappling(SelectedUnit.GetComponent<Unit>(), this);
             }
-            else
+            else // Atak
             {
                 CombatManager.Instance.Attack(SelectedUnit.GetComponent<Unit>(), this, false);
             }

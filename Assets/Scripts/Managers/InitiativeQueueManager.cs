@@ -243,17 +243,27 @@ public class InitiativeQueueManager : MonoBehaviour
     {
         if (unitTag == "PlayerUnit")
         {
-            PlayersAdvantage = Mathf.Max(0, PlayersAdvantage + value);
+            if (PlayersAdvantage == 0 && value < 0) return; // Jeśli przewaga wynosi 0 i ma zostać zmniejszona, kończymy funkcję
+            PlayersAdvantage += value;
             _playersAdvantageInput.text = PlayersAdvantage.ToString();
         }
         else if (unitTag == "EnemyUnit")
         {
-            EnemiesAdvantage = Mathf.Max(0, EnemiesAdvantage + value);
+            if (EnemiesAdvantage == 0 && value < 0) return; // Jeśli przewaga wynosi 0 i ma zostać zmniejszona, kończymy funkcję
+            EnemiesAdvantage += value;
             _enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
         }
 
         string group = unitTag == "PlayerUnit" ? "sojuszników" : "przeciwników";
-        Debug.Log($"Przewaga {group} została zwiększona o <color=#4dd2ff>{value}</color>.");
+
+        if (value > 0)
+        {
+            Debug.Log($"Przewaga {group} została zwiększona o <color=#4dd2ff>{value}</color>.");
+        }
+        else if (value < 0)
+        {
+            Debug.Log($"Przewaga {group} została zmniejszona o <color=#ff4d4d>{Mathf.Abs(value)}</color>.");
+        }
     }
 
     public void SetAdvantageByInput(TMP_InputField inputField)

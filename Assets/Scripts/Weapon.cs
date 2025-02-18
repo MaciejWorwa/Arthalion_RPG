@@ -57,6 +57,9 @@ public class Weapon : MonoBehaviour
     [Header("Zasięg")]
     public float AttackRange;
 
+    [Header("Typ amunicji")]
+    public string AmmoType = "Brak"; // Rodzaj amunicji
+
     [Header("Czas przeładowania")] // Tutaj są uwzględnione cechy Repeater (wielostrzał) i Reload (przeładowanie)
     public int ReloadTime;
     public int ReloadLeft;
@@ -120,6 +123,7 @@ public class Weapon : MonoBehaviour
         Quality = "Zwykła";
         S = 0;
         AttackRange = 1.5f;
+        AmmoType = "Brak";
         ReloadTime = 0;
         ReloadLeft = 0;
         AmmoLeft = 0;

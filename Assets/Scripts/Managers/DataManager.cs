@@ -629,11 +629,13 @@ public class StatsData
     public int SW;
     public int Ogd;
     public int Sz;
+
     public int TempSz;
     public int MaxHealth;
     public int TempHealth;
     public int CriticalWounds;
     public int CorruptionPoints; // Punkty Zepsucia
+    public int SinPoints; // Punkty Grzechu (istotne dla kapłanów)
     public int PP;
     public int PS;
     public int Resolve; // Punkty Determinacji
@@ -641,10 +643,12 @@ public class StatsData
     public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
     public int Initiative;
     public int MaxEncumbrance; // Maksymalny udźwig
+
     public int Armor_head;
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
+
     public bool Ambidextrous; // Oburęczność
     public bool ArmouredCasting; // Pancerz Wiary
     public bool DaemonicAura; // Demoniczna aura
@@ -677,6 +681,7 @@ public class StatsData
     public int Endurance; // Odporność
     public List<Pair> MeleeSerialized = new List<Pair>();
     public List<Pair> RangedSerialized = new List<Pair>();
+
     public int HighestDamageDealt; // Największe zadane obrażenia
     public int TotalDamageDealt; // Suma zadanych obrażeń
     public int HighestDamageTaken; // Największe otrzymane obrażenia
@@ -744,6 +749,9 @@ public class WeaponData
     public int S;
     public int ReloadTime;
     public int ReloadLeft;
+    public string AmmoType; // Rodzaj amunicji
+    public int AmmoMax; // Maksymalna ilość amunicji w magazynku broni ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int AmmoLeft; // Aktualna ilość amunicji w magazynku broni ---------------------- (MECHANIKA DO WPROWADZENIA)
 
     // NOWE PONIŻEJ
     public bool Accurate; // Celny (+10 do trafienia)

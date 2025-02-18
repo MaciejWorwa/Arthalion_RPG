@@ -56,6 +56,7 @@ public class Stats : MonoBehaviour
     public int TempHealth;
     public int CriticalWounds; // Ilość Ran Krytycznych
     public int CorruptionPoints; // Punkty Zepsucia
+    public int SinPoints; // Punkty Grzechu (istotne dla kapłanów)
     public int PS;
     public int PP;
     public int Resolve; // Punkty Determinacji

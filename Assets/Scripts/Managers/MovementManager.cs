@@ -334,7 +334,6 @@ public class MovementManager : MonoBehaviour
             modifier = 1;
         }
 
-        Debug.Log($"max obciazenie {stats.MaxEncumbrance}");
         int currentEncumbrance = InventoryManager.Instance.CalculateEncumbrance(stats);
 
         if (stats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < stats.MaxEncumbrance * 2)

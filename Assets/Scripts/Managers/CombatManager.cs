@@ -306,6 +306,20 @@ public class CombatManager : MonoBehaviour
         {
             attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(attacker.gameObject);
             targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
+
+            // Uwzględniamy typ amunicji
+            if(attackerWeapon.Type.Contains("ranged") && attackerWeapon.Category != "entangling" && attackerWeapon.Category != "throwing")
+            {
+                if (string.IsNullOrEmpty(attackerWeapon.AmmoType) || attackerWeapon.AmmoType == "Brak")
+                {
+                    Debug.Log("Do ataku bronią dystansową niezbędne jest wybranie typu amunicji. Możesz to zrobić w panelu ekwipunku.");
+                    yield break;
+                }
+                else
+                {
+                    attackerWeapon = InventoryManager.Instance.ApplyAmmoModifiers(attackerWeapon); // Aktualizujemy broń o dodatkowe cechy amunicji
+                }
+            }
         }
 
         // Ustalamy umiejętności, które będą testowane w zależności od kategorii broni
@@ -332,7 +346,7 @@ public class CombatManager : MonoBehaviour
         }
 
         bool isOutOfRange = attackDistance > effectiveAttackRange;
-        bool isRangedAndTooFar = attackerWeapon.Type.Contains("ranged") && attackDistance > effectiveAttackRange * 3 && attackerWeapon.Category != "entangling";
+        bool isRangedAndTooFar = attackerWeapon.Type.Contains("ranged") && (attackDistance > effectiveAttackRange * 3 || (attackDistance > effectiveAttackRange && attackerWeapon.Category == "entangling"));
 
         if (isOutOfRange && (!attackerWeapon.Type.Contains("ranged") || isRangedAndTooFar))
         {
@@ -455,6 +469,7 @@ public class CombatManager : MonoBehaviour
             if (attackerSuccessValue >= 0)
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
+                CriticalWoundRoll(attackerStats, targetStats); ;
                 attackerStats.FortunateEvents++;
             }
             else if (IsDoubleDigit(rollOnAttack) || (attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
@@ -475,6 +490,7 @@ public class CombatManager : MonoBehaviour
             if (attackerSuccessValue >= 0)
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
+                CriticalWoundRoll(attackerStats, targetStats);
                 attackerStats.FortunateEvents++;
             }
             else
@@ -645,9 +661,6 @@ public class CombatManager : MonoBehaviour
                         string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
                         Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.Dodge + targetStats.Zw},{dodgeModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>");
                     }
-
-                    // Resetujemy wybór reakcji obronnej
-                    _parryOrDodge = "";
                 }
                 else
                 {
@@ -656,6 +669,8 @@ public class CombatManager : MonoBehaviour
                     if (parryValue >= dodgeValue)
                     {
                         // Parowanie
+                        _parryOrDodge = "parry";
+
                         int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, parryValue, false);
                         defenceSuccessValue = defenceResults[0];
                         defenceSuccessLevel = defenceResults[1];
@@ -666,6 +681,8 @@ public class CombatManager : MonoBehaviour
                     else
                     {
                         // Unik
+                        _parryOrDodge = "dodge";
+
                         int[] defenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, dodgeValue, false);
                         defenceSuccessValue = defenceResults[0];
                         defenceSuccessLevel = defenceResults[1];
@@ -682,6 +699,12 @@ public class CombatManager : MonoBehaviour
                 if (defenceSuccessValue >= 0)
                 {
                     Debug.Log($"{targetStats.Name} wyrzucił <color=green>FUKSA</color>!");
+
+                    if (_parryOrDodge == "parry")
+                    {
+                        CriticalWoundRoll(targetStats, attackerStats);
+                    }
+
                     targetStats.FortunateEvents++;
                 }
                 else
@@ -690,6 +713,9 @@ public class CombatManager : MonoBehaviour
                     targetStats.UnfortunateEvents++;
                 }
             }
+
+            // Resetujemy wybór reakcji obronnej
+            _parryOrDodge = "";
         }
 
         //Resetujemy czas przeładowania broni celu ataku, bo ładowanie zostało zakłócone przez atak, przed którym musiał się bronić.
@@ -751,9 +777,14 @@ public class CombatManager : MonoBehaviour
         // 15) Animacja ataku i ewentualnie sprawdzenie śmierci
         StartCoroutine(AnimationManager.Instance.PlayAnimation("attack", attacker.gameObject, target.gameObject));
 
-        if (targetStats.TempHealth < 0 && GameManager.IsAutoKillMode)
+        if (targetStats.TempHealth < 0)
         {
-            HandleDeath(targetStats, target.gameObject, attackerStats);
+            CriticalWoundRoll(attackerStats, targetStats);
+
+            if(GameManager.IsAutoKillMode)
+            {
+                HandleDeath(targetStats, target.gameObject, attackerStats);
+            }
         }
     }
 
@@ -865,6 +896,43 @@ public class CombatManager : MonoBehaviour
         }
 
         return new int[] { successValue, successLevel };
+    }
+
+    private void CriticalWoundRoll(Stats attackerStats, Stats targetStats)
+    {
+        //TA METODA JEST DO ROZBUDOWANIA. NA RAZIE JEST ZROBIONA W BARDZO UPROSZCZONY SPOSÓB.
+
+        int rollResult = UnityEngine.Random.Range(1, 101);
+        int criticalWounds = 0;
+
+        switch (rollResult)
+        {
+            case int n when (n >= 1 && n <= 33):
+                Debug.Log($"{targetStats.Name} otrzymuje trafienie krytyczne o wartości 1.");
+                criticalWounds = 1;
+                break;
+            case int n when (n >= 34 && n <= 66):
+                Debug.Log($"{targetStats.Name} otrzymuje trafienie krytyczne o wartości 2.");
+                criticalWounds = 2;
+                break;
+            case int n when (n >= 67 && n <= 100):
+                Debug.Log($"{targetStats.Name} otrzymuje trafienie krytyczne o wartości 3.");
+                criticalWounds = 3;
+                break;
+        }
+
+        targetStats.CriticalWounds += criticalWounds;
+        UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
+
+        //Śmierć
+        if(targetStats.CriticalWounds > targetStats.Wt / 10)
+        {
+            Debug.Log($"Ilość ran krytycznych {targetStats.Name} przekroczyła bonus z wytrzymałości. <color=red>Jednostka umiera.</color>");
+            if (GameManager.IsAutoKillMode)
+            {
+                HandleDeath(targetStats, targetStats.gameObject, attackerStats);
+            }
+        }
     }
 
     public void HandleDeath(Stats targetStats, GameObject target, Stats attackerStats)
@@ -980,6 +1048,8 @@ public class CombatManager : MonoBehaviour
         // Modyfikator za broń z cechą "Celny"
         if (attackerWeapon.Accurate && _isTrainedWeaponCategory) attackModifier += 10;
 
+        Debug.Log(attackModifier);
+
         // Utrudnienie za atak słabszą ręką
         if (attackerUnit.GetComponent<Inventory>().EquippedWeapons[0] == null || attackerWeapon.Name != attackerUnit.GetComponent<Inventory>().EquippedWeapons[0].Name)
         {
@@ -988,6 +1058,8 @@ public class CombatManager : MonoBehaviour
                 attackModifier -= 20;
             }
         }
+
+        Debug.Log(attackModifier);
 
         // Modyfikatory za jakość broni
         if (attackerWeapon.Quality == "Kiepska") attackModifier -= 5;
@@ -1007,9 +1079,13 @@ public class CombatManager : MonoBehaviour
             attackModifier += targetUnit.Entangled == 0 ? 10 : 20;
         }
 
+        Debug.Log(attackModifier);
+
         // Modyfikator za wyczerpanie
         if (attackerUnit.Fatiqued > 0) attackModifier -= attackerUnit.Fatiqued * 10;
         else if(attackerUnit.Poison > 0) attackModifier -= 10;
+
+        Debug.Log(attackModifier);
 
         if (attackerWeapon.Type.Contains("ranged"))
         {
@@ -1018,17 +1094,22 @@ public class CombatManager : MonoBehaviour
             {
                 _ when attackDistance <= attackerWeapon.AttackRange / 10 => 40, // Bezpośredni dystans
                 _ when attackDistance <= attackerWeapon.AttackRange / 2 => 20,  // Bliski dystans
+                _ when attackDistance <= attackerWeapon.AttackRange => 0,      // Średni dystans
                 _ when attackDistance <= attackerWeapon.AttackRange * 2 => -10, // Daleki dystans
                 _ when attackDistance <= attackerWeapon.AttackRange * 3 => -30, // Bardzo daleki dystans
                 _ => 0 // Domyślny przypadek, jeśli żaden warunek nie zostanie spełniony
             };
 
+            Debug.Log(attackModifier);
+
             //Modyfikator za oślepienie
-            if(attackerUnit.Blinded > 0 && attackerUnit.Fatiqued == 0 && attackerUnit.Poison == 0) attackModifier -= 10;
+            if (attackerUnit.Blinded > 0 && attackerUnit.Fatiqued == 0 && attackerUnit.Poison == 0) attackModifier -= 10;
         }
 
         // Przewaga liczebna
         attackModifier += CountOutnumber(attackerUnit, targetUnit);
+
+        Debug.Log(attackModifier);
 
         //// Bijatyka
         //if (attackerWeapon.Type.Contains("melee") &&
@@ -1101,6 +1182,10 @@ public class CombatManager : MonoBehaviour
 
         // Dodaje przeciwników w sąsiedztwie atakującego do całkowitej liczby jego przeciwników
         adjacentOpponents += adjacentOpponentsNearAttacker;
+
+        // Uwzględnienie atakującego i jednostki będącej celem ataku
+        adjacentAllies++;
+        adjacentOpponents++;
 
         // Wylicza modyfikator na podstawie stosunku przeciwników do sojuszników atakującego
         if (adjacentAllies >= adjacentOpponents * 3)
