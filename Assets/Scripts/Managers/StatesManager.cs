@@ -90,7 +90,7 @@ public class StatesManager : MonoBehaviour
 
         if(unit.Broken > 0 && !isEngagedInCombat)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("SW", stats)[1];
+            int successLevel = UnitsManager.Instance.TestSkill("SW", stats, "Cool")[1];
             if(successLevel > 0)
             {
                 unit.Broken = Mathf.Max(0, unit.Broken - successLevel);

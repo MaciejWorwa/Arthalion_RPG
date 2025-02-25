@@ -675,8 +675,10 @@ public class StatsData
     public bool Terryfying; // Przerażający (test Terror)
     public bool QuickDraw; // Szybkie wyciągnięcie
     public bool WillOfIron; // Żelazna wola
+
     public int Athletics; // Atletyka
     public int Channeling; // Splatanie magii
+    public int Cool; // Opanowanie
     public int Dodge; // Unik
     public int Endurance; // Odporność
     public List<Pair> MeleeSerialized = new List<Pair>();

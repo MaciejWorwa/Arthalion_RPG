@@ -1036,19 +1036,28 @@ public class CombatManager : MonoBehaviour
 
         // Modyfikator za celowanie
         attackModifier += attackerUnit.AimingBonus;
+        if(attackerUnit.AimingBonus != 0) Debug.Log($"Uwzględniono modyfikator +20 za celowanie. Łączny modyfikator: " + attackModifier);
 
-        // Modyfikator za rozmiar
-        if (attackerStats.Size < targetStats.Size) attackModifier += 10;
-
-        if (attackerStats.Size < targetStats.Size) Debug.Log($"modyfikator za rozmiar +10");
+        // Modyfikator za różnicę rozmiarów
+        if (attackerStats.Size < targetStats.Size)
+        {
+            attackModifier += 10;
+            Debug.Log($"Uwzględniono modyfikator +10 za różnicę rozmiarów. Łączny modyfikator: " + attackModifier);
+        }
 
         // Modyfikator za szarżę
-        if (attackerUnit.IsCharging) attackModifier += 10;
+        if (attackerUnit.IsCharging)
+        {
+            attackModifier += 10;
+            Debug.Log($"Uwzględniono modyfikator za szarżę. Łączny modyfikator: " + attackModifier);
+        }
 
         // Modyfikator za broń z cechą "Celny"
-        if (attackerWeapon.Accurate && _isTrainedWeaponCategory) attackModifier += 10;
-
-        Debug.Log(attackModifier);
+        if (attackerWeapon.Accurate && _isTrainedWeaponCategory)
+        {
+            attackModifier += 10;
+            Debug.Log($"Uwzględniono modyfikator za cechę celny. Łączny modyfikator: " + attackModifier);
+        }
 
         // Utrudnienie za atak słabszą ręką
         if (attackerUnit.GetComponent<Inventory>().EquippedWeapons[0] == null || attackerWeapon.Name != attackerUnit.GetComponent<Inventory>().EquippedWeapons[0].Name)
@@ -1056,14 +1065,15 @@ public class CombatManager : MonoBehaviour
             if (!attackerStats.Ambidextrous && attackerWeapon.Id != 0)
             {
                 attackModifier -= 20;
+                Debug.Log($"Uwzględniono modyfikator za różnicę atak słabszą ręką. Łączny modyfikator: " + attackModifier);
             }
         }
-
-        Debug.Log(attackModifier);
 
         // Modyfikatory za jakość broni
         if (attackerWeapon.Quality == "Kiepska") attackModifier -= 5;
         else if (attackerWeapon.Quality == "Najlepsza" || attackerWeapon.Quality == "Magiczna") attackModifier += 5;
+
+        Debug.Log($"Uwzględniono modyfikator za jakość broni. Łączny modyfikator: " + attackModifier);
 
         // Modyfikator za stany celu
         if (targetUnit.Deafened > 0 || targetUnit.Stunned > 0 || targetUnit.Blinded > 0) attackModifier += 10;
@@ -1079,13 +1089,13 @@ public class CombatManager : MonoBehaviour
             attackModifier += targetUnit.Entangled == 0 ? 10 : 20;
         }
 
-        Debug.Log(attackModifier);
+        Debug.Log($"Uwzględniono modyfikatory za stany celu. Łączny modyfikator: " + attackModifier);
 
         // Modyfikator za wyczerpanie
         if (attackerUnit.Fatiqued > 0) attackModifier -= attackerUnit.Fatiqued * 10;
         else if(attackerUnit.Poison > 0) attackModifier -= 10;
 
-        Debug.Log(attackModifier);
+        Debug.Log($"Uwzględniono modyfikatory za stany atakującego. Łączny modyfikator: " + attackModifier);
 
         if (attackerWeapon.Type.Contains("ranged"))
         {
@@ -1100,7 +1110,17 @@ public class CombatManager : MonoBehaviour
                 _ => 0 // Domyślny przypadek, jeśli żaden warunek nie zostanie spełniony
             };
 
-            Debug.Log(attackModifier);
+            Debug.Log("Uwzględniono modyfikator za dystans. Łączny modyfikator: " + attackModifier);
+
+            //Modyfikator za rozmiar celu
+            if (targetStats.Size == SizeCategory.Monstrous) attackModifier += 60;
+            else if (targetStats.Size == SizeCategory.Enormous) attackModifier += 40;
+            else if (targetStats.Size == SizeCategory.Large) attackModifier += 40;
+            else if (targetStats.Size == SizeCategory.Small) attackModifier -= 10;
+            else if (targetStats.Size == SizeCategory.Little) attackModifier -= 20;
+            else if (targetStats.Size == SizeCategory.Tiny) attackModifier -= 30;
+
+            Debug.Log("Uwzględniono modyfikator za rozmiar celu. Łączny modyfikator: " + attackModifier);
 
             //Modyfikator za oślepienie
             if (attackerUnit.Blinded > 0 && attackerUnit.Fatiqued == 0 && attackerUnit.Poison == 0) attackModifier -= 10;
@@ -1109,7 +1129,7 @@ public class CombatManager : MonoBehaviour
         // Przewaga liczebna
         attackModifier += CountOutnumber(attackerUnit, targetUnit);
 
-        Debug.Log(attackModifier);
+        Debug.Log("Uwzględniono modyfikator za przewagę liczebną. Łączny modyfikator: " + attackModifier);
 
         //// Bijatyka
         //if (attackerWeapon.Type.Contains("melee") &&

@@ -429,24 +429,24 @@ public class UnitsManager : MonoBehaviour
         Stats stats = unit.Stats;
 
         //Usunięcie jednostki z kolejki inicjatywy
-        InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(unit.GetComponent<Unit>());
+        InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(unit);
         //Aktualizuje kolejkę inicjatywy
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
         //Uwolnienie jednostki uwięzionej przez jednostkę, która umiera
-        if(unit.GetComponent<Unit>().EntangledUnitId != 0)
+        if(unit.EntangledUnitId != 0)
         {
             foreach (var u in AllUnits)
             {
-                if (u.UnitId == unit.GetComponent<Unit>().EntangledUnitId && u.Trapped == true)
+                if (u.UnitId == unit.GetComponent<Unit>().EntangledUnitId && u.Entangled > 0)
                 {
-                    u.Trapped = false;
+                    u.Entangled = 0;
                 }
             }
         }
 
         //Usuwa jednostkę z listy wszystkich jednostek
-        AllUnits.Remove(unit.GetComponent<Unit>());
+        AllUnits.Remove(unit);
 
         //Resetuje Tile, żeby nie było uznawane jako zajęte
         GridManager.Instance.ResetTileOccupancy(unit.transform.position);

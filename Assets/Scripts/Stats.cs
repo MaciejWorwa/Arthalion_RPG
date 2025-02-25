@@ -102,6 +102,7 @@ public class Stats : MonoBehaviour
     [Header("Umiejętności")]
     public int Athletics;
     public int Channeling; // Splatanie magii
+    public int Cool; // Opanowanie
     public int Dodge; // Unik
     public int Endurance; // Odporność
     public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
