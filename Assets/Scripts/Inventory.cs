@@ -11,4 +11,13 @@ public class Inventory : MonoBehaviour
     public int CopperCoins;
     public int SilverCoins;
     public int GoldCoins;
+
+    public Dictionary<string, List<string>> ArmorCategories = new Dictionary<string, List<string>>
+{
+    { "head", new List<string>() },
+    { "arms", new List<string>() },
+    { "torso", new List<string>() },
+    { "legs", new List<string>() }
+};
+
 }

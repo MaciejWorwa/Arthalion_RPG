@@ -770,7 +770,7 @@ public class WeaponData
     public bool Impact; // Druzgoczący
     public bool Impale; // Nadziewający (str. 298)
     public bool Imprecise; // Nieprecyzyjna (zmiejsza poziom testu ataku o 1)
-    public bool Penetrating; // Przekłuwająca ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Penetrating; // Przekłuwająca
     public bool Pistol; // Pistolet
     public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
     public bool Precise; // Precyzyjna (zwiększa poziom udanego testu ataku o 1)

@@ -14,6 +14,7 @@ using System;
 using static UnityEngine.GraphicsBuffer;
 using UnityEditor.Experimental.GraphView;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using static UnityEditor.PlayerSettings;
 
 public class CombatManager : MonoBehaviour
 {
@@ -322,13 +323,16 @@ public class CombatManager : MonoBehaviour
             }
         }
 
+        bool isRangedAttack = attackerWeapon.Type.Contains("ranged");
+        bool isMeleeAttack = attackerWeapon.Type.Contains("melee");
+
         // Ustalamy umiejętności, które będą testowane w zależności od kategorii broni
         MeleeCategory meleeSkill = EnumConverter.ParseEnum<MeleeCategory>(attackerWeapon.Category) ?? MeleeCategory.Basic;
         RangedCategory rangedSkill = EnumConverter.ParseEnum<RangedCategory>(attackerWeapon.Category) ?? RangedCategory.Bow;
-        int skillModifier = attackerWeapon.Type.Contains("ranged") ? attackerStats.GetSkillModifier(attackerStats.Ranged, rangedSkill) : attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
+        int skillModifier = isRangedAttack ? attackerStats.GetSkillModifier(attackerStats.Ranged, rangedSkill) : attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
         _isTrainedWeaponCategory = skillModifier > 0 ? true : false;
 
-        if (attackerWeapon.Type.Contains("ranged") && !_isTrainedWeaponCategory && attackerWeapon.Category != "crossbow" && attackerWeapon.Category != "throwing")
+        if (isRangedAttack && !_isTrainedWeaponCategory && attackerWeapon.Category != "crossbow" && attackerWeapon.Category != "throwing")
         {
             Debug.Log("Wybrana jednostka nie może walczyć przy użyciu broni z tej kategorii.");
             yield break;
@@ -346,9 +350,9 @@ public class CombatManager : MonoBehaviour
         }
 
         bool isOutOfRange = attackDistance > effectiveAttackRange;
-        bool isRangedAndTooFar = attackerWeapon.Type.Contains("ranged") && (attackDistance > effectiveAttackRange * 3 || (attackDistance > effectiveAttackRange && attackerWeapon.Category == "entangling"));
+        bool isRangedAndTooFar = isRangedAttack && (attackDistance > effectiveAttackRange * 3 || (attackDistance > effectiveAttackRange && attackerWeapon.Category == "entangling"));
 
-        if (isOutOfRange && (!attackerWeapon.Type.Contains("ranged") || isRangedAndTooFar))
+        if (isOutOfRange && (!isRangedAttack || isRangedAndTooFar))
         {
             // Poza zasięgiem
             if (attacker.IsCharging)
@@ -364,7 +368,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // 6) Sprawdzenie dodatkowych warunków dla ataku dystansowego (np. przeszkody, czy broń jest naładowana, itp.)
-        if (attackerWeapon.Type.Contains("ranged"))
+        if (isRangedAttack)
         {
             bool validRanged = ValidateRangedAttack(attacker, target, attackerWeapon, attackDistance);
             if (!validRanged) yield break;
@@ -433,7 +437,7 @@ public class CombatManager : MonoBehaviour
         {
             skillValue = attackerStats.S;
         }
-        else if (attackerWeapon.Type.Contains("ranged"))
+        else if (isRangedAttack)
         {
             skillValue = attackerStats.US + attackerStats.GetSkillModifier(attackerStats.Ranged, rangedSkill);
         }
@@ -446,7 +450,7 @@ public class CombatManager : MonoBehaviour
         int attackerSuccessValue = results[0];
         int attackerSuccessLevel = results[1];
 
-        string successLevelColor = results[0] >= 0 ? "green" : "red";
+        string successLevelColor = attackerSuccessValue >= 0 ? "green" : "red";
         string modifierString = attackModifier != 0 ? $" Modyfikator: {attackModifier}," : "";
 
         if (AttackTypes["Grappling"] == true && attacker.EntangledUnitId != target.UnitId)
@@ -505,7 +509,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Jeśli to była broń dystansowa – resetujemy ładowanie
-        if (attackerWeapon.Type.Contains("ranged"))
+        if (isRangedAttack)
         {
             ResetWeaponLoad(attackerWeapon, attackerStats);
         }
@@ -601,8 +605,8 @@ public class CombatManager : MonoBehaviour
             string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
 
             // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
-            bool canParry = attackerWeapon.Type.Contains("melee") || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2);
-            bool canDodge = attackerWeapon.Type.Contains("melee");
+            bool canParry = isMeleeAttack || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2);
+            bool canDodge = isMeleeAttack;
 
             // Obliczamy sumaryczną wartość parowania i uniku
             MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
@@ -728,17 +732,29 @@ public class CombatManager : MonoBehaviour
         // Następuje finalne rozstrzygnięcie
         int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
 
-        if (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue)))
+        // Sprawdzenie warunku trafienia
+        bool attackSucceeded = (isRangedAttack && attackerSuccessValue >= 0) || (isMeleeAttack && (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue))));
+
+        // Atak chybił, przerywamy funkcję
+        if (attackSucceeded == false)
         {
-            //Zaktualizowanie przewagi
-            InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, 1);
-        }
-        else
-        {
-            // Atak chybił
             Debug.Log($"Atak {attackerStats.Name} chybił.");
             StartCoroutine(AnimationManager.Instance.PlayAnimation("miss", null, target.gameObject));
             yield break;
+        }
+
+        // Zaktualizowanie przewagi, skoro atak się powiódł
+        InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, 1);
+
+        // W przypadku ataku okazyjnego, cel jest zmuszony do testu opanowania ------------------------------- DODAĆ TAKĄ MECHANIKĘ, ŻE JAK JEDNOSTKA WYBIERZE OPCJĘ UNIKU TO PRZY NIEZDANYM TEŚCIE PRZECIWSTAWNYM ZOSTAJE W MIEJSCU. WTEDY NIE MA RZUTU NA OPANOWANIE, ONO JEST JAK NIE UNIKA. USUNĄĆ OPCJĘ PAROWANIA ATAKÓW OKAZYJNYCH
+        if (opportunityAttack)
+        {
+            int[] rollResults = UnitsManager.Instance.TestSkill("SW", targetStats, "Cool");
+            if (rollResults[0] < 0)
+            {
+                target.Broken += Math.Abs(rollResults[1]) + 1;
+                Debug.Log($"Poziom paniki {targetStats.Name} wzrasta o {Math.Abs(rollResults[1]) + 1}");
+            }
         }
 
         //W przypadku manualnego ataku sprawdzamy, czy postać powinna zakończyć turę
@@ -766,7 +782,7 @@ public class CombatManager : MonoBehaviour
 
         // 13) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
-        int armor = CalculateArmor(targetStats, attackerWeapon);
+        int armor = IsDoubleDigit(rollOnAttack) ? CalculateArmor(targetStats, attackerWeapon) : CalculateArmor(targetStats, attackerWeapon, rollOnAttack);
         int damage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, targetStats, attackerWeapon);
 
         Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.");
@@ -896,43 +912,6 @@ public class CombatManager : MonoBehaviour
         }
 
         return new int[] { successValue, successLevel };
-    }
-
-    private void CriticalWoundRoll(Stats attackerStats, Stats targetStats)
-    {
-        //TA METODA JEST DO ROZBUDOWANIA. NA RAZIE JEST ZROBIONA W BARDZO UPROSZCZONY SPOSÓB.
-
-        int rollResult = UnityEngine.Random.Range(1, 101);
-        int criticalWounds = 0;
-
-        switch (rollResult)
-        {
-            case int n when (n >= 1 && n <= 33):
-                Debug.Log($"{targetStats.Name} otrzymuje trafienie krytyczne o wartości 1.");
-                criticalWounds = 1;
-                break;
-            case int n when (n >= 34 && n <= 66):
-                Debug.Log($"{targetStats.Name} otrzymuje trafienie krytyczne o wartości 2.");
-                criticalWounds = 2;
-                break;
-            case int n when (n >= 67 && n <= 100):
-                Debug.Log($"{targetStats.Name} otrzymuje trafienie krytyczne o wartości 3.");
-                criticalWounds = 3;
-                break;
-        }
-
-        targetStats.CriticalWounds += criticalWounds;
-        UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
-
-        //Śmierć
-        if(targetStats.CriticalWounds > targetStats.Wt / 10)
-        {
-            Debug.Log($"Ilość ran krytycznych {targetStats.Name} przekroczyła bonus z wytrzymałości. <color=red>Jednostka umiera.</color>");
-            if (GameManager.IsAutoKillMode)
-            {
-                HandleDeath(targetStats, targetStats.gameObject, attackerStats);
-            }
-        }
     }
 
     public void HandleDeath(Stats targetStats, GameObject target, Stats attackerStats)
@@ -1097,6 +1076,20 @@ public class CombatManager : MonoBehaviour
 
         Debug.Log($"Uwzględniono modyfikatory za stany atakującego. Łączny modyfikator: " + attackModifier);
 
+
+        // Przewaga liczebna (tylko dla broni do walki wręcz)
+        int adjacentEnemies;
+        if (attackerWeapon.Type.Contains("melee"))
+        {
+            attackModifier += CountOutnumber(attackerUnit, targetUnit, out adjacentEnemies);
+            Debug.Log("Uwzględniono modyfikator za przewagę liczebną. Łączny modyfikator: " + attackModifier);
+        }
+        else
+        {
+            // Nadal musimy obliczyć adjacentEnemies, bo jest potrzebne dalej
+            CountOutnumber(attackerUnit, targetUnit, out adjacentEnemies);
+        }
+
         if (attackerWeapon.Type.Contains("ranged"))
         {
             // Modyfikator za dystans
@@ -1123,13 +1116,18 @@ public class CombatManager : MonoBehaviour
             Debug.Log("Uwzględniono modyfikator za rozmiar celu. Łączny modyfikator: " + attackModifier);
 
             //Modyfikator za oślepienie
-            if (attackerUnit.Blinded > 0 && attackerUnit.Fatiqued == 0 && attackerUnit.Poison == 0) attackModifier -= 10;
+            if (attackerUnit.Blinded > 0 && attackerUnit.Fatiqued == 0 && attackerUnit.Poison == 0)
+            {
+                attackModifier -= 10;
+                Debug.Log("Uwzględniono modyfikator za oślepienie atakującego. Łączny modyfikator: " + attackModifier);
+            }
+
+            if (adjacentEnemies > 1)
+            {
+                attackModifier -= 20;
+                Debug.Log("Uwzględniono modyfikator za to, że cel jest zaangażowany w walkę w zwarciu. Łączny modyfikator: " + attackModifier);
+            }
         }
-
-        // Przewaga liczebna
-        attackModifier += CountOutnumber(attackerUnit, targetUnit);
-
-        Debug.Log("Uwzględniono modyfikator za przewagę liczebną. Łączny modyfikator: " + attackModifier);
 
         //// Bijatyka
         //if (attackerWeapon.Type.Contains("melee") &&
@@ -1149,12 +1147,16 @@ public class CombatManager : MonoBehaviour
     }
 
     //Modyfikator za przewagę liczebną
-    private int CountOutnumber(Unit attacker, Unit target)
+    private int CountOutnumber(Unit attacker, Unit target, out int adjacentAllies)
     {
-        if (attacker.CompareTag(target.tag)) return 0; // Jeśli atakujemy sojusznika to pomijamy przewagę liczebną
+        if (attacker.CompareTag(target.tag))
+        {
+            adjacentAllies = 0;
+            return 0; // Jeśli atakujemy sojusznika to pomijamy przewagę liczebną
+        }
 
         int adjacentOpponents = 0; // Przeciwnicy atakującego stojący obok celu ataku
-        int adjacentAllies = 0;    // Sojusznicy atakującego stojący obok celu ataku
+        adjacentAllies = 0;    // Sojusznicy atakującego stojący obok celu ataku
         int adjacentOpponentsNearAttacker = 0; // Przeciwnicy atakującego stojący obok atakującego
         int modifier = 0;
 
@@ -1181,11 +1183,11 @@ public class CombatManager : MonoBehaviour
                 Collider2D collider = Physics2D.OverlapPoint(pos);
                 if (collider == null) continue;
 
-                if (collider.CompareTag(allyTag) && InventoryManager.Instance.ChooseWeaponToAttack(collider.gameObject).Type.Contains("melee"))
+                if (collider.CompareTag(allyTag) && (InventoryManager.Instance.ChooseWeaponToAttack(collider.gameObject).Type.Contains("melee") || pos == center))
                 {
                     allies++;
                 }
-                else if (collider.CompareTag(opponentTag) && !countedOpponents.Contains(collider) && InventoryManager.Instance.ChooseWeaponToAttack(collider.gameObject).Type.Contains("melee"))
+                else if (collider.CompareTag(opponentTag) && !countedOpponents.Contains(collider) && (InventoryManager.Instance.ChooseWeaponToAttack(collider.gameObject).Type.Contains("melee") || pos == center))
                 {
                     opponents++;
                     countedOpponents.Add(collider); // Dodajemy do zestawu zliczonych przeciwników
@@ -1203,10 +1205,6 @@ public class CombatManager : MonoBehaviour
         // Dodaje przeciwników w sąsiedztwie atakującego do całkowitej liczby jego przeciwników
         adjacentOpponents += adjacentOpponentsNearAttacker;
 
-        // Uwzględnienie atakującego i jednostki będącej celem ataku
-        adjacentAllies++;
-        adjacentOpponents++;
-
         // Wylicza modyfikator na podstawie stosunku przeciwników do sojuszników atakującego
         if (adjacentAllies >= adjacentOpponents * 3)
         {
@@ -1216,6 +1214,9 @@ public class CombatManager : MonoBehaviour
         {
             modifier = 20;
         }
+
+        Debug.Log($"adjacentAllies {adjacentAllies}");
+        Debug.Log($"adjacentOpponents {adjacentOpponents}");
 
         return modifier;
     }
@@ -1263,51 +1264,187 @@ public class CombatManager : MonoBehaviour
     }
     #endregion
 
-    #region Check for attack localization and return armor value
-    private int CalculateArmor(Stats targetStats, Weapon attackerWeapon)
+    #region Critical wounds
+    private void CriticalWoundRoll(Stats attackerStats, Stats targetStats)
     {
-        int attackLocalization = UnityEngine.Random.Range(1, 101);
+        //TA METODA JEST DO ROZBUDOWANIA. Można dodać konkretne dodatkowe efekty np. ogłuszenie, krwawienie itp. w zależności również od lokacji
+
+        int rollResult = UnityEngine.Random.Range(1, 101);
+        int extraWounds = 0;
+        Debug.Log("Wynik rzutu na na trafienie krytyczne: " + rollResult);
+
+        switch (rollResult)
+        {
+            case int n when (n >= 1 && n <= 10):
+                extraWounds = 1;
+                break;
+            case int n when (n >= 11 && n <= 20):
+                extraWounds = 1;
+                break;
+            case int n when (n >= 21 && n <= 25):
+                extraWounds = 1;
+                break;
+            case int n when (n >= 26 && n <= 30):
+                extraWounds = 1;
+                break;
+            case int n when (n >= 31 && n <= 35):
+                extraWounds = 2;
+                break;
+            case int n when (n >= 36 && n <= 40):
+                extraWounds = 2;
+                break;
+            case int n when (n >= 41 && n <= 45):
+                extraWounds = 2;
+                break;
+            case int n when (n >= 46 && n <= 50):
+                extraWounds = 2;
+                break;
+            case int n when (n >= 51 && n <= 55):
+                extraWounds = 3;
+                break;
+            case int n when (n >= 56 && n <= 60):
+                extraWounds = 3;
+                break;
+            case int n when (n >= 61 && n <= 65):
+                extraWounds = 3;
+                break;
+            case int n when (n >= 66 && n <= 70):
+                extraWounds = 3;
+                break;
+            case int n when (n >= 71 && n <= 75):
+                extraWounds = 4;
+                break;
+            case int n when (n >= 76 && n <= 80):
+                extraWounds = 4;
+                break;
+            case int n when (n >= 81 && n <= 85):
+                extraWounds = 4;
+                break;
+            case int n when (n >= 86 && n <= 90):
+                extraWounds = 4;
+                break;
+            case int n when (n >= 91 && n <= 93):
+                extraWounds = 5;
+                break;
+            case int n when (n >= 94 && n <= 96):
+                extraWounds = 5;
+                break;
+            case int n when (n >= 97 && n <= 99):
+                extraWounds = 5;
+                break;
+        }
+
+        //Zadanie dodatkowych obrażeń
+        targetStats.TempHealth -= extraWounds;
+        if (extraWounds != 0)
+        {
+            Debug.Log($"{targetStats.Name} otrzymuje {extraWounds} obrażeń w wyniku trafienia krytycznego.");
+        }
+
+        //Zwiększenie ilości ran krytycznych
+        targetStats.CriticalWounds++;
+        UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
+
+        //Śmierć
+        if (targetStats.CriticalWounds > targetStats.Wt / 10 || rollResult == 100)
+        {
+            string deathMessage = rollResult == 100 ? $"Trafienie krytyczne powoduje śmierć {targetStats.Name}." : $"Ilość ran krytycznych {targetStats.Name} przekroczyła bonus z wytrzymałości.";
+
+            Debug.Log($"<color=red>{deathMessage} Jednostka umiera.</color>");
+
+            if (GameManager.IsAutoKillMode)
+            {
+                HandleDeath(targetStats, targetStats.gameObject, attackerStats);
+            }
+        }
+    }
+    #endregion
+
+    #region Check for attack localization and return armor value
+    private int CalculateArmor(Stats targetStats, Weapon attackerWeapon, int rollResult = 0)
+    {
+        int attackLocalization;
+        if (rollResult == 0) // Sytuacja, która ma miejsce w przypadku trafień krytycznych. Wtedy rzut na lokalizację jest ustalany losowo.
+        {
+            attackLocalization = UnityEngine.Random.Range(1, 101);
+        }
+        else // Wynikiem rzutu na llokalizacje jest odwrócony wynik na trafienie
+        {
+            // Konwersja liczby na string i odwrócenie
+            string reversedString = new string(rollResult.ToString().Reverse().ToArray());
+
+            // Jeśli liczba była jednocyfrowa, dodajemy "0" na końcu
+            if (rollResult < 10)
+            {
+                reversedString += "0";
+            }
+
+            attackLocalization = int.Parse(reversedString);
+        }
+
         int armor = 0;
+        string hitLocation = "";
+        Inventory inventory = targetStats.GetComponent<Inventory>();
 
         switch (attackLocalization)
         {
             case int n when (n >= 1 && n <= 9):
                 Debug.Log("Trafienie w głowę.");
                 armor = targetStats.Armor_head;
+                hitLocation = "head";
                 break;
             case int n when (n >= 10 && n <= 24):
                 Debug.Log("Trafienie w lewą rękę.");
                 armor = targetStats.Armor_arms;
+                hitLocation = "arms";
                 break;
             case int n when (n >= 25 && n <= 44):
                 Debug.Log("Trafienie w prawą rękę.");
                 armor = targetStats.Armor_arms;
+                hitLocation = "arms";
                 break;
             case int n when (n >= 45 && n <= 79):
                 Debug.Log("Trafienie w korpus.");
                 armor = targetStats.Armor_torso;
+                hitLocation = "torso";
                 break;
             case int n when (n >= 80 && n <= 89):
                 Debug.Log("Trafienie w lewą nogę.");
                 armor = targetStats.Armor_legs;
+                hitLocation = "legs";
                 break;
             case int n when (n >= 90 && n <= 100):
                 Debug.Log("Trafienie w prawą nogę.");
                 armor = targetStats.Armor_legs;
+                hitLocation = "legs";
                 break;
         }
 
         //Podwaja wartość zbroi w przypadku walki przy użyciu broni Tępej
-        if(attackerWeapon.Undamaging) armor *= 2;
+        if (attackerWeapon.Undamaging) armor *= 2;
 
         //Zwiększenie pancerza, jeśli cel ataku posiada tarcze
         armor += targetStats.GetComponent<Inventory>().EquippedWeapons.Where(weapon => weapon != null && weapon.Shield > 0).Select(weapon => weapon.Shield).FirstOrDefault();
 
-        //Uwzględnienie broni przebijających zbroję
-        if (attackerWeapon.Penetrating == true) armor --; // UWZGLĘDNIĆ TU W PRZYSZŁOŚCI, ŻE PANCERZE NIEMETALOWE POWINNY BYĆ CAŁKOWICIE IGNOROWANE
+        // Pobranie kategorii pancerza dla trafionej lokalizacji
+        List<string> armorCategories = inventory.ArmorCategories.ContainsKey(hitLocation) ? inventory.ArmorCategories[hitLocation] : new List<string>();
+
+        // Sprawdzenie, czy żadna część pancerza nie jest metalowa
+        bool noMetalArmor = armorCategories.All(category => category == "leather");
+
+        if (attackerWeapon.Penetrating && noMetalArmor)
+        {
+            Debug.Log("Broń przekłuwająca całkowicie ignoruje niemetalowy pancerz.");
+            armor = 0;
+        }
+        else if (attackerWeapon.Penetrating && armor > 0)
+        {
+            armor--;
+        }
 
         return armor;
     }
+
     #endregion
 
     #region Charge

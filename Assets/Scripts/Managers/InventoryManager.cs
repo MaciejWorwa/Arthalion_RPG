@@ -833,6 +833,7 @@ public class InventoryManager : MonoBehaviour
         Weapon[] equippedWeapons = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons;
         List<Weapon> equippedArmors = Unit.SelectedUnit.GetComponent<Inventory>().EquippedArmors;
         Stats unitStats = Unit.SelectedUnit.GetComponent<Stats>();
+        Inventory inventory = Unit.SelectedUnit.GetComponent<Inventory>();
 
         // Resetowanie wartości pancerza
         unitStats.Armor_head = 0;
@@ -842,13 +843,35 @@ public class InventoryManager : MonoBehaviour
 
         if(equippedArmors.Count > 0)
         {
+            // Resetowanie list kategorii pancerza
+            inventory.ArmorCategories["head"].Clear();
+            inventory.ArmorCategories["arms"].Clear();
+            inventory.ArmorCategories["torso"].Clear();
+            inventory.ArmorCategories["legs"].Clear();
+
             // Sumowanie wartości pancerza
             foreach (Weapon armor in equippedArmors)
             {
-                if (armor.Type.Contains("head")) unitStats.Armor_head += armor.Armor;
-                if (armor.Type.Contains("arms")) unitStats.Armor_arms += armor.Armor;
-                if (armor.Type.Contains("torso")) unitStats.Armor_torso += armor.Armor;
-                if (armor.Type.Contains("legs")) unitStats.Armor_legs += armor.Armor;
+                if (armor.Type.Contains("head"))
+                {
+                    unitStats.Armor_head += armor.Armor;
+                    inventory.ArmorCategories["head"].Add(armor.Category);
+                }
+                if (armor.Type.Contains("arms"))
+                {
+                    unitStats.Armor_arms += armor.Armor;
+                    inventory.ArmorCategories["arms"].Add(armor.Category);
+                }
+                if (armor.Type.Contains("torso"))
+                {
+                    unitStats.Armor_torso += armor.Armor;
+                    inventory.ArmorCategories["torso"].Add(armor.Category);
+                }
+                if (armor.Type.Contains("legs"))
+                {
+                    unitStats.Armor_legs += armor.Armor;
+                    inventory.ArmorCategories["legs"].Add(armor.Category);
+                }
             }
 
             UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);

@@ -86,7 +86,7 @@ public class Weapon : MonoBehaviour
     public bool Impact; // Druzgoczący
     public bool Impale; // Nadziewający (str. 298)
     public bool Imprecise; // Nieprecyzyjna (zmiejsza poziom testu ataku o 1)
-    public bool Penetrating; // Przekłuwająca ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Penetrating; // Przekłuwająca
     public bool Pistol; // Pistolet
     public bool Precise; // Precyzyjna (zwiększa poziom udanego testu ataku o 1)
     public bool Pummel; // Ogłuszający ---------------------- (MECHANIKA DO WPROWADZENIA)
