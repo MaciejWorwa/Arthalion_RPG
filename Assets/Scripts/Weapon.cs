@@ -30,6 +30,7 @@ public enum RangedCategory
 public class Weapon : MonoBehaviour
 {
     public int Id;
+    public WeaponBaseStats BaseWeaponStats; // Przechowywanie bazowych statystyk broni
 
     [Header("Nazwa")]
     public string Name;
@@ -113,6 +114,30 @@ public class Weapon : MonoBehaviour
 
     public Dictionary<int, int> WeaponsWithReloadLeft = new Dictionary<int, int>(); // słownik zawierający wszystkie posiadane przez postać bronie wraz z ich ReloadLeft
 
+    public void SetBaseWeaponStats()
+    {
+        Debug.Log("USTAWIAMY BASE STATS");
+        // Zapisujemy bazowe statystyki przy uruchomieniu
+        BaseWeaponStats = new WeaponBaseStats
+        {
+            S = this.S,
+            AttackRange = this.AttackRange,
+            ReloadTime = this.ReloadTime,
+            Accurate = this.Accurate,
+            Penetrating = this.Penetrating,
+            Impale = this.Impale,
+            Slash = this.Slash,
+            Undamaging = this.Undamaging,
+            Imprecise = this.Imprecise,
+            Dangerous = this.Dangerous,
+            Pummel = this.Pummel,
+            Impact = this.Impact,
+            Spread = this.Spread,
+            Precise = this.Precise,
+            Blast = this.Blast
+        };
+    }
+
     public void ResetWeapon()
     {
         Id = 0;
@@ -166,3 +191,24 @@ public class Weapon : MonoBehaviour
         Wrap = false;
     }
 }
+
+[System.Serializable]
+public class WeaponBaseStats
+{
+    public int S;
+    public float AttackRange;
+    public int ReloadTime;
+    public bool Accurate;
+    public bool Penetrating;
+    public bool Impale;
+    public int Slash;
+    public bool Undamaging;
+    public bool Imprecise;
+    public bool Dangerous;
+    public bool Pummel;
+    public bool Impact;
+    public int Spread;
+    public bool Precise;
+    public int Blast;
+}
+

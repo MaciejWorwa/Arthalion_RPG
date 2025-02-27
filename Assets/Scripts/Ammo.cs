@@ -12,13 +12,13 @@ public class Ammo
     public bool? Accurate = null; // Celny
     public bool? Penetrating = null; // Przek³uwaj¹cy
     public bool? Impale = null; // Nadziewaj¹cy
-    public int? Slash = null; // Sieczny
+    public int? Slash = null; // Sieczny --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaæ wywo³anie funkcji, takie jak np. w input fieldzie Accurate)
     public bool? Undamaging = null; // Têpy
     public bool? Imprecise = null; // Nieprecyzyjna
-    public bool? Dangerous = null; // Niebezpieczna
+    public bool? Dangerous = null; // Niebezpieczna   --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaæ wywo³anie funkcji, takie jak np. w input fieldzie Accurate)
     public bool? Pummel = null; // Og³uszaj¹cy
     public bool? Impact = null; // Druzgocz¹cy
-    public int? Spread = null; // Rozrzucaj¹ca
+    public int? Spread = null; // Rozrzucaj¹ca --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaæ wywo³anie funkcji, takie jak np. w input fieldzie Accurate)
     public bool? Precise = null; // Precyzyjna
     public int? Blast = null; // Wybuchowa
 

@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 using UnityEngine.Windows;
 using UnityEngine.TextCore.Text;
 using Unity.VisualScripting;
+using static UnityEngine.UI.CanvasScaler;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -156,6 +157,12 @@ public class InventoryManager : MonoBehaviour
             unit.GetComponent<Inventory>().AllWeapons.Sort((x, y) => x.Name.CompareTo(y.Name));
 
             Debug.Log($"Przedmiot {newWeapon.Name} został dodany do ekwipunku {unit.GetComponent<Stats>().Name}.");
+        }
+
+        //Zapisuje bazowe statystyki broni (przed uwzględnieniem amunicji)
+        if (!WeaponsPool.Instance.IsWeaponInPool(newWeapon.gameObject))
+        {
+            newWeapon.SetBaseWeaponStats();
         }
 
         UpdateInventoryDropdown(unit.GetComponent<Inventory>().AllWeapons, true);
@@ -607,7 +614,6 @@ public class InventoryManager : MonoBehaviour
                 field.SetValue(selectedWeapon, 1.5f); // gdy ktos poda zasieg mniejszy niz 3 metry to ustawia domyslna wartosc zasiegu do walki wrecz
                 selectedWeapon.Type[0] = "melee"; // Zmiana typu broni na broń do walki w zwarciu
             }
-
         }
         else if (field.FieldType == typeof(bool))
         {
@@ -631,6 +637,12 @@ public class InventoryManager : MonoBehaviour
             }
 
             field.SetValue(selectedWeapon, value);
+
+            if (attributeName == "AmmoType")
+            {
+                // Aktualizujemy broń o dodatkowe cechy amunicji
+                ApplyAmmoModifiers(selectedWeapon);
+            }
         }
         else if (field.FieldType == typeof(string))
         {
@@ -752,6 +764,15 @@ public class InventoryManager : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void UpdateBaseWeaponStatsByInput()
+    {
+        if (Unit.SelectedUnit == null) return;
+
+        int selectedIndex = InventoryScrollViewContent.GetComponent<CustomDropdown>().GetSelectedIndex();
+        Weapon selectedWeapon = Unit.SelectedUnit.GetComponent<Inventory>().AllWeapons[selectedIndex - 1];
+        selectedWeapon.SetBaseWeaponStats();
     }
     #endregion
 
@@ -993,36 +1014,60 @@ public class InventoryManager : MonoBehaviour
     }
 
     #region Ammo managing
-    public Weapon ApplyAmmoModifiers(Weapon weapon)
+    public void ApplyAmmoModifiers(Weapon weapon)
     {
         if (!Ammo.Ammos.TryGetValue(weapon.AmmoType, out Ammo effect))
         {
             Debug.LogWarning($"Nie znaleziono efektów dla amunicji: {weapon.AmmoType}");
-            return weapon; // Jeśli brak efektów, zwracamy oryginalną broń
+            return;
         }
+        Debug.Log($"siła tuz przed resetem {weapon.S}");
+        // Resetowanie broni do bazowych statystyk
+        ResetToBaseWeaponStats(weapon);
 
-        // Tworzymy kopię broni, aby nie modyfikować oryginału
-        Weapon modifiedWeapon = Instantiate(weapon);
+        Debug.Log($"siła tuz po resecie {weapon.S}");
 
-        // Nakładamy efekty amunicji na kopię broni
-        if (effect.S.HasValue) modifiedWeapon.S += effect.S.Value;
-        if (effect.AttackRange.HasValue) modifiedWeapon.AttackRange += effect.AttackRange.Value;
-        if (effect.ReloadTime.HasValue) modifiedWeapon.ReloadTime += effect.ReloadTime.Value;
-        if (effect.Accurate.HasValue) modifiedWeapon.Accurate = effect.Accurate.Value;
-        if (effect.Penetrating.HasValue) modifiedWeapon.Penetrating = effect.Penetrating.Value;
-        if (effect.Impale.HasValue) modifiedWeapon.Impale = effect.Impale.Value;
-        if (effect.Slash.HasValue) modifiedWeapon.Slash = effect.Slash.Value;
-        if (effect.Undamaging.HasValue) modifiedWeapon.Undamaging = effect.Undamaging.Value;
-        if (effect.Imprecise.HasValue) modifiedWeapon.Imprecise = effect.Imprecise.Value;
-        if (effect.Dangerous.HasValue) modifiedWeapon.Dangerous = effect.Dangerous.Value;
-        if (effect.Pummel.HasValue) modifiedWeapon.Pummel = effect.Pummel.Value;
-        if (effect.Impact.HasValue) modifiedWeapon.Impact = effect.Impact.Value;
-        if (effect.Spread.HasValue) modifiedWeapon.Spread = effect.Spread.Value;
-        if (effect.Precise.HasValue) modifiedWeapon.Precise = effect.Precise.Value;
-        if (effect.Blast.HasValue) modifiedWeapon.Blast = effect.Blast.Value;
-
-        return modifiedWeapon; // Zwracamy tymczasowy obiekt broni
+        // Nakładamy efekty amunicji na bazową broń
+        if (effect.S.HasValue) weapon.S = weapon.BaseWeaponStats.S + effect.S.Value;
+        if (effect.AttackRange.HasValue) weapon.AttackRange = weapon.BaseWeaponStats.AttackRange + effect.AttackRange.Value;
+        if (effect.ReloadTime.HasValue) weapon.ReloadTime = weapon.BaseWeaponStats.ReloadTime + effect.ReloadTime.Value;
+        if (effect.Accurate.HasValue) weapon.Accurate = effect.Accurate.Value;
+        if (effect.Penetrating.HasValue) weapon.Penetrating = effect.Penetrating.Value;
+        if (effect.Impale.HasValue) weapon.Impale = effect.Impale.Value;
+        if (effect.Slash.HasValue) weapon.Slash = effect.Slash.Value;
+        if (effect.Undamaging.HasValue) weapon.Undamaging = effect.Undamaging.Value;
+        if (effect.Imprecise.HasValue) weapon.Imprecise = effect.Imprecise.Value;
+        if (effect.Dangerous.HasValue) weapon.Dangerous = effect.Dangerous.Value;
+        if (effect.Pummel.HasValue) weapon.Pummel = effect.Pummel.Value;
+        if (effect.Impact.HasValue) weapon.Impact = effect.Impact.Value;
+        if (effect.Spread.HasValue) weapon.Spread = effect.Spread.Value;
+        if (effect.Precise.HasValue) weapon.Precise = effect.Precise.Value;
+        if (effect.Blast.HasValue) weapon.Blast = effect.Blast.Value;
     }
+
+    public void ResetToBaseWeaponStats(Weapon weapon)
+    {
+        if (weapon.BaseWeaponStats == null) return;
+
+        weapon.S = weapon.BaseWeaponStats.S;
+        weapon.AttackRange = weapon.BaseWeaponStats.AttackRange;
+        weapon.ReloadTime = weapon.BaseWeaponStats.ReloadTime;
+        weapon.Accurate = weapon.BaseWeaponStats.Accurate;
+        weapon.Penetrating = weapon.BaseWeaponStats.Penetrating;
+        weapon.Impale = weapon.BaseWeaponStats.Impale;
+        weapon.Slash = weapon.BaseWeaponStats.Slash;
+        weapon.Undamaging = weapon.BaseWeaponStats.Undamaging;
+        weapon.Imprecise = weapon.BaseWeaponStats.Imprecise;
+        weapon.Dangerous = weapon.BaseWeaponStats.Dangerous;
+        weapon.Pummel = weapon.BaseWeaponStats.Pummel;
+        weapon.Impact = weapon.BaseWeaponStats.Impact;
+        weapon.Spread = weapon.BaseWeaponStats.Spread;
+        weapon.Precise = weapon.BaseWeaponStats.Precise;
+        weapon.Blast = weapon.BaseWeaponStats.Blast;
+
+        Debug.Log($"siła tuż tuż po resecie {weapon.S}");
+    }
+
     #endregion
 
     #region Money managing

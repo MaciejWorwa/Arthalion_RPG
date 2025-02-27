@@ -65,4 +65,9 @@ public class WeaponsPool : MonoBehaviour
 
         InitializePool();
     }
+
+    public bool IsWeaponInPool(GameObject weapon)
+    {
+        return _weaponsQueue.Contains(weapon);
+    }
 }

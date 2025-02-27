@@ -265,25 +265,28 @@ public class CombatManager : MonoBehaviour
     #region Attack function
     public void Attack(Unit attacker, Unit target, bool opportunityAttack = false)
     {
-        StartCoroutine(AttackCoroutine(attacker, target, opportunityAttack));
-    }
-    private IEnumerator AttackCoroutine(Unit attacker, Unit target, bool opportunityAttack)
-    {
-        // 1) Sprawdź, czy gra jest wstrzymana
+        // Sprawdź, czy gra jest wstrzymana
         if (GameManager.IsGamePaused)
         {
             Debug.Log("Gra została wstrzymana. Aby ją wznowić musisz wyłączyć okno znajdujące się na polu gry.");
-            yield break;
+            return;
         }
 
-        // 2) Sprawdź, czy jednostka może wykonać atak
+        // Sprawdź, czy jednostka może wykonać atak
         if (!attacker.CanDoAction && !opportunityAttack)
         {
             Debug.Log("Wybrana jednostka nie może wykonać ataku w tej rundzie.");
-            yield break;
+            return;
         }
 
-        // 3) Pobierz statystyki i broń
+        if (opportunityAttack) ChangeAttackType("StandardAttack");
+
+        StartCoroutine(AttackCoroutine(attacker, target, opportunityAttack));
+
+    }
+    private IEnumerator AttackCoroutine(Unit attacker, Unit target, bool opportunityAttack)
+    {
+        // 1) Pobierz statystyki i broń
         Stats attackerStats = attacker.Stats;
         Stats targetStats = target.Stats;
 
@@ -308,8 +311,13 @@ public class CombatManager : MonoBehaviour
             attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(attacker.gameObject);
             targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
 
+            Debug.Log("attackerWeapon " + attackerWeapon);
+            Debug.Log("attackerWeapon name " + attackerWeapon.Name);
+            Debug.Log("reload left " + attackerWeapon.ReloadLeft);
+            Debug.Log("reload time " + attackerWeapon.ReloadTime);
+
             // Uwzględniamy typ amunicji
-            if(attackerWeapon.Type.Contains("ranged") && attackerWeapon.Category != "entangling" && attackerWeapon.Category != "throwing")
+            if (attackerWeapon.Type.Contains("ranged") && attackerWeapon.Category != "entangling" && attackerWeapon.Category != "throwing")
             {
                 if (string.IsNullOrEmpty(attackerWeapon.AmmoType) || attackerWeapon.AmmoType == "Brak")
                 {
@@ -318,7 +326,7 @@ public class CombatManager : MonoBehaviour
                 }
                 else
                 {
-                    attackerWeapon = InventoryManager.Instance.ApplyAmmoModifiers(attackerWeapon); // Aktualizujemy broń o dodatkowe cechy amunicji
+                    InventoryManager.Instance.ApplyAmmoModifiers(attackerWeapon); // Aktualizujemy broń o dodatkowe cechy amunicji
                 }
             }
         }
@@ -338,10 +346,10 @@ public class CombatManager : MonoBehaviour
             yield break;
         }
 
-        // 4) Oblicz dystans
+        // 2) Oblicz dystans
         float attackDistance = CalculateDistance(attacker.gameObject, target.gameObject);
 
-        // 5) Sprawdź zasięg i ewentualnie wykonaj szarżę
+        // 3) Sprawdź zasięg i ewentualnie wykonaj szarżę
         float effectiveAttackRange = attackerWeapon.AttackRange;
 
         if (attackerWeapon.Type.Contains("throwing")) // Oblicz właściwy zasięg ataku, uwzględniając broń miotaną
@@ -367,29 +375,28 @@ public class CombatManager : MonoBehaviour
             yield break;
         }
 
-        // 6) Sprawdzenie dodatkowych warunków dla ataku dystansowego (np. przeszkody, czy broń jest naładowana, itp.)
+        // 4) Sprawdzenie dodatkowych warunków dla ataku dystansowego (np. przeszkody, czy broń jest naładowana, itp.)
         if (isRangedAttack)
         {
             bool validRanged = ValidateRangedAttack(attacker, target, attackerWeapon, attackDistance);
             if (!validRanged) yield break;
-
 
             // ==================================================================
             //DODAĆ MODYFIKATORY ZA PRZESZKODY NA LINII STRZAŁU
             // ==================================================================
         }
 
-        // 7) Określamy, czy atak jest manualny czy automatyczny
+        // 5) Określamy, czy atak jest manualny czy automatyczny
         IsManualPlayerAttack = attacker.CompareTag("PlayerUnit") && GameManager.IsAutoDiceRollingMode == false;
 
-        // 8) Jeśli to nie atak okazyjny – zużywamy akcję
+        // 6) Jeśli to nie atak okazyjny – zużywamy akcję
         if (!opportunityAttack)
         {
             RoundsManager.Instance.DoAction(attacker);
         }
 
         // ==================================================================
-        // 9) *** RZUT ATAKU *** (manualny lub automatyczny)
+        // 7) *** RZUT ATAKU *** (manualny lub automatyczny)
         // ==================================================================
         int attackModifier = CalculateAttackModifier(attacker, attackerWeapon, target, attackDistance);
 
@@ -421,7 +428,7 @@ public class CombatManager : MonoBehaviour
             Debug.Log(message);
 
             // Wywołujemy panel do wpisania wyniku (korutyna czeka, żeby reszta kodu nie poszła od razu dalej)
-            yield return StartCoroutine(WaitForRollValue());
+            yield return StartCoroutine(WaitForRollValue(attackerStats));
             rollOnAttack = _manualRollResult;
         }
         else
@@ -430,7 +437,7 @@ public class CombatManager : MonoBehaviour
             rollOnAttack = UnityEngine.Random.Range(1, 101);
         }
 
-        // 10) Liczymy poziomy sukcesu atakującego
+        // 8) Liczymy poziomy sukcesu atakującego
         int skillValue;
 
         if (AttackTypes["Grappling"])
@@ -515,7 +522,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // ==================================================================
-        // 11) *** OBRONA *** (tylko jeśli to atak w zwarciu lub mamy tarcze i możemy bronić się przed strzałem)
+        // 9) *** OBRONA *** (tylko jeśli to atak w zwarciu lub mamy tarcze i możemy bronić się przed strzałem)
         // ==================================================================
         int defenceSuccessValue = 0;
         int defenceSuccessLevel = 0;
@@ -728,7 +735,7 @@ public class CombatManager : MonoBehaviour
             ResetWeaponLoad(targetWeapon, targetStats);
         }
 
-        // 12) Teraz dopiero wiemy, ile wynoszą poziomy sukcesu atakującego i obrońcy
+        // 10) Teraz dopiero wiemy, ile wynoszą poziomy sukcesu atakującego i obrońcy
         // Następuje finalne rozstrzygnięcie
         int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
 
@@ -780,17 +787,17 @@ public class CombatManager : MonoBehaviour
             yield break;
         }
 
-        // 13) Jeśli atakujący wygrywa, zadaj obrażenia
+        // 11) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
         int armor = IsDoubleDigit(rollOnAttack) ? CalculateArmor(targetStats, attackerWeapon) : CalculateArmor(targetStats, attackerWeapon, rollOnAttack);
         int damage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, targetStats, attackerWeapon);
 
         Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.");
 
-        // 14) Zadaj obrażenia
+        // 12) Zadaj obrażenia
         ApplyDamageToTarget(damage, armor, attackerStats, attackerWeapon, targetStats, target);
 
-        // 15) Animacja ataku i ewentualnie sprawdzenie śmierci
+        // 13) Animacja ataku i ewentualnie sprawdzenie śmierci
         StartCoroutine(AnimationManager.Instance.PlayAnimation("attack", attacker.gameObject, target.gameObject));
 
         if (targetStats.TempHealth < 0)
@@ -862,6 +869,12 @@ public class CombatManager : MonoBehaviour
             }
 
             target.LastAttackerStats = attackerStats;
+
+            //Aktualizuje żywotność w panelu jednostki, jeśli dostała obrażenia w wyniku ataku okazyjnego
+            if (Unit.SelectedUnit == target.gameObject)
+            {
+                UnitsManager.Instance.UpdateUnitPanel(target.gameObject);
+            }
 
             StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, target.gameObject, finalDamage));
         }
@@ -1655,7 +1668,7 @@ public class CombatManager : MonoBehaviour
                 int attackerRoll = 0;
                 if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
                 {
-                    yield return StartCoroutine(WaitForRollValue());
+                    yield return StartCoroutine(WaitForRollValue(attackerStats));
                     attackerRoll = _manualRollResult;
                 }
                 else
@@ -1666,7 +1679,7 @@ public class CombatManager : MonoBehaviour
                 int targetRoll = 0;
                 if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
                 {
-                    yield return StartCoroutine(WaitForRollValue());
+                    yield return StartCoroutine(WaitForRollValue(targetStats));
                     targetRoll = _manualRollResult;
                 }
                 else
@@ -1736,7 +1749,7 @@ public class CombatManager : MonoBehaviour
             // Dla pochwyconego: jeśli to gracz, pobieramy ręczny wynik, w przeciwnym razie losujemy
             if (!GameManager.IsAutoDiceRollingMode && entangledUnit.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(WaitForRollValue());
+                yield return StartCoroutine(WaitForRollValue(entangledUnitStats));
                 targetRoll = _manualRollResult;
             }
             else
@@ -1748,7 +1761,7 @@ public class CombatManager : MonoBehaviour
             Unit attackerUnit = entanglingUnitStats.GetComponent<Unit>();
             if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(WaitForRollValue());
+                yield return StartCoroutine(WaitForRollValue(entanglingUnitStats));
                 attackerRoll = _manualRollResult;
             }
             else
@@ -1864,7 +1877,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    public IEnumerator WaitForRollValue()
+    public IEnumerator WaitForRollValue(Stats stats)
     {
         IsWaitingForRoll = true;
         _manualRollResult = 0;
@@ -1873,6 +1886,7 @@ public class CombatManager : MonoBehaviour
         if (_applyRollResultPanel != null)
         {
             _applyRollResultPanel.SetActive(true);
+            _applyRollResultPanel.GetComponentInChildren<TMP_Text>().text = "Wpisz wynik rzutu " + stats.Name;
         }
 
         // Wyzeruj pole tekstowe
@@ -1952,7 +1966,7 @@ public class CombatManager : MonoBehaviour
             // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(WaitForRollValue());
+                yield return StartCoroutine(WaitForRollValue(stats));
                 reloadRollResult = _manualRollResult;
             }
             else
@@ -2008,6 +2022,11 @@ public class CombatManager : MonoBehaviour
         }
 
         InventoryManager.Instance.DisplayReloadTime();
+
+        Debug.Log("attackerWeapon " + attackerWeapon);
+        Debug.Log("attackerWeapon name " + attackerWeapon.Name);
+        Debug.Log("reload left " + attackerWeapon.ReloadLeft);
+        Debug.Log("reload time " + attackerWeapon.ReloadTime);
     }
     #endregion
 
