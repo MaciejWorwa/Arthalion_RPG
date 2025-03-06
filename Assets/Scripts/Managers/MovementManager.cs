@@ -334,17 +334,16 @@ public class MovementManager : MonoBehaviour
             modifier = 1;
         }
 
-        int currentEncumbrance = InventoryManager.Instance.CalculateEncumbrance(stats);
-
-        if (stats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < stats.MaxEncumbrance * 2)
+        //Modyfikator za przeciążenie
+        if (stats.MaxEncumbrance - stats.CurrentEncumbrance < 0 && stats.CurrentEncumbrance < stats.MaxEncumbrance * 2)
         {
             stats.TempSz = Math.Max(3, stats.Sz - 1);
         }
-        else if (stats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < stats.MaxEncumbrance * 3)
+        else if (stats.MaxEncumbrance - stats.CurrentEncumbrance < 0 && stats.CurrentEncumbrance < stats.MaxEncumbrance * 3)
         {
             stats.TempSz = Math.Max(2, stats.Sz - 2);
         }
-        else if (currentEncumbrance > stats.MaxEncumbrance * 3)
+        else if (stats.CurrentEncumbrance > stats.MaxEncumbrance * 3)
         {
             stats.TempSz = 0;
         }

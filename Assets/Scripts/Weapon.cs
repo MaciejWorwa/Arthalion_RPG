@@ -78,7 +78,7 @@ public class Weapon : MonoBehaviour
     public bool Blackpowder; // Prochowa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Blast; // Wybuchowa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Damaging; // Przebijająca
-    public bool Dangerous; // Niebezpieczna ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Dangerous; // Niebezpieczna
     public bool Defensive; // Parujący
     public bool Distract; // Dekoncentrujący (Powoduje cofanie się) ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Entangle; // Unieruchamiający

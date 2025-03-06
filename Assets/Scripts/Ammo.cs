@@ -15,7 +15,7 @@ public class Ammo
     public int? Slash = null; // Sieczny --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaæ wywo³anie funkcji, takie jak np. w input fieldzie Accurate)
     public bool? Undamaging = null; // Têpy
     public bool? Imprecise = null; // Nieprecyzyjna
-    public bool? Dangerous = null; // Niebezpieczna   --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaæ wywo³anie funkcji, takie jak np. w input fieldzie Accurate)
+    public bool? Dangerous = null; // Niebezpieczna
     public bool? Pummel = null; // Og³uszaj¹cy
     public bool? Impact = null; // Druzgocz¹cy
     public int? Spread = null; // Rozrzucaj¹ca --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaæ wywo³anie funkcji, takie jak np. w input fieldzie Accurate)

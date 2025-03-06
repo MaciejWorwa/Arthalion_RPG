@@ -63,6 +63,7 @@ public class Stats : MonoBehaviour
     public int Resilience; // Punkty Bohatera
     public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
     public int Initiative; // Inicjatywa w walce
+    public int CurrentEncumbrance; // Aktualne obciążenie ekwipunkiem
     public int MaxEncumbrance; // Maksymalny udźwig
 
     [Header("Punkty zbroi")]

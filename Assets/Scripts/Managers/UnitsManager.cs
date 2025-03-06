@@ -1185,16 +1185,14 @@ public class UnitsManager : MonoBehaviour
             // Modyfikator za przeciążenie
             if (attributeName == "Zw")
             {
-                int currentEncumbrance = InventoryManager.Instance.CalculateEncumbrance(stats);
-
-                Debug.Log($"max obciazenie {stats.MaxEncumbrance}, currentEncumbrance {currentEncumbrance}");
+                Debug.Log($"max obciazenie {stats.MaxEncumbrance}, currentEncumbrance {stats.CurrentEncumbrance}");
 
                 int encumbrancePenalty = 0;
-                if (stats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < stats.MaxEncumbrance * 2)
+                if (stats.MaxEncumbrance - stats.CurrentEncumbrance < 0 && stats.CurrentEncumbrance < stats.MaxEncumbrance * 2)
                 {
                     encumbrancePenalty = 10;
                 }
-                else if (stats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < stats.MaxEncumbrance * 3)
+                else if (stats.MaxEncumbrance - stats.CurrentEncumbrance < 0 && stats.CurrentEncumbrance < stats.MaxEncumbrance * 3)
                 {
                     encumbrancePenalty = 20;
                 }

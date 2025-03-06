@@ -576,13 +576,12 @@ public class CombatManager : MonoBehaviour
             }
 
             //Modyfikator za przeciążenie
-            int currentEncumbrance = InventoryManager.Instance.CalculateEncumbrance(targetStats);
             int encumbrancePenalty = 0;
-            if (targetStats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < targetStats.MaxEncumbrance * 2)
+            if (targetStats.MaxEncumbrance - targetStats.CurrentEncumbrance < 0 && targetStats.CurrentEncumbrance < targetStats.MaxEncumbrance * 2)
             {
                 encumbrancePenalty = 10;
             }
-            else if (targetStats.MaxEncumbrance - currentEncumbrance < 0 && currentEncumbrance < targetStats.MaxEncumbrance * 3)
+            else if (targetStats.MaxEncumbrance - targetStats.CurrentEncumbrance < 0 && targetStats.CurrentEncumbrance < targetStats.MaxEncumbrance * 3)
             {
                 encumbrancePenalty = 20;
             }

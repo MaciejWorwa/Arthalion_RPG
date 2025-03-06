@@ -642,6 +642,7 @@ public class StatsData
     public int Resilience; // Punkty Bohatera
     public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
     public int Initiative;
+    public int CurrentEncumbrance; // Aktualne obciążenie ekwipunkiem
     public int MaxEncumbrance; // Maksymalny udźwig
 
     public int Armor_head;
@@ -760,7 +761,7 @@ public class WeaponData
     public bool Blackpowder; // Prochowa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Blast; // Wybuchowa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Damaging; // Przebijająca
-    public bool Dangerous; // Niebezpieczna ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Dangerous; // Niebezpieczna
     public bool Defensive; // Parujący
     public bool Distract; // Dekoncentrujący (Powoduje cofanie się) ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Durable; // Wytrzymały (str. 292) ---------------------- (MECHANIKA DO WPROWADZENIA)

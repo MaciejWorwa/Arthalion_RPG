@@ -131,6 +131,7 @@ public class StatesManager : MonoBehaviour
             {
                 unit.Fatiqued++; // Zwiększenie Wyczerpania
                 Debug.Log($"<color=#FF7F50>{stats.Name} udało się wygrać z zatruciem. Poziom wyczerpania wzrasta o 1.</color>");
+                return;
             }
             else
             {
