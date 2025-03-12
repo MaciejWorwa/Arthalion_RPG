@@ -72,10 +72,37 @@ public class StatesManager : MonoBehaviour
             Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Bleeding} punktów żywotności w wyniku krwawienia.</color>");
             unit.DisplayUnitHealthPoints();
         }
-        else
+        else if (!unit.Unconscious)
         {
             unit.Unconscious = true; // Utrata Przytomności
             Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność w wyniku krwawienia.</color>");
+        }
+        else
+        {
+            int rollResult = UnityEngine.Random.Range(1, 101);
+            int rollDifficulty = unit.Bleeding * 10;
+            if(rollResult < rollDifficulty)
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} wykonuje rzut obronny przed śmiercią w wyniku krwawienia. Wynik rzutu: {rollResult} Modyfikator: {-rollDifficulty}. {stats.Name} umiera.</color>");
+
+                if (GameManager.IsAutoKillMode)
+                {
+                    // Usuwanie jednostki
+                    UnitsManager.Instance.DestroyUnit(unit.gameObject);
+                }
+            }
+            else
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} wykonuje rzut obronny przed śmiercią w wyniku krwawienia. Wynik rzutu: {rollResult} Modyfikator: {-rollDifficulty}. {stats.Name} nadal żyje.</color>");
+            }
+
+            if (IsDoubleDigit(rollResult))
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} wyrzucił/a dublet. Krwawienie zmniejsza się o 1 poziom.</color>");
+                unit.Bleeding--;
+
+                if(unit.Bleeding == 0) unit.Fatiqued++; // Zwiększenie Wyczerpania
+            }
         }
     }
     private void Blinded(Unit unit)
@@ -291,5 +318,22 @@ public class StatesManager : MonoBehaviour
                 inputField.GetComponent<UnityEngine.UI.Toggle>().isOn = value;
             }
         }
+    }
+
+    // Funkcja sprawdzająca, czy liczba ma dwie identyczne cyfry
+    private bool IsDoubleDigit(int number)
+    {
+        // Jeśli wynik to dokładnie 100, również spełnia warunek
+        if (number == 100) return true;
+
+        // Sprawdzenie dla liczb dwucyfrowych
+        if (number >= 10 && number <= 99)
+        {
+            int tens = number / 10;  // Cyfra dziesiątek
+            int ones = number % 10; // Cyfra jedności
+            return tens == ones;    // Sprawdzenie, czy cyfry są takie same
+        }
+
+        return false;
     }
 }

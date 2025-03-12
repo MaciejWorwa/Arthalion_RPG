@@ -52,11 +52,11 @@ public class GameManager : MonoBehaviour
     public static bool IsMapHidingMode = false;
     [SerializeField] private Button _mapCoverButton;
     [SerializeField] private Button _mapUncoverButton;
-    public static bool IsStatsHidingMode = true;
+    public static bool IsStatsHidingMode = false;
     [SerializeField] private Button _statsHidingButton;
-    public static bool IsNamesHidingMode = true;
+    public static bool IsNamesHidingMode = false;
     [SerializeField] private Button _healthPointsHidingButton;
-    public static bool IsHealthPointsHidingMode = true;
+    public static bool IsHealthPointsHidingMode = false;
     [SerializeField] private Button _namesHidingButton;
     private Dictionary<Button, bool> allModes;
     [SerializeField] private Button _autosaveButton;

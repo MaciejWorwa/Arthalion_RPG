@@ -114,9 +114,9 @@ public class Weapon : MonoBehaviour
 
     public Dictionary<int, int> WeaponsWithReloadLeft = new Dictionary<int, int>(); // słownik zawierający wszystkie posiadane przez postać bronie wraz z ich ReloadLeft
 
+    // Funkcja pomocnicza do zapisywania bazowych cech broni dystansowych, przed uwzględnieniem typu amunicji
     public void SetBaseWeaponStats()
     {
-        Debug.Log("USTAWIAMY BASE STATS");
         // Zapisujemy bazowe statystyki przy uruchomieniu
         BaseWeaponStats = new WeaponBaseStats
         {

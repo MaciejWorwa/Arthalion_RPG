@@ -41,6 +41,7 @@ public class Unit : MonoBehaviour
     public bool Unconscious; // Utrata Przytomności
 
     public int EntangledUnitId; // Cel unieruchomienia
+    public int FeintedUnitId; // Cel finty
 
     //STARE
     public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
@@ -54,6 +55,7 @@ public class Unit : MonoBehaviour
     public int AimingBonus;
     public int CastingNumberBonus;
     public int DefensiveBonus;
+    public int FeintModifier; // Modyfikator za fintę
 
     [Header("Dostępne działania")]
     public bool CanMove = true;

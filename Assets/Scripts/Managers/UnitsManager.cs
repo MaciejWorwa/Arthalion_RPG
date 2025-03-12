@@ -190,19 +190,21 @@ public class UnitsManager : MonoBehaviour
         }
       
         //Tworzy nową postać na odpowiedniej pozycji
-        GameObject newUnit = Instantiate(_unitPrefab, position, Quaternion.identity);
+        GameObject newUnitObject = Instantiate(_unitPrefab, position, Quaternion.identity);
+        Stats stats = newUnitObject.GetComponent<Stats>();
+        Unit unit = newUnitObject.GetComponent<Unit>();
 
         //Umieszcza postać jako dziecko EmptyObject'u do którego są podpięte wszystkie jednostki
-        newUnit.transform.SetParent(GameObject.Find("----------Units-------------------").transform);
+        newUnitObject.transform.SetParent(GameObject.Find("----------Units-------------------").transform);
 
         //Ustawia Id postaci, które będzie definiować jego rasę i statystyki
-        newUnit.GetComponent<Stats>().Id = unitId;
+        stats.Id = unitId;
 
         //Zmienia status wybranego pola na zajęte
         selectedTile.GetComponent<Tile>().IsOccupied = true;
 
         // Aktualizuje liczbę wszystkich postaci
-        AllUnits.Add(newUnit.GetComponent<Unit>());
+        AllUnits.Add(unit);
 
         // Ustala unikalne Id jednostki
         int newUnitId = 1;
@@ -212,9 +214,9 @@ public class UnitsManager : MonoBehaviour
         {
             idExists = false;
 
-            foreach (var unit in AllUnits)
+            foreach (var u in AllUnits)
             {
-                if (unit.GetComponent<Unit>().UnitId == newUnitId)
+                if (u.UnitId == newUnitId)
                 {
                     idExists = true;
                     newUnitId++; // Zwiększa id i sprawdza ponownie
@@ -223,25 +225,25 @@ public class UnitsManager : MonoBehaviour
             }
         }
         while (idExists);
-        newUnit.GetComponent<Unit>().UnitId = newUnitId;
+        unit.UnitId = newUnitId;
 
         //Ustala nazwę jednostki (potrzebne, do wczytywania jednostek z listy zapisanych jednostek)
         if(_unitsDropdown.SelectedButton != null && IsSavedUnitsManaging)
         {
-            newUnit.GetComponent<Stats>().Name = _unitsDropdown.SelectedButton.GetComponentInChildren<TextMeshProUGUI>().text;
+            stats.Name = _unitsDropdown.SelectedButton.GetComponentInChildren<TextMeshProUGUI>().text;
         }
 
         //Wczytuje statystyki dla danego typu jednostki
-        DataManager.Instance.LoadAndUpdateStats(newUnit);
+        DataManager.Instance.LoadAndUpdateStats(newUnitObject);
 
         //Ustala nazwę GameObjectu jednostki
         if (unitName.Length < 1)
         {
-            newUnit.name = newUnit.GetComponent<Stats>().Race + $" {newUnitId}";
+            newUnitObject.name = stats.Race + $" {newUnitId}";
         }
         else
         {
-            newUnit.name = unitName;
+            newUnitObject.name = unitName;
         }
 
         // Wczytuje dane zapisanej jednostki
@@ -256,7 +258,7 @@ public class UnitsManager : MonoBehaviour
             }
         
             string savedUnitsFolder = Path.Combine(Application.persistentDataPath, "savedUnitsList");
-            string baseFileName = newUnit.GetComponent<Stats>().Name;
+            string baseFileName = stats.Name;
 
             //string unitFilePath = Path.Combine(savedUnitsFolder, baseFileName + "_unit.json");
             string weaponFilePath = Path.Combine(savedUnitsFolder, baseFileName + "_weapon.json");
@@ -264,36 +266,37 @@ public class UnitsManager : MonoBehaviour
             string tokenJsonPath = Path.Combine(savedUnitsFolder, baseFileName + "_token.json");
 
             // SaveAndLoadManager.Instance.LoadComponentDataWithReflection<UnitData, Unit>(newUnit, unitFilePath);
-            SaveAndLoadManager.Instance.LoadComponentDataWithReflection<WeaponData, Weapon>(newUnit, weaponFilePath);
+            SaveAndLoadManager.Instance.LoadComponentDataWithReflection<WeaponData, Weapon>(newUnitObject, weaponFilePath);
 
             // Wczytaj ekwipunek
             InventoryData inventoryData = JsonUtility.FromJson<InventoryData>(File.ReadAllText(inventoryFilePath));
+            Inventory inventory = newUnitObject.GetComponent<Inventory>();
             if (File.Exists(inventoryFilePath))
             {
                 foreach (var weapon in inventoryData.AllWeapons)
                 {
-                    InventoryManager.Instance.AddWeaponToInventory(weapon, newUnit);
+                    InventoryManager.Instance.AddWeaponToInventory(weapon, newUnitObject);
                 }
 
                 //Wczytanie aktualnie dobytych broni
-                foreach(var weapon in newUnit.GetComponent<Inventory>().AllWeapons)
+                foreach(var weapon in inventory.AllWeapons)
                 {
                     if(weapon.Id == inventoryData.EquippedWeaponsId[0])
                     {
-                        newUnit.GetComponent<Inventory>().EquippedWeapons[0] = weapon;
+                        inventory.EquippedWeapons[0] = weapon;
                     }
                     if(weapon.Id == inventoryData.EquippedWeaponsId[1])
                     {
-                        newUnit.GetComponent<Inventory>().EquippedWeapons[1] = weapon;
+                        inventory.EquippedWeapons[1] = weapon;
                     }
                 }
                 InventoryManager.Instance.CheckForEquippedWeapons();
             }
 
             //Wczytanie pieniędzy
-            newUnit.GetComponent<Inventory>().CopperCoins = inventoryData.CopperCoins;
-            newUnit.GetComponent<Inventory>().SilverCoins = inventoryData.SilverCoins;
-            newUnit.GetComponent<Inventory>().GoldCoins = inventoryData.GoldCoins;
+            inventory.CopperCoins = inventoryData.CopperCoins;
+            inventory.SilverCoins = inventoryData.SilverCoins;
+            inventory.GoldCoins = inventoryData.GoldCoins;
 
             // Wczytaj token, jeśli istnieje
             if (File.Exists(tokenJsonPath))
@@ -303,7 +306,7 @@ public class UnitsManager : MonoBehaviour
 
                 if(tokenData.filePath.Length > 1)
                 {
-                    StartCoroutine(TokensManager.Instance.LoadTokenImage(tokenData.filePath, newUnit));
+                    StartCoroutine(TokensManager.Instance.LoadTokenImage(tokenData.filePath, newUnitObject));
                 }
             }
 
@@ -321,51 +324,51 @@ public class UnitsManager : MonoBehaviour
             if (_unitTagToggle.isOn)
             {
 
-                newUnit.tag = "PlayerUnit";
-                newUnit.GetComponent<Unit>().DefaultColor = new Color(0f, 0.54f, 0.17f, 1.0f);
+                newUnitObject.tag = "PlayerUnit";
+                unit.DefaultColor = new Color(0f, 0.54f, 0.17f, 1.0f);
             }
             else
             {
-                newUnit.tag = "EnemyUnit";
-                newUnit.GetComponent<Unit>().DefaultColor = new Color(0.59f, 0.1f, 0.19f, 1.0f);
+                newUnitObject.tag = "EnemyUnit";
+                unit.DefaultColor = new Color(0.59f, 0.1f, 0.19f, 1.0f);
             }
-            newUnit.GetComponent<Unit>().ChangeUnitColor(newUnit);
+            unit.ChangeUnitColor(newUnitObject);
 
             //Jednostki duże
             if (_unitSizeToggle.isOn)
             {
-                newUnit.transform.localScale = new Vector3(1.4f, 1.4f, 1.4f);
-                newUnit.GetComponent<Stats>().IsBig = true;
+                newUnitObject.transform.localScale = new Vector3(1.4f, 1.4f, 1.4f);
+                stats.IsBig = true;
             }
             else
             {
-                newUnit.transform.localScale = new Vector3(1f, 1f, 1f);
-                newUnit.GetComponent<Stats>().IsBig = false;
+                newUnitObject.transform.localScale = new Vector3(1f, 1f, 1f);
+                stats.IsBig = false;
             }
 
             //Losuje początkowe statystyki dla każdej jednostki
             if (!IsSavedUnitsManaging)
             {
-                newUnit.GetComponent<Stats>().RollForBaseStats();
+                stats.RollForBaseStats();
             }
    
             // Dodaje do ekwipunku początkową broń adekwatną dla danej jednostki i wyposaża w nią
-            if (newUnit.GetComponent<Stats>().PrimaryWeaponIds != null && newUnit.GetComponent<Stats>().PrimaryWeaponIds.Count > 0 && !IsSavedUnitsManaging)
+            if (stats.PrimaryWeaponIds != null && stats.PrimaryWeaponIds.Count > 0 && !IsSavedUnitsManaging)
             {
                 Unit.LastSelectedUnit = Unit.SelectedUnit != null ? Unit.SelectedUnit : null;
-                Unit.SelectedUnit = newUnit;
+                Unit.SelectedUnit = newUnitObject;
                 SaveAndLoadManager.Instance.IsLoading = true; // Tylko po to, żeby informacja o dobyciu broni i dodaniu do ekwipunku z metody GrabWeapon i LoadWeapon nie były wyświetlane w oknie wiadomości
 
                 InventoryManager.Instance.GrabPrimaryWeapons();
             }
 
             //Ustala początkową inicjatywę i dodaje jednostkę do kolejki inicjatywy
-            newUnit.GetComponent<Stats>().Initiative = newUnit.GetComponent<Stats>().I + UnityEngine.Random.Range(1, 11);
+            stats.Initiative = stats.I + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
 
-            InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(newUnit.GetComponent<Unit>());
+            InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit);
         }
 
-        return newUnit;
+        return newUnitObject;
     }
 
     public void SetSavedUnitsManaging(bool value)
@@ -688,7 +691,7 @@ public class UnitsManager : MonoBehaviour
         Stats stats = unit.GetComponent<Stats>();
 
         //Ustala nową inicjatywę
-        stats.Initiative = stats.I + UnityEngine.Random.Range(1, 11);
+        stats.Initiative = stats.I + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
 
         //Uwzględnienie kary do Zręczności za pancerz
         if(stats.Armor_head >= 3 || stats.Armor_torso >= 3 || stats.Armor_arms >= 3 || stats.Armor_legs >= 3)

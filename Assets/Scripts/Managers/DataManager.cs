@@ -650,10 +650,17 @@ public class StatsData
     public int Armor_torso;
     public int Armor_legs;
 
+    public int AccurateShot; // Celny strzał
+    public int CombatReflexes; // Bitewny refleks
+    public int DirtyFighting; // Cios poniżej pasa
+    public int Disarm; // Robrajanie ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Feint; // Finta
+    public int StrikeToStun; // Ogłuszanie ---------------------- (MECHANIKA DO WPROWADZENIA)
+
+    // STARE
     public bool Ambidextrous; // Oburęczność
     public bool ArmouredCasting; // Pancerz Wiary
     public bool DaemonicAura; // Demoniczna aura
-    public bool Disarm; // Rozbrojenie
     public bool Ethereal; // Eteryczny
     public bool FastHands; // Dotyk mocy
     public bool Fearless; // Nieustraszony
@@ -668,9 +675,7 @@ public class StatsData
     public bool RapidReload; // Błyskawiczne przeładowanie
     public bool Sharpshooter; // Strzał przebijający
     public bool StoutHearted; // Odwaga
-    public bool StreetFighting; // Bijatyka
     public bool StrikeMightyBlow; // Silny cios
-    public bool StrikeToStun; // Ogłuszanie
     public bool Sturdy; // Krzepki
     public bool SureShot; // Strzał przebijający
     public bool Terryfying; // Przerażający (test Terror)

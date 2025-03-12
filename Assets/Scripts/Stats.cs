@@ -51,7 +51,7 @@ public class Stats : MonoBehaviour
 
     [Header("Cechy drugorzędowe")]
     public int Sz;
-    [HideInInspector] public int TempSz;
+    public int TempSz;
     public int MaxHealth;
     public int TempHealth;
     public int CriticalWounds; // Ilość Ran Krytycznych
@@ -72,11 +72,28 @@ public class Stats : MonoBehaviour
     public int Armor_torso;
     public int Armor_legs;
 
-    [Header("Zdolności")]
+    [Header("Umiejętności")]
+    public int Athletics;
+    public int Channeling; // Splatanie magii
+    public int Cool; // Opanowanie
+    public int Dodge; // Unik
+    public int Endurance; // Odporność
+    public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
+    public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
+
+    [Header("Talenty")]
+    public int AccurateShot; // Celny strzał
+    public int CombatReflexes; // Bitewny refleks
+    public int DirtyFighting; // Cios poniżej pasa
+    public int Disarm; // Robrajanie ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Feint; // Finta
+    public int StrikeToStun; // Ogłuszanie ---------------------- (MECHANIKA DO WPROWADZENIA)
+
+
+    //STARE
     public bool Ambidextrous; // Oburęczność
     public bool ArmouredCasting; // Pancerz Wiary
     public bool DaemonicAura; // Demoniczna aura (Wt +2 na niemagiczną broń, odporność na truciznę, ataki demona to broń magiczna)
-    public bool Disarm; // Rozbrojenie
     public bool Ethereal; // Eteryczny
     public bool FastHands; //Dotyk mocy
     public bool Fearless; // Nieustraszony
@@ -93,21 +110,11 @@ public class Stats : MonoBehaviour
     public bool StoutHearted; // Odwaga
     public bool StreetFighting; // Bijatyka
     public bool StrikeMightyBlow; // Silny cios
-    public bool StrikeToStun; // Ogłuszanie
     public bool Sturdy; // Krzepki
     public bool SureShot; // Strzał przebijający
     public bool Terryfying; // Przerażający (test Terror)
     public bool QuickDraw; // Szybkie wyciągnięcie
     public bool WillOfIron; // Żelazna wola
-
-    [Header("Umiejętności")]
-    public int Athletics;
-    public int Channeling; // Splatanie magii
-    public int Cool; // Opanowanie
-    public int Dodge; // Unik
-    public int Endurance; // Odporność
-    public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
-    public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Statystyki")]
     public int HighestDamageDealt; // Największe zadane obrażenia

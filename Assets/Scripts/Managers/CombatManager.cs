@@ -126,6 +126,7 @@ public class CombatManager : MonoBehaviour
         if (Unit.SelectedUnit == null) return;
 
         Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
+        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
 
         if (attackTypeName == null && unit.Entangled == 0 && unit.EntangledUnitId == 0)
         {
@@ -184,36 +185,43 @@ public class CombatManager : MonoBehaviour
             //    }
             //}
 
-            ////Ogłuszanie jest dostępne tylko dla jednostek ze zdolnością ogłuszania
-            //if (AttackTypes["Stun"] == true && unit.GetComponent<Stats>().StrikeToStun == false)
-            //{
-            //    AttackTypes[attackTypeName] = false;
-            //    AttackTypes["StandardAttack"] = true;
-            //    Debug.Log("Ogłuszanie mogą wykonywać tylko jednostki posiadające tą zdolność.");
-            //}
+            //Ogłuszanie jest dostępne tylko dla jednostek ze zdolnością ogłuszania
+            if (AttackTypes["Stun"] == true && stats.StrikeToStun == 0)
+            {
+                AttackTypes[attackTypeName] = false;
+                AttackTypes["StandardAttack"] = true;
+                Debug.Log("Ogłuszanie mogą wykonywać tylko jednostki posiadające ten talent.");
+            }
 
-            ////Rozbrajanie jest dostępne tylko dla jednostek ze zdolnością rozbrajania
-            //if (AttackTypes["Disarm"] == true && unit.GetComponent<Stats>().Disarm == false)
-            //{
-            //    AttackTypes[attackTypeName] = false;
-            //    AttackTypes["StandardAttack"] = true;
-            //    Debug.Log("Rozbrajanie mogą wykonywać tylko jednostki posiadające tą zdolność.");
-            //}
+            //Rozbrajanie jest dostępne tylko dla jednostek ze zdolnością rozbrajania
+            if (AttackTypes["Disarm"] == true && stats.Disarm == 0)
+            {
+                AttackTypes[attackTypeName] = false;
+                AttackTypes["StandardAttack"] = true;
+                Debug.Log("Rozbrajanie mogą wykonywać tylko jednostki posiadające ten talent.");
+            }
 
-            ////Ograniczenie finty, ogłuszania i rozbrajania do ataków w zwarciu
-            //if ((AttackTypes["Feint"] || AttackTypes["Stun"] || AttackTypes["Disarm"] || AttackTypes["Charge"]) == true && unit.GetComponent<Inventory>().EquippedWeapons[0] != null && unit.GetComponent<Inventory>().EquippedWeapons[0].Type.Contains("ranged"))
-            //{
-            //    AttackTypes[attackTypeName] = false;
-            //    AttackTypes["StandardAttack"] = true;
-            //    Debug.Log("Jednostka walcząca bronią dystansową nie może wykonać tej akcji.");
-            //}
-            //// else if ((AttackTypes["AllOutAttack"] || AttackTypes["GuardedAttack"] || AttackTypes["Charge"]) == true)
-            //// {
-            ////     AttackTypes[attackTypeName] = false;
-            ////     AttackTypes["StandardAttack"] = true;
-            ////     Debug.Log("Ta jednostka nie może w tej rundzie wykonać akcji podwójnej.");
-            //// }
-            //else
+            //Finta jest dostępna tylko dla jednostek ze zdolnością finty
+            if (AttackTypes["Feint"] == true && stats.Feint == 0)
+            {
+                AttackTypes[attackTypeName] = false;
+                AttackTypes["StandardAttack"] = true;
+                Debug.Log("Fintę mogą wykonywać tylko jednostki posiadające ten talent.");
+            }
+
+            //Ograniczenie finty, ogłuszania i rozbrajania do ataków w zwarciu
+            if ((AttackTypes["Feint"] || AttackTypes["Stun"] || AttackTypes["Disarm"] || AttackTypes["Charge"]) == true && unit.GetComponent<Inventory>().EquippedWeapons[0] != null && unit.GetComponent<Inventory>().EquippedWeapons[0].Type.Contains("ranged"))
+            {
+                AttackTypes[attackTypeName] = false;
+                AttackTypes["StandardAttack"] = true;
+                Debug.Log("Jednostka walcząca bronią dystansową nie może wykonać tej akcji.");
+            }
+            // else if ((AttackTypes["AllOutAttack"] || AttackTypes["GuardedAttack"] || AttackTypes["Charge"]) == true)
+            // {
+            //     AttackTypes[attackTypeName] = false;
+            //     AttackTypes["StandardAttack"] = true;
+            //     Debug.Log("Ta jednostka nie może w tej rundzie wykonać akcji podwójnej.");
+            // }
 
             // Podczas pochwycenia lub pochwytywania kogoś możemy tylko wykonywac atak typu Zapasy
             if (attackTypeName != "Grappling" && (unit.Entangled > 0 || unit.EntangledUnitId != 0))
@@ -311,11 +319,6 @@ public class CombatManager : MonoBehaviour
             attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(attacker.gameObject);
             targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
 
-            Debug.Log("attackerWeapon " + attackerWeapon);
-            Debug.Log("attackerWeapon name " + attackerWeapon.Name);
-            Debug.Log("reload left " + attackerWeapon.ReloadLeft);
-            Debug.Log("reload time " + attackerWeapon.ReloadTime);
-
             // Uwzględniamy typ amunicji
             if (attackerWeapon.Type.Contains("ranged") && attackerWeapon.Category != "entangling" && attackerWeapon.Category != "throwing")
             {
@@ -343,6 +346,19 @@ public class CombatManager : MonoBehaviour
         if (isRangedAttack && !_isTrainedWeaponCategory && attackerWeapon.Category != "crossbow" && attackerWeapon.Category != "throwing")
         {
             Debug.Log("Wybrana jednostka nie może walczyć przy użyciu broni z tej kategorii.");
+            yield break;
+        }
+
+        // Finta
+        if (AttackTypes["Feint"])
+        {
+            if (attackerWeapon.Category != "fencing")
+            {
+                Debug.Log("Fintę można wykonywać tylko przy użyciu broni szermierczej.");
+                yield break;
+            }
+
+            StartCoroutine(Feint(attackerStats, targetStats, targetWeapon));
             yield break;
         }
 
@@ -412,6 +428,10 @@ public class CombatManager : MonoBehaviour
             UpdateAimButtonColor();
         }
 
+        // Zresetowanie finty
+        attacker.FeintedUnitId = 0;
+        attacker.FeintModifier = 0;
+
         int rollOnAttack;
         if (IsManualPlayerAttack)
         {
@@ -469,6 +489,9 @@ public class CombatManager : MonoBehaviour
             Debug.Log($"{attackerStats.Name} atakuje przy użyciu {attackerWeapon.Name}. Wynik rzutu: {rollOnAttack}, Wartość umiejętności: {skillValue},{modifierString} PS: <color={successLevelColor}>{attackerSuccessLevel}</color>");
         }
 
+        //Ustalamy miejsce trafienia
+        string hitLocation = IsDoubleDigit(rollOnAttack) ? DetermineHitLocation() : DetermineHitLocation(rollOnAttack);
+
         // Obsługa fuksa / pecha
 
         bool isFortunateOrUnfortunateEvent = false; // Zmienna używana do tego, aby nie powielać dwa razy szczęścia lub pecha w przypadku specyficznych broni
@@ -480,7 +503,7 @@ public class CombatManager : MonoBehaviour
             if (attackerSuccessValue >= 0)
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
-                CriticalWoundRoll(attackerStats, targetStats); ;
+                CriticalWoundRoll(attackerStats, targetStats, hitLocation);
                 attackerStats.FortunateEvents++;
             }
             else if (IsDoubleDigit(rollOnAttack) || (attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
@@ -501,7 +524,7 @@ public class CombatManager : MonoBehaviour
             if (attackerSuccessValue >= 0)
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
-                CriticalWoundRoll(attackerStats, targetStats);
+                CriticalWoundRoll(attackerStats, targetStats, hitLocation);
                 attackerStats.FortunateEvents++;
             }
             else
@@ -712,7 +735,8 @@ public class CombatManager : MonoBehaviour
 
                     if (_parryOrDodge == "parry")
                     {
-                        CriticalWoundRoll(targetStats, attackerStats);
+                        //Ustalamy miejsce trafienia
+                        CriticalWoundRoll(targetStats, attackerStats, DetermineHitLocation());
                     }
 
                     targetStats.FortunateEvents++;
@@ -788,7 +812,7 @@ public class CombatManager : MonoBehaviour
 
         // 11) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
-        int armor = IsDoubleDigit(rollOnAttack) ? CalculateArmor(targetStats, attackerWeapon) : CalculateArmor(targetStats, attackerWeapon, rollOnAttack);
+        int armor = CalculateArmor(targetStats, attackerWeapon, hitLocation);
         int damage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, targetStats, attackerWeapon);
 
         Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.");
@@ -801,7 +825,7 @@ public class CombatManager : MonoBehaviour
 
         if (targetStats.TempHealth < 0)
         {
-            CriticalWoundRoll(attackerStats, targetStats);
+            CriticalWoundRoll(attackerStats, targetStats, hitLocation);
 
             if(GameManager.IsAutoKillMode)
             {
@@ -1089,17 +1113,22 @@ public class CombatManager : MonoBehaviour
         Debug.Log($"Uwzględniono modyfikatory za stany atakującego. Łączny modyfikator: " + attackModifier);
 
 
-        // Przewaga liczebna (tylko dla broni do walki wręcz)
+        // Przewaga liczebna
         int adjacentEnemies;
+        int outNumber = CountOutnumber(attackerUnit, targetUnit, out adjacentEnemies);
+
+        // Tylko dla broni w Walce Wręcz
         if (attackerWeapon.Type.Contains("melee"))
         {
-            attackModifier += CountOutnumber(attackerUnit, targetUnit, out adjacentEnemies);
+            // Przewaga liczebna
+            attackModifier += outNumber;
             Debug.Log("Uwzględniono modyfikator za przewagę liczebną. Łączny modyfikator: " + attackModifier);
-        }
-        else
-        {
-            // Nadal musimy obliczyć adjacentEnemies, bo jest potrzebne dalej
-            CountOutnumber(attackerUnit, targetUnit, out adjacentEnemies);
+
+            if(attackerUnit.FeintedUnitId == targetUnit.UnitId)
+            {
+                attackModifier += attackerUnit.FeintModifier;
+                Debug.Log("Uwzględniono modyfikator za fintę. Łączny modyfikator: " + attackModifier);
+            }
         }
 
         if (attackerWeapon.Type.Contains("ranged"))
@@ -1140,20 +1169,6 @@ public class CombatManager : MonoBehaviour
                 Debug.Log("Uwzględniono modyfikator za to, że cel jest zaangażowany w walkę w zwarciu. Łączny modyfikator: " + attackModifier);
             }
         }
-
-        //// Bijatyka
-        //if (attackerWeapon.Type.Contains("melee") &&
-        //    (attackerWeapon.Id == 0 || attackerWeapon.Id == 11) &&
-        //    attackerStats.StreetFighting)
-        //{
-        //    attackModifier += 10;
-        //}
-
-        ////Zapiekła nienawiść
-        //if (attackerStats.GrudgeBornFury == true && _greenskinsList.Contains(targetStats.Race))
-        //{
-        //    attackModifier += 5;
-        //}
 
         return attackModifier;
     }
@@ -1227,9 +1242,6 @@ public class CombatManager : MonoBehaviour
             modifier = 20;
         }
 
-        Debug.Log($"adjacentAllies {adjacentAllies}");
-        Debug.Log($"adjacentOpponents {adjacentOpponents}");
-
         return modifier;
     }
 
@@ -1239,7 +1251,7 @@ public class CombatManager : MonoBehaviour
         int damage;
 
         // Uwzględnienie cechy broni "Przebijająca"
-        if ((attackerWeapon.Damaging || attackerStats.Size - targetStats.Size >= 1) && successLevel < attackRoll % 10 && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) && _isTrainedWeaponCategory)
+        if (!attackerWeapon.Undamaging && (attackerWeapon.Damaging || attackerStats.Size - targetStats.Size >= 1) && successLevel < attackRoll % 10 && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) && _isTrainedWeaponCategory)
         {
             Debug.Log($"Używamy cechy Przebijająca i zamieniamy PS z {successLevel} na {attackRoll % 10}");
             successLevel = attackRoll % 10;
@@ -1252,12 +1264,20 @@ public class CombatManager : MonoBehaviour
         }
         else //Oblicza łączne obrażenia dla ataku dystansowego
         {
-            Debug.Log($"Poziom sukcesu: {successLevel}. Siła broni: {Math.Max(0, attackerWeapon.S - attackerWeapon.Damage)}");
-            damage = successLevel + Math.Max(0, attackerWeapon.S - attackerWeapon.Damage);
+            string accurateShotString = attackerStats.AccurateShot > 0 ? $". Bonus za talent Celny Strzał: {attackerStats.AccurateShot}" : "";
+            Debug.Log($"Poziom sukcesu: {successLevel}. Siła broni: {Math.Max(0, attackerWeapon.S - attackerWeapon.Damage)}{accurateShotString}");
+            damage = successLevel + Math.Max(0, attackerWeapon.S - attackerWeapon.Damage) + attackerStats.AccurateShot;
+        }
+
+        // Talent "Cios poniżej pasa"
+        if (attackerWeapon.Category == "brawling" && attackerStats.DirtyFighting > 0)
+        {
+            damage += attackerStats.DirtyFighting;
+            Debug.Log($"Dodatkowe obrażenia za talent Cios Poniżej Pasa: {attackerStats.DirtyFighting}");
         }
 
         // Uwzględnia cechę Druzgoczący
-        if (attackerWeapon.Impact && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 2 && _isTrainedWeaponCategory) 
+        if (attackerWeapon.Impact && !attackerWeapon.Undamaging && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 2 && _isTrainedWeaponCategory) 
         {
             damage += attackRoll % 10; // Dodaje liczbę jedności z rzutu na atak
             Debug.Log($"Dodatkowe obrażenia za cechę Druzgoczący: {attackRoll % 10}");
@@ -1277,110 +1297,249 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Critical wounds
-    private void CriticalWoundRoll(Stats attackerStats, Stats targetStats)
+    private void CriticalWoundRoll(Stats attackerStats, Stats targetStats, String hitLocation)
     {
         //TA METODA JEST DO ROZBUDOWANIA. Można dodać konkretne dodatkowe efekty np. ogłuszenie, krwawienie itp. w zależności również od lokacji
 
         int rollResult = UnityEngine.Random.Range(1, 101);
+        int modifier = targetStats.TempHealth < 0 ? Math.Abs(targetStats.TempHealth * 10) : 0;
+        string modifierString = modifier != 0 ? $" Modyfikator: {modifier}." : "";
         int extraWounds = 0;
-        Debug.Log("Wynik rzutu na na trafienie krytyczne: " + rollResult);
+        Debug.Log($"Wynik rzutu na trafienie krytyczne: {rollResult}.{modifierString} {targetStats.Name} otrzymuje trafienie krytyczne o wartości {rollResult + modifier}");
 
-        switch (rollResult)
+        switch (hitLocation)
         {
-            case int n when (n >= 1 && n <= 10):
-                extraWounds = 1;
+            case "head":
+                switch (rollResult + modifier)
+                {
+                    case int n when (n >= 1 && n <= 3):
+                        extraWounds = 0; break;
+                    case int n when (n >= 4 && n <= 6):
+                        extraWounds = 1; break;
+                    case int n when (n >= 7 && n <= 9):
+                        extraWounds = 1; break;
+                    case int n when (n >= 10 && n <= 15):
+                        extraWounds = 1; break;
+                    case int n when (n >= 16 && n <= 20):
+                        extraWounds = 1; break;
+                    case int n when (n >= 21 && n <= 25):
+                        extraWounds = 1; break;
+                    case int n when (n >= 26 && n <= 30):
+                        extraWounds = 1; break;
+                    case int n when (n >= 31 && n <= 35):
+                        extraWounds = 2; break;
+                    case int n when (n >= 36 && n <= 40):
+                        extraWounds = 2; break;
+                    case int n when (n >= 41 && n <= 45):
+                        extraWounds = 2; break;
+                    case int n when (n >= 46 && n <= 50):
+                        extraWounds = 3; break;
+                    case int n when (n >= 51 && n <= 55):
+                        extraWounds = 3; break;
+                    case int n when (n >= 56 && n <= 60):
+                        extraWounds = 3; break;
+                    case int n when (n >= 61 && n <= 65):
+                        extraWounds = 4; break;
+                    case int n when (n >= 66 && n <= 75):
+                        extraWounds = 4; break;
+                    case int n when (n >= 76 && n <= 80):
+                        extraWounds = 4; break;
+                    case int n when (n >= 81 && n <= 85):
+                        extraWounds = 5; break;
+                    case int n when (n >= 86 && n <= 94):
+                        extraWounds = 5; break;
+                    case int n when (n >= 95 && n <= 99):
+                        extraWounds = 5; break;
+                    case int n when (n >= 100):
+                        extraWounds = -1; break; // Śmierć
+                }
                 break;
-            case int n when (n >= 11 && n <= 20):
-                extraWounds = 1;
+
+            case "arms":
+                switch (rollResult + modifier)
+                {
+                    case int n when (n >= 1 && n <= 10):
+                        extraWounds = 0; break;
+                    case int n when (n >= 11 && n <= 20):
+                        extraWounds = 0; break;
+                    case int n when (n >= 21 && n <= 25):
+                        extraWounds = 1; break;
+                    case int n when (n >= 26 && n <= 40):
+                        extraWounds = 1; break;
+                    case int n when (n >= 41 && n <= 45):
+                        extraWounds = 1; break;
+                    case int n when (n >= 46 && n <= 50):
+                        extraWounds = 1; break;
+                    case int n when (n >= 51 && n <= 55):
+                        extraWounds = 2; break;
+                    case int n when (n >= 56 && n <= 60):
+                        extraWounds = 2; break;
+                    case int n when (n >= 61 && n <= 75):
+                        extraWounds = 2; break;
+                    case int n when (n >= 76 && n <= 80):
+                        extraWounds = 2; break;
+                    case int n when (n >= 81 && n <= 85):
+                        extraWounds = 3; break;
+                    case int n when (n >= 86 && n <= 90):
+                        extraWounds = 3; break;
+                    case int n when (n >= 91 && n <= 95):
+                        extraWounds = 3; break;
+                    case int n when (n >= 96 && n <= 109):
+                        extraWounds = 4; break;
+                    case int n when (n >= 110 && n <= 115):
+                        extraWounds = 4; break;
+                    case int n when (n >= 116 && n <= 120):
+                        extraWounds = 4; break;
+                    case int n when (n >= 121 && n <= 125):
+                        extraWounds = 5; break;
+                    case int n when (n >= 126 && n <= 130):
+                        extraWounds = 5; break;
+                    case int n when (n >= 131 && n <= 135):
+                        extraWounds = 5; break;
+                    case int n when (n >= 136):
+                        extraWounds = -1; break; // Śmierć
+                }
                 break;
-            case int n when (n >= 21 && n <= 25):
-                extraWounds = 1;
+
+            case "torso":
+                switch (rollResult + modifier)
+                {
+                    case int n when (n >= 1 && n <= 10):
+                        extraWounds = 0; break;
+                    case int n when (n >= 11 && n <= 20):
+                        extraWounds = 1; break;
+                    case int n when (n >= 21 && n <= 25):
+                        extraWounds = 1; break;
+                    case int n when (n >= 26 && n <= 30):
+                        extraWounds = 1; break;
+                    case int n when (n >= 31 && n <= 35):
+                        extraWounds = 2; break;
+                    case int n when (n >= 36 && n <= 40):
+                        extraWounds = 2; break;
+                    case int n when (n >= 41 && n <= 45):
+                        extraWounds = 2; break;
+                    case int n when (n >= 46 && n <= 50):
+                        extraWounds = 2; break;
+                    case int n when (n >= 51 && n <= 55):
+                        extraWounds = 3; break;
+                    case int n when (n >= 56 && n <= 60):
+                        extraWounds = 3; break;
+                    case int n when (n >= 61 && n <= 65):
+                        extraWounds = 3; break;
+                    case int n when (n >= 66 && n <= 70):
+                        extraWounds = 3; break;
+                    case int n when (n >= 71 && n <= 75):
+                        extraWounds = 4; break;
+                    case int n when (n >= 76 && n <= 80):
+                        extraWounds = 4; break;
+                    case int n when (n >= 81 && n <= 85):
+                        extraWounds = 4; break;
+                    case int n when (n >= 86 && n <= 90):
+                        extraWounds = 4; break;
+                    case int n when (n >= 91 && n <= 95):
+                        extraWounds = 5; break;
+                    case int n when (n >= 96 && n <= 110):
+                        extraWounds = 5; break;
+                    case int n when (n >= 111 && n <= 115):
+                        extraWounds = 5; break;
+                    case int n when (n >= 116):
+                        extraWounds = -1; break; // Śmierć
+                }
                 break;
-            case int n when (n >= 26 && n <= 30):
-                extraWounds = 1;
-                break;
-            case int n when (n >= 31 && n <= 35):
-                extraWounds = 2;
-                break;
-            case int n when (n >= 36 && n <= 40):
-                extraWounds = 2;
-                break;
-            case int n when (n >= 41 && n <= 45):
-                extraWounds = 2;
-                break;
-            case int n when (n >= 46 && n <= 50):
-                extraWounds = 2;
-                break;
-            case int n when (n >= 51 && n <= 55):
-                extraWounds = 3;
-                break;
-            case int n when (n >= 56 && n <= 60):
-                extraWounds = 3;
-                break;
-            case int n when (n >= 61 && n <= 65):
-                extraWounds = 3;
-                break;
-            case int n when (n >= 66 && n <= 70):
-                extraWounds = 3;
-                break;
-            case int n when (n >= 71 && n <= 75):
-                extraWounds = 4;
-                break;
-            case int n when (n >= 76 && n <= 80):
-                extraWounds = 4;
-                break;
-            case int n when (n >= 81 && n <= 85):
-                extraWounds = 4;
-                break;
-            case int n when (n >= 86 && n <= 90):
-                extraWounds = 4;
-                break;
-            case int n when (n >= 91 && n <= 93):
-                extraWounds = 5;
-                break;
-            case int n when (n >= 94 && n <= 96):
-                extraWounds = 5;
-                break;
-            case int n when (n >= 97 && n <= 99):
-                extraWounds = 5;
+
+            case "legs":
+                switch (rollResult + modifier)
+                {
+                    case int n when (n >= 1 && n <= 10):
+                        extraWounds = 0; break;
+                    case int n when (n >= 11 && n <= 20):
+                        extraWounds = 0; break;
+                    case int n when (n >= 21 && n <= 25):
+                        extraWounds = 1; break;
+                    case int n when (n >= 26 && n <= 40):
+                        extraWounds = 1; break;
+                    case int n when (n >= 41 && n <= 45):
+                        extraWounds = 1; break;
+                    case int n when (n >= 46 && n <= 50):
+                        extraWounds = 1; break;
+                    case int n when (n >= 51 && n <= 55):
+                        extraWounds = 2; break;
+                    case int n when (n >= 56 && n <= 60):
+                        extraWounds = 2; break;
+                    case int n when (n >= 61 && n <= 65):
+                        extraWounds = 2; break;
+                    case int n when (n >= 66 && n <= 70):
+                        extraWounds = 2; break;
+                    case int n when (n >= 71 && n <= 75):
+                        extraWounds = 3; break;
+                    case int n when (n >= 76 && n <= 80):
+                        extraWounds = 3; break;
+                    case int n when (n >= 81 && n <= 85):
+                        extraWounds = 3; break;
+                    case int n when (n >= 86 && n <= 90):
+                        extraWounds = 4; break;
+                    case int n when (n >= 91 && n <= 95):
+                        extraWounds = 4; break;
+                    case int n when (n >= 96 && n <= 105):
+                        extraWounds = 4; break;
+                    case int n when (n >= 106 && n <= 115):
+                        extraWounds = 5; break;
+                    case int n when (n >= 116 && n <= 120):
+                        extraWounds = 5; break;
+                    case int n when (n >= 121 && n <= 125):
+                        extraWounds = 5; break;
+                    case int n when (n >= 126):
+                        extraWounds = -1; break; // Śmierć
+                }
                 break;
         }
 
-        //Zadanie dodatkowych obrażeń
-        targetStats.TempHealth -= extraWounds;
-        if (extraWounds != 0)
+        if (extraWounds > 0)
         {
+            // Zadanie dodatkowych obrażeń
+            targetStats.TempHealth -= extraWounds;
+
             Debug.Log($"{targetStats.Name} otrzymuje {extraWounds} obrażeń w wyniku trafienia krytycznego.");
+
+            // Zwiększenie ilości ran krytycznych
+            targetStats.CriticalWounds++;
+            UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
         }
 
-        //Zwiększenie ilości ran krytycznych
-        targetStats.CriticalWounds++;
-        UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
-
-        //Śmierć
-        if (targetStats.CriticalWounds > targetStats.Wt / 10 || rollResult == 100)
+        // Obsługa śmierci
+        if (targetStats.CriticalWounds > targetStats.Wt / 10 || extraWounds == -1)
         {
-            string deathMessage = rollResult == 100 ? $"Trafienie krytyczne powoduje śmierć {targetStats.Name}." : $"Ilość ran krytycznych {targetStats.Name} przekroczyła bonus z wytrzymałości.";
-
+            string deathMessage = extraWounds == -1 ? $"Trafienie krytyczne powoduje natychmiastową śmierć {targetStats.Name}." : $"Ilość ran krytycznych {targetStats.Name} przekroczyła bonus z wytrzymałości.";
             Debug.Log($"<color=red>{deathMessage} Jednostka umiera.</color>");
 
             if (GameManager.IsAutoKillMode)
             {
                 HandleDeath(targetStats, targetStats.gameObject, attackerStats);
             }
+            else
+            {
+                targetStats.GetComponent<Unit>().DisplayUnitHealthPoints();
+            }
+        }
+        else if (targetStats.gameObject != null && targetStats.TempHealth < 0)
+        {
+            // Jeśli jednostka nie umarła, ale jej żywotność spadła poniżej 0 – ustaw na 0.
+            targetStats.TempHealth = 0;
+            targetStats.GetComponent<Unit>().DisplayUnitHealthPoints();
         }
     }
     #endregion
 
     #region Check for attack localization and return armor value
-    private int CalculateArmor(Stats targetStats, Weapon attackerWeapon, int rollResult = 0)
+    // Metoda określająca miejsce trafienia
+    private string DetermineHitLocation(int rollResult = 0)
     {
         int attackLocalization;
         if (rollResult == 0) // Sytuacja, która ma miejsce w przypadku trafień krytycznych. Wtedy rzut na lokalizację jest ustalany losowo.
         {
             attackLocalization = UnityEngine.Random.Range(1, 101);
         }
-        else // Wynikiem rzutu na llokalizacje jest odwrócony wynik na trafienie
+        else // Wynikiem rzutu na lokalizacje jest odwrócony wynik na trafienie
         {
             // Konwersja liczby na string i odwrócenie
             string reversedString = new string(rollResult.ToString().Reverse().ToArray());
@@ -1394,43 +1553,51 @@ public class CombatManager : MonoBehaviour
             attackLocalization = int.Parse(reversedString);
         }
 
-        int armor = 0;
         string hitLocation = "";
-        Inventory inventory = targetStats.GetComponent<Inventory>();
 
         switch (attackLocalization)
         {
             case int n when (n >= 1 && n <= 9):
-                Debug.Log("Trafienie w głowę.");
-                armor = targetStats.Armor_head;
+                Debug.Log("Atak jest skierowany w głowę.");
                 hitLocation = "head";
                 break;
             case int n when (n >= 10 && n <= 24):
-                Debug.Log("Trafienie w lewą rękę.");
-                armor = targetStats.Armor_arms;
+                Debug.Log("Atak jest skierowany w lewą rękę.");
                 hitLocation = "arms";
                 break;
             case int n when (n >= 25 && n <= 44):
-                Debug.Log("Trafienie w prawą rękę.");
-                armor = targetStats.Armor_arms;
+                Debug.Log("Atak jest skierowany w prawą rękę.");
                 hitLocation = "arms";
                 break;
             case int n when (n >= 45 && n <= 79):
-                Debug.Log("Trafienie w korpus.");
-                armor = targetStats.Armor_torso;
+                Debug.Log("Atak jest skierowany w korpus.");
                 hitLocation = "torso";
                 break;
             case int n when (n >= 80 && n <= 89):
-                Debug.Log("Trafienie w lewą nogę.");
-                armor = targetStats.Armor_legs;
+                Debug.Log("Atak jest skierowany w lewą nogę.");
                 hitLocation = "legs";
                 break;
             case int n when (n >= 90 && n <= 100):
-                Debug.Log("Trafienie w prawą nogę.");
-                armor = targetStats.Armor_legs;
+                Debug.Log("Atak jest skierowany w prawą nogę.");
                 hitLocation = "legs";
                 break;
         }
+
+        return hitLocation;
+    }
+
+    private int CalculateArmor(Stats targetStats, Weapon attackerWeapon, string hitLocation)
+    {
+        int armor = hitLocation switch
+        {
+            "head" => targetStats.Armor_head,
+            "larms" => targetStats.Armor_arms,
+            "torso" => targetStats.Armor_torso,
+            "legs" => targetStats.Armor_legs,
+            _ => 0
+        };
+
+        Inventory inventory = targetStats.GetComponent<Inventory>();
 
         //Podwaja wartość zbroi w przypadku walki przy użyciu broni Tępej
         if (attackerWeapon.Undamaging) armor *= 2;
@@ -1456,7 +1623,6 @@ public class CombatManager : MonoBehaviour
 
         return armor;
     }
-
     #endregion
 
     #region Charge
@@ -1757,8 +1923,7 @@ public class CombatManager : MonoBehaviour
             }
 
             // Dla pochwytującego: sprawdzamy, czy ma tag "PlayerUnit"
-            Unit attackerUnit = entanglingUnitStats.GetComponent<Unit>();
-            if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
+            if (!GameManager.IsAutoDiceRollingMode && entanglingUnit.CompareTag("PlayerUnit"))
             {
                 yield return StartCoroutine(WaitForRollValue(entanglingUnitStats));
                 attackerRoll = _manualRollResult;
@@ -2021,11 +2186,6 @@ public class CombatManager : MonoBehaviour
         }
 
         InventoryManager.Instance.DisplayReloadTime();
-
-        Debug.Log("attackerWeapon " + attackerWeapon);
-        Debug.Log("attackerWeapon name " + attackerWeapon.Name);
-        Debug.Log("reload left " + attackerWeapon.ReloadLeft);
-        Debug.Log("reload time " + attackerWeapon.ReloadTime);
     }
     #endregion
 
@@ -2144,6 +2304,65 @@ public class CombatManager : MonoBehaviour
         }
 
         return units;
+    }
+    #endregion
+
+    #region Feint
+    public IEnumerator Feint(Stats attackerStats, Stats targetStats, Weapon targetWeapon)
+    {
+        Unit attackerUnit = attackerStats.GetComponent<Unit>();
+        Unit targetUnit = targetStats.GetComponent<Unit>();
+
+        //Wykonuje akcję
+        RoundsManager.Instance.DoAction(attackerUnit);
+
+        int targetRoll;
+        int attackerRoll;
+
+        // Dla atakowanego
+        if (!GameManager.IsAutoDiceRollingMode && targetUnit.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(WaitForRollValue(targetStats));
+            targetRoll = _manualRollResult;
+        }
+        else
+        {
+            targetRoll = UnityEngine.Random.Range(1, 101);
+        }
+
+        // Dla atakującego
+        if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(WaitForRollValue(attackerStats));
+            attackerRoll = _manualRollResult;
+        }
+        else
+        {
+            attackerRoll = UnityEngine.Random.Range(1, 101);
+        }
+
+        MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
+
+        // Wywołanie testów – przekazujemy wynik rzutu tylko dla jednostki, która była manualna
+        int[] targetTest = UnitsManager.Instance.TestSkill("WW", targetStats, targetMeleeSkill.ToString(), 0, targetRoll);
+        int[] attackerTest = UnitsManager.Instance.TestSkill("WW", attackerStats, "Fencing", (attackerStats.Feint - 1) * 10, attackerRoll);
+
+        int targetSuccessLevel = targetTest[1];
+        int attackerSuccessLevel = attackerTest[1];
+
+        if (attackerSuccessLevel > targetSuccessLevel)
+        {
+            Debug.Log($"Finta powiodła się. Następny atak {attackerStats.Name} przeciwko {targetStats.Name} będzie wykonywany z modyfikatorem {(attackerSuccessLevel - targetSuccessLevel) * 10}");
+            attackerUnit.FeintModifier = (attackerSuccessLevel - targetSuccessLevel) * 10;
+            attackerUnit.FeintedUnitId = targetUnit.UnitId;
+        }
+        else
+        {
+            Debug.Log($"Finta nie powiodła się.");
+        }
+
+        // Resetuje typ ataku
+        ChangeAttackType();
     }
     #endregion
 

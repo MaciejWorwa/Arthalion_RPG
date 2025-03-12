@@ -1034,11 +1034,9 @@ public class InventoryManager : MonoBehaviour
             Debug.LogWarning($"Nie znaleziono efektów dla amunicji: {weapon.AmmoType}");
             return;
         }
-        Debug.Log($"siła tuz przed resetem {weapon.S}");
+
         // Resetowanie broni do bazowych statystyk
         ResetToBaseWeaponStats(weapon);
-
-        Debug.Log($"siła tuz po resecie {weapon.S}");
 
         // Nakładamy efekty amunicji na bazową broń
         if (effect.S.HasValue) weapon.S = weapon.BaseWeaponStats.S + effect.S.Value;
@@ -1077,8 +1075,6 @@ public class InventoryManager : MonoBehaviour
         weapon.Spread = weapon.BaseWeaponStats.Spread;
         weapon.Precise = weapon.BaseWeaponStats.Precise;
         weapon.Blast = weapon.BaseWeaponStats.Blast;
-
-        Debug.Log($"siła tuż tuż po resecie {weapon.S}");
     }
 
     #endregion

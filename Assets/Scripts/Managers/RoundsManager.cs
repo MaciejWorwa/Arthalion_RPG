@@ -199,8 +199,8 @@ public class RoundsManager : MonoBehaviour
 
         if (unit.CanDoAction)
         {
-            // Automatyczny zapis, aby możliwe było użycie punktów szczęścia. Jeżeli jednostka ich nie posiada to zapis nie jest wykonywany
-            if(unit.Stats.PS > 0 && !GameManager.IsAutoCombatMode)
+            // Automatyczny zapis, aby możliwe było użycie punktów szczęścia lub zepsucia
+            if(!GameManager.IsAutoCombatMode)
             {
                 SaveAndLoadManager.Instance.SaveUnits(UnitsManager.Instance.AllUnits, "autosave");
                 _isFortunePointSpent = false;
@@ -270,10 +270,15 @@ public class RoundsManager : MonoBehaviour
 
         if (stats.PS == 0)
         {
-            Debug.Log("Ta jednostka nie posiada Punktów Szczęścia. Przerzut jest niemożliwy.");
-            return;
+            Debug.Log($"{stats.Name} nie posiada Punktów Szczęścia, co skutkuje zwiększeniem Punktów Zepsucia. Wykonaj akcję ponownie.");
+            stats.CorruptionPoints++;
         }
-        stats.PS--;
+        else
+        {
+            Debug.Log($"{stats.Name} zużywa Punkt Szczęścia. Wykonaj akcję ponownie.");
+            stats.PS--;
+        }
+        
         _isFortunePointSpent = true;
 
         SaveAndLoadManager.Instance.SaveFortunePoints("autosave", stats, stats.PS);
