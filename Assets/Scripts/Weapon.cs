@@ -142,7 +142,7 @@ public class Weapon : MonoBehaviour
     {
         Id = 0;
         Name = "Pięści";
-        Type = new string[] { "melee" };
+        Type = new string[] { "melee", "natural-weapon" };
         NaturalWeapon = true;
         TwoHanded = false;
         Quality = "Zwykła";

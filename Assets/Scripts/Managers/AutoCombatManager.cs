@@ -81,7 +81,7 @@ public class AutoCombatManager : MonoBehaviour
             {
                 CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>(), false);
 
-                if (unit.CanDoAction || unit.GetComponent<Stats>().RapidReload)
+                if (unit.CanDoAction || unit.GetComponent<Stats>().RapidReload > 0)
                 {
                     CombatManager.Instance.Reload();
                 }
@@ -100,7 +100,7 @@ public class AutoCombatManager : MonoBehaviour
             {
                 CombatManager.Instance.Reload();
 
-                if (unit.CanDoAction || unit.GetComponent<Stats>().RapidReload)
+                if (unit.CanDoAction || unit.GetComponent<Stats>().RapidReload > 0)
                 {
                     CombatManager.Instance.Reload();
                 }

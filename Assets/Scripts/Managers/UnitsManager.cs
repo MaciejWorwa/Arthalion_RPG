@@ -1221,7 +1221,7 @@ public class UnitsManager : MonoBehaviour
         string successLevelColor = successValue > 0 ? "green" : "red";
 
         // Tworzenie stringa dla modyfikatora
-        string modifierString = modifier != 0 ? $" Modifikator: {modifier}," : "";
+        string modifierString = modifier != 0 ? $" Modyfikator: {modifier}," : "";
 
         // Wyświetlenie wyniku
         if(skillName != null)

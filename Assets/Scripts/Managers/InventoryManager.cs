@@ -542,7 +542,6 @@ public class InventoryManager : MonoBehaviour
     #region Encumbrance
     public void CalculateEncumbrance(Stats stats)
     {
-        Debug.Log("oblicamy obciazenie dla " + stats.Name);
         Inventory inventory = stats.GetComponent<Inventory>();
         int totalEncumbrance = 0;
 
@@ -567,7 +566,7 @@ public class InventoryManager : MonoBehaviour
     {
         string color = "<color=white>";
         if (stats.CurrentEncumbrance > stats.MaxEncumbrance) color = "<color=red>";
-        _encumbranceDisplay.text = $"{color}{stats.CurrentEncumbrance.ToString()}</color> / {stats.MaxEncumbrance}";
+        _encumbranceDisplay.text = $"{color}{stats.CurrentEncumbrance}</color> / {stats.MaxEncumbrance}";
     }
     #endregion
 

@@ -95,7 +95,11 @@ public class Unit : MonoBehaviour
 
     private void OnMouseOver()
     {
-        if(Input.GetMouseButtonDown(1) && SelectedUnit != null && SelectedUnit != this.gameObject && !MagicManager.IsTargetSelecting)
+        if(Input.GetMouseButton(1) && SelectedUnit != null && SelectedUnit != this.gameObject && !MagicManager.IsTargetSelecting)
+        {
+            StartCoroutine(CombatManager.Instance.OpenHitLocationPanel());
+        }
+        else if(Input.GetMouseButtonUp(1) && SelectedUnit != null && SelectedUnit != this.gameObject && !MagicManager.IsTargetSelecting)
         {
             //Sprawdza, czy atakowanym jest nasz sojusznik i czy tryb Friendly Fire jest aktywny
             if(GameManager.IsFriendlyFire == false && this.gameObject.CompareTag(SelectedUnit.tag))
@@ -132,12 +136,11 @@ public class Unit : MonoBehaviour
                 CombatManager.Instance.Attack(SelectedUnit.GetComponent<Unit>(), this, false);
             }
         }
-        else if (Input.GetMouseButtonDown(1) && SelectedUnit != null && MagicManager.IsTargetSelecting)
+        else if (Input.GetMouseButtonUp(1) && SelectedUnit != null && MagicManager.IsTargetSelecting)
         {
             MagicManager.Instance.CastSpell(this.gameObject);
         }   
     }
-
     public void SelectUnit()
     {
         if (SelectedUnit == null)

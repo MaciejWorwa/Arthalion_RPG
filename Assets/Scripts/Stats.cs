@@ -83,11 +83,15 @@ public class Stats : MonoBehaviour
 
     [Header("Talenty")]
     public int AccurateShot; // Celny strzał
+    public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
-    public int Disarm; // Robrajanie ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Disarm; // Rozbrojenie
     public int Feint; // Finta
-    public int StrikeToStun; // Ogłuszanie ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Gunner; // Artylerzysta
+    public int RapidReload; // Szybkie przeładowanie
+    public int Robust; // Krzepki
+    public int StrikeToStun; // Ogłuszenie
 
 
     //STARE
@@ -105,7 +109,6 @@ public class Stats : MonoBehaviour
     public bool MightyShot; // Strzał precyzyjny
     public bool MightyMissile; // Morderczy pocisk
     public bool PowerfulBlow; // Potężny cios (parowanie -30)
-    public bool RapidReload; // Błyskawiczne przeładowanie
     public bool Sharpshooter; // Strzał przebijający
     public bool StoutHearted; // Odwaga
     public bool StreetFighting; // Bijatyka
