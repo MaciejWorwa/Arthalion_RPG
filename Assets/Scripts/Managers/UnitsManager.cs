@@ -654,7 +654,7 @@ public class UnitsManager : MonoBehaviour
             stats.TempHealth = stats.MaxHealth;
 
             // Aktualizuje udźwig
-            stats.MaxEncumbrance = (stats.S + stats.Wt) / 10;
+            stats.MaxEncumbrance = (stats.S + stats.Wt) / 10 + stats.StrongBack;
 
             //Ustala inicjatywę i aktualizuje kolejkę inicjatywy
             stats.Initiative = stats.I + UnityEngine.Random.Range(1, 11);
@@ -710,7 +710,8 @@ public class UnitsManager : MonoBehaviour
     {
         if (Unit.SelectedUnit == null) return;
 
-        GameObject unit = Unit.SelectedUnit;
+        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
+        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
 
         // Pobiera nazwę cechy z nazwy obiektu InputField (bez "_input")
         string attributeName = textInput.name.Replace("_input", "");
@@ -727,7 +728,7 @@ public class UnitsManager : MonoBehaviour
                             : 0;
 
                 // Ustawia w słowniku
-                unit.GetComponent<Stats>().Melee[category] = value;
+                stats.Melee[category] = value;
             }
         }
         // 2. Albo umiejętność z tablicy Ranged
@@ -740,14 +741,14 @@ public class UnitsManager : MonoBehaviour
                             ? rangedValue
                             : 0;
 
-                unit.GetComponent<Stats>().Ranged[category] = value;
+                stats.Ranged[category] = value;
             }
         }
         // 3. A jeżeli to nie Melee_ ani Ranged_, wtedy korzystamy z refleksji
         else
         {
             // Szukamy zwykłego pola w klasie Stats
-            FieldInfo field = unit.GetComponent<Stats>().GetType().GetField(attributeName);
+            FieldInfo field = stats.GetType().GetField(attributeName);
 
             // Jeżeli pole nie istnieje, kończymy metodę
             if (field == null)
@@ -764,7 +765,7 @@ public class UnitsManager : MonoBehaviour
                             ? inputValue 
                             : 0;
 
-                field.SetValue(unit.GetComponent<Stats>(), value);
+                field.SetValue(stats, value);
 
                 if(attributeName == "Mag")
                 {
@@ -775,17 +776,17 @@ public class UnitsManager : MonoBehaviour
             {
                 // int przez Slider
                 int value = (int)textInput.GetComponent<UnityEngine.UI.Slider>().value;
-                field.SetValue(unit.GetComponent<Stats>(), value);
+                field.SetValue(stats, value);
             }
             else if (field.FieldType == typeof(bool))
             {
                 bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn; 
-                field.SetValue(unit.GetComponent<Stats>(), boolValue);
+                field.SetValue(stats, boolValue);
             }
             else if (field.FieldType == typeof(string))
             {
                 string value = textInput.GetComponent<TMP_InputField>().text;
-                field.SetValue(unit.GetComponent<Stats>(), value);
+                field.SetValue(stats, value);
             }
             else if (field.FieldType.IsEnum && textInput.GetComponent<TMP_Dropdown>() != null)
             {
@@ -796,7 +797,7 @@ public class UnitsManager : MonoBehaviour
                 if (dropdown.value >= 0 && dropdown.value < enumValues.Length)
                 {
                     object selectedEnumValue = enumValues.GetValue(dropdown.value);
-                    field.SetValue(unit.GetComponent<Stats>(), selectedEnumValue);
+                    field.SetValue(stats, selectedEnumValue);
                 }
             }
             else
@@ -806,26 +807,26 @@ public class UnitsManager : MonoBehaviour
 
             if(attributeName == "MaxHealth")
             {
-                unit.GetComponent<Stats>().TempHealth = unit.GetComponent<Stats>().MaxHealth;
-                unit.GetComponent<Unit>().DisplayUnitHealthPoints();
+                stats.TempHealth = stats.MaxHealth;
+                unit.DisplayUnitHealthPoints();
             }
-            else if(attributeName == "S" || attributeName == "Wt")
+            else if(attributeName == "S" || attributeName == "Wt" || attributeName == "StrongBack")
             {
-                unit.GetComponent<Stats>().MaxEncumbrance = (unit.GetComponent<Stats>().S + unit.GetComponent<Stats>().Wt) / 10;
+                stats.MaxEncumbrance = (stats.S + stats.Wt) / 10 + stats.StrongBack;
             }
             else if(attributeName == "Name")
             {
-                unit.GetComponent<Unit>().DisplayUnitName();
+                unit.DisplayUnitName();
             }
         }
 
-        UpdateUnitPanel(unit);
+        UpdateUnitPanel(Unit.SelectedUnit);
 
         if(!SaveAndLoadManager.Instance.IsLoading)
         {
             //Aktualizuje pasek przewagi w bitwie
-            int newOverall = unit.GetComponent<Stats>().CalculateOverall();
-            int difference = newOverall - unit.GetComponent<Stats>().Overall;
+            int newOverall = stats.CalculateOverall();
+            int difference = newOverall - stats.Overall;
 
             InitiativeQueueManager.Instance.CalculateDominance();
         }
@@ -1118,7 +1119,7 @@ public class UnitsManager : MonoBehaviour
         //}
 
         //Pech i szczęście
-        if (IsDoubleDigit(rollResult))
+        if (DiceRollManager.Instance.IsDoubleDigit(rollResult))
         {
             if (successLevel >= 0)
             {
@@ -1234,7 +1235,7 @@ public class UnitsManager : MonoBehaviour
         }
 
         //Pech i szczęście
-        if (IsDoubleDigit(rollResult))
+        if (DiceRollManager.Instance.IsDoubleDigit(rollResult))
         {
             if (successValue >= 0)
             {
@@ -1253,23 +1254,6 @@ public class UnitsManager : MonoBehaviour
         }
 
         return new int[] { successValue, successLevel };
-    }
-
-    // Funkcja sprawdzająca, czy liczba ma dwie identyczne cyfry
-    private bool IsDoubleDigit(int number)
-    {
-        // Jeśli wynik to dokładnie 100, również spełnia warunek
-        if (number == 100) return true;
-
-        // Sprawdzenie dla liczb dwucyfrowych
-        if (number >= 10 && number <= 99)
-        {
-            int tens = number / 10;  // Cyfra dziesiątek
-            int ones = number % 10; // Cyfra jedności
-            return tens == ones;    // Sprawdzenie, czy cyfry są takie same
-        }
-
-        return false;
     }
     #endregion
 

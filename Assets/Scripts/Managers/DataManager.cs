@@ -617,7 +617,7 @@ public class StatsData
 
     public SizeCategory Size; // Rozmiar
 
-    public List<int> PrimaryWeaponIds = new List<int>(); // Zmienione na listę
+    public List<int> PrimaryWeaponIds = new List<int>();
     public int WW;
     public int US;
     public int S;
@@ -650,6 +650,7 @@ public class StatsData
     public int Armor_torso;
     public int Armor_legs;
 
+    public int Ambidextrous; // Oburęczność
     public int AccurateShot; // Celny strzał
     public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
@@ -657,12 +658,17 @@ public class StatsData
     public int Disarm; // Rozbrojenie
     public int Feint; // Finta
     public int Gunner; // Artylerzysta
+    public int Implacable; // Nieubłagany
     public int RapidReload; // Szybkie przeładowanie
+    public int Resolute; // Nieugięty
     public int Robust; // Krzepki
+    public int Sniper; // Snajper
+    public int StrikeMightyBlow; // Silny cios
+    public bool StrikeToInjure; // Morderczy Atak
     public int StrikeToStun; // Ogłuszenie
+    public int StrongBack; // Mocne plecy
 
     // STARE
-    public bool Ambidextrous; // Oburęczność
     public bool ArmouredCasting; // Pancerz Wiary
     public bool DaemonicAura; // Demoniczna aura
     public bool Ethereal; // Eteryczny
@@ -678,7 +684,6 @@ public class StatsData
     public bool PowerfulBlow; // Potężny cios (parowanie -30)
     public bool Sharpshooter; // Strzał przebijający
     public bool StoutHearted; // Odwaga
-    public bool StrikeMightyBlow; // Silny cios
     public bool Sturdy; // Krzepki
     public bool SureShot; // Strzał przebijający
     public bool Terryfying; // Przerażający (test Terror)

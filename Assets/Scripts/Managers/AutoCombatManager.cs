@@ -187,7 +187,7 @@ public class AutoCombatManager : MonoBehaviour
         {
             Debug.Log($"{unit.GetComponent<Stats>().Name} szarżuje na {closestOpponent.GetComponent<Stats>().Name}.");
 
-            MovementManager.Instance.UpdateMovementRange(2);
+            StartCoroutine(MovementManager.Instance.UpdateMovementRange(2));
             CombatManager.Instance.ChangeAttackType("Charge");
 
             CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>(), false);
@@ -201,12 +201,12 @@ public class AutoCombatManager : MonoBehaviour
         {
             if (unit.CanDoAction) //Wykonuje bieg
             {
-                MovementManager.Instance.UpdateMovementRange(2);
+                StartCoroutine(MovementManager.Instance.UpdateMovementRange(2));
                 Debug.Log($"{unit.GetComponent<Stats>().Name} biegnie w stronę {closestOpponent.GetComponent<Stats>().Name}.");
             }
             else
             {
-                MovementManager.Instance.UpdateMovementRange(1);
+                StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
                 Debug.Log($"{unit.GetComponent<Stats>().Name} idzie w stronę {closestOpponent.GetComponent<Stats>().Name}.");
             }
 
@@ -226,7 +226,7 @@ public class AutoCombatManager : MonoBehaviour
         Debug.Log($"{unit.GetComponent<Stats>().Name} podchodzi do {closestOpponent.GetComponent<Stats>().Name} i atakuje.");
 
         //Przywraca standardową szybkość
-        MovementManager.Instance.UpdateMovementRange(1);
+        StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
 
         // Ruch
         MovementManager.Instance.MoveSelectedUnit(targetTile, unit.gameObject);
@@ -241,7 +241,7 @@ public class AutoCombatManager : MonoBehaviour
     public void WaitForMovementOrAttackOpportunity(Unit unit)
     {
         //Resetuje szybkość jednostki
-        MovementManager.Instance.UpdateMovementRange(1);
+        StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
 
         if (unit.CanDoAction) 
         {

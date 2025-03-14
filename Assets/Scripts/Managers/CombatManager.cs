@@ -15,6 +15,8 @@ using static UnityEngine.GraphicsBuffer;
 using UnityEditor.Experimental.GraphView;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using static UnityEditor.PlayerSettings;
+using NUnit.Framework.Internal;
+using UnityEditor.VersionControl;
 
 public class CombatManager : MonoBehaviour
 {
@@ -54,18 +56,13 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _disarmButton;
     public Dictionary<string, bool> AttackTypes = new Dictionary<string, bool>();
 
-    [Header("Panele do manualnego zarządzania rzutami")]
+    [Header("Panel do manualnego zarządzania sposobem obrony")]
     [SerializeField] private GameObject _parryAndDodgePanel;
     [SerializeField] private UnityEngine.UI.Button _dodgeButton;
     [SerializeField] private UnityEngine.UI.Button _parryButton;
     [SerializeField] private UnityEngine.UI.Button _getDamageButton;
     [SerializeField] private UnityEngine.UI.Button _cancelButton;
-
     private string _parryOrDodge;
-    [SerializeField] private GameObject _applyDefenceRollResultPanel;
-    [SerializeField] private GameObject _applyRollResultPanel;
-    [SerializeField] private TMP_InputField _rollInputField;
-    [SerializeField] private TMP_InputField _defenceRollInputField;
 
     private string _grapplingActionChoice = "";    // Zmienna do przechowywania wyboru akcji przy grapplingu
     [SerializeField] private GameObject _grapplingActionPanel;
@@ -79,8 +76,8 @@ public class CombatManager : MonoBehaviour
     private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
 
     // Zmienne do przechowywania wyniku
-    private int _manualRollResult;
-    public bool IsWaitingForRoll;
+    //private int _manualRollResult;
+    //public bool IsWaitingForRoll;
     public bool IsManualPlayerAttack;
 
     private List<string> _greenskinsList = new List<string> { "Goblin", "Hobgoblin", "Ork zwyczajny", "Czarny ork", "Dziki ork" }; //Lista string wszystkich zielonoskórych
@@ -143,7 +140,7 @@ public class CombatManager : MonoBehaviour
         //Resetuje szarżę lub bieg, jeśli były aktywne
         if (attackTypeName != "Charge" && unit.IsCharging)
         {
-            MovementManager.Instance.UpdateMovementRange(1);
+            StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
         }
 
         if (attackTypeName == "Charge" && (!unit.CanDoAction || !unit.CanMove))
@@ -184,7 +181,7 @@ public class CombatManager : MonoBehaviour
             //    AttackTypes["StandardAttack"] = true;
             //    if (unit.GetComponent<Stats>().TempSz == unit.GetComponent<Stats>().Sz * 2)
             //    {
-            //        MovementManager.Instance.UpdateMovementRange(1);
+            //        MovementManager.Instance.StartCoroutine(UpdateMovementRange(1);
             //    }
             //}
 
@@ -251,7 +248,7 @@ public class CombatManager : MonoBehaviour
                     return;
                 }
 
-                MovementManager.Instance.UpdateMovementRange(2, null, true);
+                StartCoroutine(MovementManager.Instance.UpdateMovementRange(2, null, true));
                 MovementManager.Instance.Retreat(false); // Zresetowanie bezpiecznego odwrotu
             }
         }
@@ -290,7 +287,7 @@ public class CombatManager : MonoBehaviour
             return;
         }
 
-        if (opportunityAttack) ChangeAttackType("StandardAttack");
+        if (opportunityAttack) ChangeAttackType();
 
         StartCoroutine(AttackCoroutine(attacker, target, opportunityAttack));
     }
@@ -432,9 +429,10 @@ public class CombatManager : MonoBehaviour
         int attackModifier = CalculateAttackModifier(attacker, attackerWeapon, target, attackDistance);
 
         // Modyfikator do trafienia, za wybór konkretnej lokacji
-        if (_hitLocation != null && !((attackerWeapon.Pummel || attackerWeapon.Id == 4) && attackerStats.StrikeToStun > 0))
+        if (_hitLocation != null && _hitLocation.Length > 0 && !((attackerWeapon.Pummel || attackerWeapon.Id == 4) && attackerStats.StrikeToStun > 0))
         {
             attackModifier -= 20;
+            Debug.Log("Modyfikator -20 do trafienia za wybór konrketnej lokalizacji");
         }
 
         //Zwiększenie modyfikatora do ataku za atak okazyjny
@@ -457,8 +455,8 @@ public class CombatManager : MonoBehaviour
         if (IsManualPlayerAttack)
         {
             // Wywołujemy panel do wpisania wyniku (korutyna czeka, żeby reszta kodu nie poszła od razu dalej)
-            yield return StartCoroutine(WaitForRollValue(attackerStats));
-            rollOnAttack = _manualRollResult;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie"));
+            rollOnAttack = DiceRollManager.Instance.ManualRollResult;
         }
         else
         {
@@ -499,28 +497,28 @@ public class CombatManager : MonoBehaviour
         }
 
         //Ustalamy miejsce trafienia
-        string hitLocation = _hitLocation != null ? _hitLocation : (IsDoubleDigit(rollOnAttack) ? DetermineHitLocation() : DetermineHitLocation(rollOnAttack));
+        string hitLocation = !String.IsNullOrEmpty(_hitLocation) ? _hitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollOnAttack) ? DetermineHitLocation() : DetermineHitLocation(rollOnAttack));
 
-        if (_hitLocation != null)
+        if (!String.IsNullOrEmpty(_hitLocation))
         {
-            LogHitLocation(hitLocation);
+            Debug.Log($"Atak jest skierowany w {TranslateHitLocation(hitLocation)}.");
             _hitLocation = null;
         }
         
         // Obsługa fuksa / pecha
         bool isFortunateOrUnfortunateEvent = false; // Zmienna używana do tego, aby nie powielać dwa razy szczęścia lub pecha w przypadku specyficznych broni
 
-        if (IsDoubleDigit(rollOnAttack) || (attackerWeapon.Impale && rollOnAttack % 10 == 0) || (attackerWeapon.Dangerous && attackerSuccessValue < 0 && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
+        if (DiceRollManager.Instance.IsDoubleDigit(rollOnAttack) || (attackerWeapon.Impale && rollOnAttack % 10 == 0) || (attackerWeapon.Dangerous && attackerSuccessValue < 0 && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
         {
             isFortunateOrUnfortunateEvent = true;
 
             if (attackerSuccessValue >= 0)
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
-                CriticalWoundRoll(attackerStats, targetStats, hitLocation);
+                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation));
                 attackerStats.FortunateEvents++;
             }
-            else if (IsDoubleDigit(rollOnAttack) || (attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
+            else if (DiceRollManager.Instance.IsDoubleDigit(rollOnAttack) || (attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color> na trafienie!");
                 attackerStats.UnfortunateEvents++;
@@ -528,7 +526,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Obsługa FUKSA i PECHA
-        bool isDoubleRoll = IsDoubleDigit(rollOnAttack);
+        bool isDoubleRoll = DiceRollManager.Instance.IsDoubleDigit(rollOnAttack);
         bool isImpaleRoll = attackerWeapon.Impale && rollOnAttack % 10 == 0;
         bool isDangerousRoll = attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9) && attackerSuccessValue < 0;
         bool isSpecialRoll = isDoubleRoll || isImpaleRoll || isDangerousRoll; // Sprawdzamy, czy mamy do czynienia z którymś z „wyjątkowych” rzutów
@@ -538,7 +536,7 @@ public class CombatManager : MonoBehaviour
             if (attackerSuccessValue >= 0)
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
-                CriticalWoundRoll(attackerStats, targetStats, hitLocation);
+                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation));
                 attackerStats.FortunateEvents++;
             }
             else
@@ -572,8 +570,8 @@ public class CombatManager : MonoBehaviour
             // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
             if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(WaitForDefenceRollValue(targetStats));
-                defenceRollResult = _manualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę"));
+                defenceRollResult = DiceRollManager.Instance.ManualRollResult;
             }
             else
             {
@@ -677,8 +675,9 @@ public class CombatManager : MonoBehaviour
                     // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi i wybrano parowanie lub unik, to czekamy na wynik rzutu
                     if ((_parryOrDodge == "parry" || _parryOrDodge == "dodge") && !GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
                     {
-                        yield return StartCoroutine(WaitForDefenceRollValue(targetStats));
-                        defenceRollResult = _manualRollResult;
+                        string rollContext = _parryOrDodge == "dodge" ? "unik" : "parowanie";
+                        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, rollContext));
+                        defenceRollResult = DiceRollManager.Instance.ManualRollResult;
                     }
                     else if (_parryOrDodge == "parry" || _parryOrDodge == "dodge")
                     {
@@ -743,7 +742,7 @@ public class CombatManager : MonoBehaviour
             }
 
             // Obsługa fuksa / pecha
-            if (IsDoubleDigit(defenceRollResult))
+            if (DiceRollManager.Instance.IsDoubleDigit(defenceRollResult))
             {
                 if (defenceSuccessValue >= 0)
                 {
@@ -751,8 +750,8 @@ public class CombatManager : MonoBehaviour
 
                     if (_parryOrDodge == "parry")
                     {
-                        //Ustalamy miejsce trafienia
-                        CriticalWoundRoll(targetStats, attackerStats, DetermineHitLocation());
+                        //Trafienie krytyczne
+                        StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, DetermineHitLocation()));
                     }
 
                     targetStats.FortunateEvents++;
@@ -786,6 +785,7 @@ public class CombatManager : MonoBehaviour
         {
             Debug.Log($"Atak {attackerStats.Name} chybił.");
             StartCoroutine(AnimationManager.Instance.PlayAnimation("miss", null, target.gameObject));
+            ChangeAttackType(); // Resetuje typ ataku
             yield break;
         }
 
@@ -801,7 +801,14 @@ public class CombatManager : MonoBehaviour
         // W przypadku ataku okazyjnego, cel jest zmuszony do testu opanowania ------------------------------- DODAĆ TAKĄ MECHANIKĘ, ŻE JAK JEDNOSTKA WYBIERZE OPCJĘ UNIKU TO PRZY NIEZDANYM TEŚCIE PRZECIWSTAWNYM ZOSTAJE W MIEJSCU. WTEDY NIE MA RZUTU NA OPANOWANIE, ONO JEST JAK NIE UNIKA. USUNĄĆ OPCJĘ PAROWANIA ATAKÓW OKAZYJNYCH
         if (opportunityAttack)
         {
-            int[] rollResults = UnitsManager.Instance.TestSkill("SW", targetStats, "Cool");
+            int rollResult = 0;
+            if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "opanowanie"));
+                rollResult = DiceRollManager.Instance.ManualRollResult;
+            }
+
+            int[] rollResults = UnitsManager.Instance.TestSkill("SW", targetStats, "Cool", 0, rollResult);
             if (rollResults[0] < 0)
             {
                 target.Broken += Math.Abs(rollResults[1]) + 1;
@@ -847,13 +854,15 @@ public class CombatManager : MonoBehaviour
 
         if (targetStats.TempHealth < 0)
         {
-            CriticalWoundRoll(attackerStats, targetStats, hitLocation);
+            StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation));
 
             if(GameManager.IsAutoKillMode)
             {
                 HandleDeath(targetStats, target.gameObject, attackerStats);
             }
         }
+
+        ChangeAttackType(); // Resetuje typ ataku
     }
 
     private void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Weapon attackerWeapon, Stats targetStats, Unit target)
@@ -864,7 +873,7 @@ public class CombatManager : MonoBehaviour
         int finalDamage = 0;
 
         // W zapasach zbroja nie jest uzwględniania
-        if(AttackTypes["Grappling"] == true)
+        if(AttackTypes["Grappling"])
         {
             reducedDamage -= armor;
         }
@@ -1045,24 +1054,6 @@ public class CombatManager : MonoBehaviour
 
     #endregion
 
-
-    // Funkcja sprawdzająca, czy liczba ma dwie identyczne cyfry
-    private bool IsDoubleDigit(int number)
-    {
-        // Jeśli wynik to dokładnie 100, również spełnia warunek
-        if (number == 100) return true;
-
-        // Sprawdzenie dla liczb dwucyfrowych
-        if (number >= 10 && number <= 99)
-        {
-            int tens = number / 10;  // Cyfra dziesiątek
-            int ones = number % 10; // Cyfra jedności
-            return tens == ones;    // Sprawdzenie, czy cyfry są takie same
-        }
-
-        return false;
-    }
-
     //Oblicza modyfikator do trafienia
     private int CalculateAttackModifier(Unit attackerUnit, Weapon attackerWeapon, Unit targetUnit, float attackDistance = 0)
     {
@@ -1099,10 +1090,10 @@ public class CombatManager : MonoBehaviour
         // Utrudnienie za atak słabszą ręką
         if (attackerUnit.GetComponent<Inventory>().EquippedWeapons[0] == null || attackerWeapon.Name != attackerUnit.GetComponent<Inventory>().EquippedWeapons[0].Name)
         {
-            if (!attackerStats.Ambidextrous && attackerWeapon.Id != 0)
+            if (attackerWeapon.Id != 0)
             {
-                attackModifier -= 20;
-                Debug.Log($"Uwzględniono modyfikator za różnicę atak słabszą ręką. Łączny modyfikator: " + attackModifier);
+                attackModifier -= attackerStats.Ambidextrous > 0 ? 20 - Math.Min(20, attackerStats.Ambidextrous * 10) : 20; // Uwzględnia talent oburęczność
+                Debug.Log($"Uwzględniono modyfikator za atak słabszą ręką. Łączny modyfikator: " + attackModifier);
             }
         }
 
@@ -1161,11 +1152,12 @@ public class CombatManager : MonoBehaviour
                 _ when attackDistance <= attackerWeapon.AttackRange / 10 => 40, // Bezpośredni dystans
                 _ when attackDistance <= attackerWeapon.AttackRange / 2 => 20,  // Bliski dystans
                 _ when attackDistance <= attackerWeapon.AttackRange => 0,      // Średni dystans
-                _ when attackDistance <= attackerWeapon.AttackRange * 2 => -10, // Daleki dystans
-                _ when attackDistance <= attackerWeapon.AttackRange * 3 => -30, // Bardzo daleki dystans
+                _ when attackDistance <= attackerWeapon.AttackRange * 2 => attackerStats.Sniper > 0 ? (-10 + attackerStats.Sniper * 10) : -10, // Daleki dystans
+                _ when attackDistance <= attackerWeapon.AttackRange * 3 => attackerStats.Sniper > 0 ? (-30 + attackerStats.Sniper * 10) : -30, // Bardzo daleki dystans
                 _ => 0 // Domyślny przypadek, jeśli żaden warunek nie zostanie spełniony
             };
 
+            Debug.Log($"Attack distance: {attackDistance}, Weapon range: {attackerWeapon.AttackRange}");
             Debug.Log("Uwzględniono modyfikator za dystans. Łączny modyfikator: " + attackModifier);
 
             //Modyfikator za rozmiar celu
@@ -1190,6 +1182,13 @@ public class CombatManager : MonoBehaviour
                 attackModifier -= 20;
                 Debug.Log("Uwzględniono modyfikator za to, że cel jest zaangażowany w walkę w zwarciu. Łączny modyfikator: " + attackModifier);
             }
+        }
+
+        // Talent "Cios poniżej pasa"
+        if (attackerWeapon.Category == "brawling" && attackerStats.DirtyFighting > 0)
+        {
+            attackModifier += attackerStats.DirtyFighting * 10;
+            Debug.Log("Uwzględniono modyfikator za talent Cios poniżej pasa. Łączny modyfikator: " + attackModifier);
         }
 
         return attackModifier;
@@ -1346,6 +1345,20 @@ public class CombatManager : MonoBehaviour
             Debug.Log($"Modyfikator obrażeń za rozmiar. Rozmiar atakującego: {attackerStats.Size}. Rozmiar celu: {targetStats.Size}. Obrażenia zostały pomnożone x{attackerStats.Size - targetStats.Size}.");
         }
 
+        // Uwzględnienie talentu Nieugięty
+        if (AttackTypes["Charge"] && attackerStats.Resolute > 0)
+        {
+            damage += attackerStats.Resolute;
+            Debug.Log($"Dodatkowe obrażenia za talent Nieugięty: {attackerStats.Resolute}");
+        }
+
+        // Uwzględnienie talentu Silny Cios
+        if (attackerWeapon.Type.Contains("melee") && !attackerWeapon.Type.Contains("no-damage") && attackerStats.StrikeMightyBlow > 0)
+        {
+            damage += attackerStats.StrikeMightyBlow;
+            Debug.Log($"Dodatkowe obrażenia za talent Silny Cios: {attackerStats.StrikeMightyBlow}");
+        }
+
         if (damage < 0) damage = 0;
 
         return damage;
@@ -1353,15 +1366,32 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Critical wounds
-    private void CriticalWoundRoll(Stats attackerStats, Stats targetStats, String hitLocation)
+    private IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, String hitLocation)
     {
         //TA METODA JEST DO ROZBUDOWANIA. Można dodać konkretne dodatkowe efekty np. ogłuszenie, krwawienie itp. w zależności również od lokacji
 
-        int rollResult = UnityEngine.Random.Range(1, 101);
+        int rollResult;
+        if (!GameManager.IsAutoDiceRollingMode && attackerStats.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie krytyczne"));
+            rollResult = DiceRollManager.Instance.ManualRollResult;
+        }
+        else
+        {
+            rollResult = UnityEngine.Random.Range(1, 101);
+        }
+
+        // Uwzględnienie talentu Morderczy Atak
+        if (attackerStats.StrikeToInjure)
+        {
+            int extraRoll = UnityEngine.Random.Range(1, 101);
+            if(extraRoll > rollResult) rollResult = extraRoll;
+        }
+
         int modifier = targetStats.TempHealth < 0 ? Math.Abs(targetStats.TempHealth * 10) : 0;
         string modifierString = modifier != 0 ? $" Modyfikator: {modifier}." : "";
         int extraWounds = 0;
-        Debug.Log($"Wynik rzutu na trafienie krytyczne: {rollResult}.{modifierString} {targetStats.Name} otrzymuje trafienie krytyczne o wartości {rollResult + modifier}");
+        Debug.Log($"Wynik rzutu na trafienie krytyczne: {rollResult}.{modifierString} {targetStats.Name} otrzymuje trafienie krytyczne w {TranslateHitLocation(hitLocation)} o wartości {rollResult + modifier}");
 
         switch (hitLocation)
         {
@@ -1643,26 +1673,26 @@ public class CombatManager : MonoBehaviour
         };
 
         // Wywołujemy logowanie
-        LogHitLocation(hitLocation);
+        Debug.Log($"Atak jest skierowany w {TranslateHitLocation(hitLocation)}.");
 
         return hitLocation;
     }
 
-    // Metoda do logowania trafienia
-    private void LogHitLocation(string hitLocation)
+    // Metoda do logowania trafienia po polsku
+    private string TranslateHitLocation(string hitLocation)
     {
         string message = hitLocation switch
         {
-            "head" => "Atak jest skierowany w głowę.",
-            "leftArm" => "Atak jest skierowany w lewą rękę.",
-            "rightArm" => "Atak jest skierowany w prawą rękę.",
-            "torso" => "Atak jest skierowany w korpus.",
-            "leftLeg" => "Atak jest skierowany w lewą nogę.",
-            "rightLeg" => "Atak jest skierowany w prawą nogę.",
-            _ => "Nieznana lokalizacja trafienia."
+            "head" => "głowę",
+            "leftArm" => "lewą rękę",
+            "rightArm" => "prawą rękę",
+            "torso" => "korpus",
+            "leftLeg" => "lewą nogę",
+            "rightLeg" => "prawą nogę",
+            _ => "nieznaną lokalizację trafienia"
         };
 
-        Debug.Log(message);
+        return message;
     }
 
     private int CalculateArmor(Stats targetStats, Weapon attackerWeapon, string hitLocation)
@@ -1750,8 +1780,6 @@ public class CombatManager : MonoBehaviour
                 if(attacker == null || target == null) yield break;
 
                 Attack(attacker.GetComponent<Unit>(), target.GetComponent<Unit>(), false);
-                     
-                ChangeAttackType(); // Resetuje szarżę
             }
         }
         else
@@ -1912,8 +1940,8 @@ public class CombatManager : MonoBehaviour
                 int attackerRoll = 0;
                 if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
                 {
-                    yield return StartCoroutine(WaitForRollValue(attackerStats));
-                    attackerRoll = _manualRollResult;
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę"));
+                    attackerRoll = DiceRollManager.Instance.ManualRollResult;
                 }
                 else
                 {
@@ -1923,8 +1951,8 @@ public class CombatManager : MonoBehaviour
                 int targetRoll = 0;
                 if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
                 {
-                    yield return StartCoroutine(WaitForRollValue(targetStats));
-                    targetRoll = _manualRollResult;
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę"));
+                    targetRoll = DiceRollManager.Instance.ManualRollResult;
                 }
                 else
                 {
@@ -1993,8 +2021,8 @@ public class CombatManager : MonoBehaviour
             // Dla pochwyconego: jeśli to gracz, pobieramy ręczny wynik, w przeciwnym razie losujemy
             if (!GameManager.IsAutoDiceRollingMode && entangledUnit.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(WaitForRollValue(entangledUnitStats));
-                targetRoll = _manualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entangledUnitStats, "siłę"));
+                targetRoll = DiceRollManager.Instance.ManualRollResult;
             }
             else
             {
@@ -2004,8 +2032,8 @@ public class CombatManager : MonoBehaviour
             // Dla pochwytującego: sprawdzamy, czy ma tag "PlayerUnit"
             if (!GameManager.IsAutoDiceRollingMode && entanglingUnit.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(WaitForRollValue(entanglingUnitStats));
-                attackerRoll = _manualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entanglingUnitStats, "siłę"));
+                attackerRoll = DiceRollManager.Instance.ManualRollResult;
             }
             else
             {
@@ -2089,87 +2117,7 @@ public class CombatManager : MonoBehaviour
     }
     #endregion
 
-    // Korutyna czekająca na wpisanie wyniku rzutu obronnego przez użytkownika
-    private IEnumerator WaitForDefenceRollValue(Stats stats)
-    {
-        IsWaitingForRoll = true;
-        _manualRollResult = 0;
-
-        // Wyświetl panel do wpisania wyniku
-        if (_applyDefenceRollResultPanel != null)
-        {
-            _applyDefenceRollResultPanel.SetActive(true);
-            _applyDefenceRollResultPanel.GetComponentInChildren<TMP_Text>().text = "Wpisz wynik rzutu " + stats.Name;
-        }
-
-        // Wyzeruj pole tekstowe
-        if (_defenceRollInputField != null)
-        {
-            _defenceRollInputField.text = "";
-        }
-
-        // Czekaj aż użytkownik wpisze wartość i kliknie Submit
-        while (IsWaitingForRoll)
-        {
-            yield return null; // Czekaj na następną ramkę
-        }
-
-        // Ukryj panel po wpisaniu
-        if (_applyDefenceRollResultPanel != null)
-        {
-            _applyDefenceRollResultPanel.SetActive(false);
-        }
-    }
-
-    public IEnumerator WaitForRollValue(Stats stats)
-    {
-        IsWaitingForRoll = true;
-        _manualRollResult = 0;
-
-        // Wyświetl panel do wpisania wyniku
-        if (_applyRollResultPanel != null)
-        {
-            _applyRollResultPanel.SetActive(true);
-            _applyRollResultPanel.GetComponentInChildren<TMP_Text>().text = "Wpisz wynik rzutu " + stats.Name;
-        }
-
-        // Wyzeruj pole tekstowe
-        if (_rollInputField != null)
-        {
-            _rollInputField.text = "";
-        }
-
-        // Czekaj aż użytkownik wpisze wartość i kliknie Submit
-        while (IsWaitingForRoll)
-        {
-            yield return null; // Czekaj na następną ramkę
-        }
-
-        // Ukryj panel po wpisaniu
-        if (_applyRollResultPanel != null)
-        {
-            _applyRollResultPanel.SetActive(false);
-        }
-    }
-
-    public void OnSubmitRoll()
-    {
-        if (_rollInputField != null && int.TryParse(_rollInputField.text, out int result))
-        {
-            _manualRollResult = result;
-            IsWaitingForRoll = false; // Przerywamy oczekiwanie
-            _rollInputField.text = ""; // Czyścimy pole
-        }
-
-        if (_defenceRollInputField != null && int.TryParse(_defenceRollInputField.text, out int defenceResult))
-        {
-            _manualRollResult = defenceResult;
-            IsWaitingForRoll = false; // Przerywamy oczekiwanie
-            _defenceRollInputField.text = ""; // Czyścimy pole
-        }
-    }
-   
-    void ParryOrDodgeButtonClick(string parryOrDodge)
+    private void ParryOrDodgeButtonClick(string parryOrDodge)
     {
         _parryOrDodge = parryOrDodge;
     }
@@ -2210,8 +2158,8 @@ public class CombatManager : MonoBehaviour
             // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(WaitForRollValue(stats));
-                reloadRollResult = _manualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "broń zasięgową"));
+                reloadRollResult = DiceRollManager.Instance.ManualRollResult;
             }
             else
             {
@@ -2404,8 +2352,8 @@ public class CombatManager : MonoBehaviour
         // Dla atakowanego
         if (!GameManager.IsAutoDiceRollingMode && targetUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(WaitForRollValue(targetStats));
-            targetRoll = _manualRollResult;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "walkę bronią białą"));
+            targetRoll = DiceRollManager.Instance.ManualRollResult;
         }
         else
         {
@@ -2415,8 +2363,8 @@ public class CombatManager : MonoBehaviour
         // Dla atakującego
         if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(WaitForRollValue(attackerStats));
-            attackerRoll = _manualRollResult;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "walkę bronią szermierczą"));
+            attackerRoll = DiceRollManager.Instance.ManualRollResult;
         }
         else
         {
@@ -2449,7 +2397,7 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Stun
-    public IEnumerator Stun(Stats attackerStats, Stats targetStats)
+    private IEnumerator Stun(Stats attackerStats, Stats targetStats)
     {
         Unit attackerUnit = attackerStats.GetComponent<Unit>();
         Unit targetUnit = targetStats.GetComponent<Unit>();
@@ -2460,8 +2408,8 @@ public class CombatManager : MonoBehaviour
         // Dla atakowanego
         if (!GameManager.IsAutoDiceRollingMode && targetUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(WaitForRollValue(targetStats));
-            targetRoll = _manualRollResult;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność"));
+            targetRoll = DiceRollManager.Instance.ManualRollResult;
         }
         else
         {
@@ -2471,8 +2419,8 @@ public class CombatManager : MonoBehaviour
         // Dla atakującego
         if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(WaitForRollValue(attackerStats));
-            attackerRoll = _manualRollResult;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę"));
+            attackerRoll = DiceRollManager.Instance.ManualRollResult;
         }
         else
         {
@@ -2499,7 +2447,7 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Disarm
-    public IEnumerator Disarm(Stats attackerStats, Stats targetStats, Weapon attackerWeapon, Weapon targetWeapon)
+    private IEnumerator Disarm(Stats attackerStats, Stats targetStats, Weapon attackerWeapon, Weapon targetWeapon)
     {
         if (targetStats.Size > attackerStats.Size || targetWeapon.Type.Contains("natural-weapon"))
         {
@@ -2519,8 +2467,8 @@ public class CombatManager : MonoBehaviour
         // Dla atakowanego
         if (!GameManager.IsAutoDiceRollingMode && targetUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(WaitForRollValue(targetStats));
-            targetRoll = _manualRollResult;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "walkę bronią białą"));
+            targetRoll = DiceRollManager.Instance.ManualRollResult;
         }
         else
         {
@@ -2530,8 +2478,8 @@ public class CombatManager : MonoBehaviour
         // Dla atakującego
         if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(WaitForRollValue(attackerStats));
-            attackerRoll = _manualRollResult;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "walkę bronią białą"));
+            attackerRoll = DiceRollManager.Instance.ManualRollResult;
         }
         else
         {

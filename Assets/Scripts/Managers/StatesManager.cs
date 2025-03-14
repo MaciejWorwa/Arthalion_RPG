@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using static UnityEngine.GraphicsBuffer;
+using System.Collections;
 
 public class StatesManager : MonoBehaviour
 {
@@ -33,12 +34,12 @@ public class StatesManager : MonoBehaviour
     public void UpdateUnitStates(Unit unit)
     {
         Ablaze(unit); // Podpalenie
-        Bleeding(unit); // Krwawienie
+        StartCoroutine(Bleeding(unit)); // Krwawienie
         Blinded(unit); // Oślepienie
-        Broken(unit); // Panika
+        StartCoroutine(Broken(unit)); // Panika
         Deafened(unit); // Ogłuszenie
-        Poison(unit); // Zatrucie
-        Stunned(unit); // Oszołomienie
+        StartCoroutine(Poison(unit)); // Zatrucie
+        StartCoroutine(Stunned(unit)); // Oszołomienie
         unit.Surprised = false;
     }
 
@@ -61,15 +62,16 @@ public class StatesManager : MonoBehaviour
         Debug.Log($"minimalna zbroja: {minArmor} bonus z WT: {stats.Wt / 10}");
     }
 
-    private void Bleeding(Unit unit)
+    private IEnumerator Bleeding(Unit unit)
     {
-        if (unit.Bleeding == 0) return;
         Stats stats = unit.GetComponent<Stats>();
+
+        if (unit.Bleeding - stats.Implacable <= 0) yield break;
 
         if (stats.TempHealth > 0)
         {
-            stats.TempHealth -= unit.Bleeding;
-            Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Bleeding} punktów żywotności w wyniku krwawienia.</color>");
+            stats.TempHealth -= unit.Bleeding - stats.Implacable;
+            Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Bleeding - stats.Implacable} punktów żywotności w wyniku krwawienia.</color>");
             unit.DisplayUnitHealthPoints();
         }
         else if (!unit.Unconscious)
@@ -79,7 +81,13 @@ public class StatesManager : MonoBehaviour
         }
         else
         {
-            int rollResult = UnityEngine.Random.Range(1, 101);
+            int rollResult = 0;
+            if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "śmierć w wyniku krwawienia"));
+                rollResult = DiceRollManager.Instance.ManualRollResult;
+            }
+
             int rollDifficulty = unit.Bleeding * 10;
             if(rollResult < rollDifficulty)
             {
@@ -96,7 +104,7 @@ public class StatesManager : MonoBehaviour
                 Debug.Log($"<color=#FF7F50>{stats.Name} wykonuje rzut obronny przed śmiercią w wyniku krwawienia. Wynik rzutu: {rollResult} Modyfikator: {-rollDifficulty}. {stats.Name} nadal żyje.</color>");
             }
 
-            if (IsDoubleDigit(rollResult))
+            if (DiceRollManager.Instance.IsDoubleDigit(rollResult))
             {
                 Debug.Log($"<color=#FF7F50>{stats.Name} wyrzucił/a dublet. Krwawienie zmniejsza się o 1 poziom.</color>");
                 unit.Bleeding--;
@@ -110,18 +118,24 @@ public class StatesManager : MonoBehaviour
         if (unit.Blinded > 0) unit.Blinded--;
     }
 
-    private void Broken(Unit unit)
+    private IEnumerator Broken(Unit unit)
     {
         Stats stats = unit.GetComponent<Stats>();
         bool isEngagedInCombat = CombatManager.Instance.AdjacentOpponents(unit.transform.position, unit.tag).Count > 0 ? true : false;
 
         if(unit.Broken > 0 && !isEngagedInCombat)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("SW", stats, "Cool")[1];
+            int rollResult = 0;
+            if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie"));
+                rollResult = DiceRollManager.Instance.ManualRollResult;
+            }
+
+            int successLevel = UnitsManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult)[1];
             if(successLevel > 0)
             {
                 unit.Broken = Mathf.Max(0, unit.Broken - successLevel);
-                Debug.Log(successLevel + " " + unit.Broken);
             }
 
             if (unit.Broken == 0)
@@ -141,14 +155,21 @@ public class StatesManager : MonoBehaviour
         if(unit.Deafened > 0) unit.Deafened --;
     }
 
-    private void Poison(Unit unit)
+    private IEnumerator Poison(Unit unit)
     {
-        if (unit.Poison == 0) return;
+        if (unit.Poison == 0) yield break;
         Stats stats = unit.GetComponent<Stats>();
 
         if(unit.Poison > 0)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("Wt", stats, "Endurance")[1];
+            int rollResult = 0;
+            if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność"));
+                rollResult = DiceRollManager.Instance.ManualRollResult;
+            }
+
+            int successLevel = UnitsManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
             if(successLevel > 0)
             {
                 unit.Poison = Mathf.Max(0, unit.Poison - successLevel);
@@ -158,7 +179,7 @@ public class StatesManager : MonoBehaviour
             {
                 unit.Fatiqued++; // Zwiększenie Wyczerpania
                 Debug.Log($"<color=#FF7F50>{stats.Name} udało się wygrać z zatruciem. Poziom wyczerpania wzrasta o 1.</color>");
-                return;
+                yield break;
             }
             else
             {
@@ -208,13 +229,20 @@ public class StatesManager : MonoBehaviour
         }
     }
 
-    private void Stunned(Unit unit)
+    private IEnumerator Stunned(Unit unit)
     {
         Stats stats = unit.GetComponent<Stats>();
 
         if(unit.Stunned > 0)
         {
-            int successLevel = UnitsManager.Instance.TestSkill("Wt", stats, "Endurance")[1];
+            int rollResult = 0;
+            if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność"));
+                rollResult = DiceRollManager.Instance.ManualRollResult;
+            }
+
+            int successLevel = UnitsManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
             if(successLevel > 0)
             {
                 unit.Stunned = Mathf.Max(0, unit.Stunned - successLevel);
@@ -318,22 +346,5 @@ public class StatesManager : MonoBehaviour
                 inputField.GetComponent<UnityEngine.UI.Toggle>().isOn = value;
             }
         }
-    }
-
-    // Funkcja sprawdzająca, czy liczba ma dwie identyczne cyfry
-    private bool IsDoubleDigit(int number)
-    {
-        // Jeśli wynik to dokładnie 100, również spełnia warunek
-        if (number == 100) return true;
-
-        // Sprawdzenie dla liczb dwucyfrowych
-        if (number >= 10 && number <= 99)
-        {
-            int tens = number / 10;  // Cyfra dziesiątek
-            int ones = number % 10; // Cyfra jedności
-            return tens == ones;    // Sprawdzenie, czy cyfry są takie same
-        }
-
-        return false;
     }
 }

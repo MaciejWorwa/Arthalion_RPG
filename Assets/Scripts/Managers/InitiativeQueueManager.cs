@@ -162,7 +162,7 @@ public class InitiativeQueueManager : MonoBehaviour
             yield return new WaitForSeconds(0.05f);
 
             //Czeka ze zmianą postaci, aż obecna postać zakończy ruch
-            while (MovementManager.Instance.IsMoving == true || CombatManager.Instance.IsWaitingForRoll)
+            while (MovementManager.Instance.IsMoving == true || DiceRollManager.Instance.IsWaitingForRoll)
             {
                 yield return null; // Czekaj na następną klatkę
             }

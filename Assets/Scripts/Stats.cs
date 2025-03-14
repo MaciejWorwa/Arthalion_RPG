@@ -83,19 +83,25 @@ public class Stats : MonoBehaviour
 
     [Header("Talenty")]
     public int AccurateShot; // Celny strzał
+    public int Ambidextrous; // Oburęczność
     public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
     public int Feint; // Finta
     public int Gunner; // Artylerzysta
+    public int Implacable; // Nieubłagany
     public int RapidReload; // Szybkie przeładowanie
+    public int Resolute; // Nieugięty
     public int Robust; // Krzepki
+    public int Sniper; // Snajper
+    public int StrikeMightyBlow; // Silny cios
+    public bool StrikeToInjure; // Morderczy Atak
     public int StrikeToStun; // Ogłuszenie
+    public int StrongBack; // Mocne plecy
 
 
     //STARE
-    public bool Ambidextrous; // Oburęczność
     public bool ArmouredCasting; // Pancerz Wiary
     public bool DaemonicAura; // Demoniczna aura (Wt +2 na niemagiczną broń, odporność na truciznę, ataki demona to broń magiczna)
     public bool Ethereal; // Eteryczny
@@ -112,7 +118,6 @@ public class Stats : MonoBehaviour
     public bool Sharpshooter; // Strzał przebijający
     public bool StoutHearted; // Odwaga
     public bool StreetFighting; // Bijatyka
-    public bool StrikeMightyBlow; // Silny cios
     public bool Sturdy; // Krzepki
     public bool SureShot; // Strzał przebijający
     public bool Terryfying; // Przerażający (test Terror)
@@ -183,7 +188,7 @@ public class Stats : MonoBehaviour
         Resolve = Resilience; // Punkty Determinacji są Równe Punktom Bohatera
 
         // Aktualizuje udźwig
-        MaxEncumbrance = (S + Wt) / 10;
+        MaxEncumbrance = (S + Wt) / 10 + StrongBack;
     }
     private int RollStat(int statsValue)
     {

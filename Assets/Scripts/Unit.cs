@@ -74,7 +74,7 @@ public class Unit : MonoBehaviour
 
         DisplayUnitName();
 
-        MovementManager.Instance.UpdateMovementRange(1, this);
+        StartCoroutine(MovementManager.Instance.UpdateMovementRange(1, this));
 
         if(Stats.Name.Contains(Stats.Race)) // DO POKMINIENIA, JAKI INNY WARUNEK DAĆ, BO TEN NIE JEST IDEALNY, BO KTOŚ MOŻE NAZWAĆ ZAPISANEGO GOBLINA NP. "FAJNY GOBLIN"
         {
@@ -155,7 +155,7 @@ public class Unit : MonoBehaviour
         else if (SelectedUnit == this.gameObject)
         {
             CombatManager.Instance.ChangeAttackType(); // Resetuje wybrany typ ataku
-            MovementManager.Instance.UpdateMovementRange(1); //Resetuje szarżę lub bieg, jeśli były aktywne
+            StartCoroutine(MovementManager.Instance.UpdateMovementRange(1)); //Resetuje szarżę lub bieg, jeśli były aktywne
             MovementManager.Instance.Retreat(false); //Resetuje bezpieczny odwrót
 
             //Zamyka aktywne panele
@@ -173,7 +173,7 @@ public class Unit : MonoBehaviour
             SelectedUnit = this.gameObject;
 
             CombatManager.Instance.ChangeAttackType(); // Resetuje wybrany typ ataku
-            MovementManager.Instance.UpdateMovementRange(1); //Resetuje szarżę lub bieg, jeśli były aktywne   
+            StartCoroutine(MovementManager.Instance.UpdateMovementRange(1)); //Resetuje szarżę lub bieg, jeśli były aktywne   
             MovementManager.Instance.Retreat(false); //Resetuje bezpieczny odwrót    
 
             CombatManager.Instance.UpdateAimButtonColor();

@@ -52,7 +52,7 @@ public class MovementManager : MonoBehaviour
         else if (!unit.CanDoAction && unit.IsRunning)
         {
             Debug.Log("Ta jednostka nie może wykonać biegu w tej rundzie.");
-            UpdateMovementRange(1);
+            StartCoroutine(UpdateMovementRange(1));
             return;
         }
 
@@ -100,7 +100,11 @@ public class MovementManager : MonoBehaviour
             else
             {
                 RoundsManager.Instance.DoAction(unit);
-                UpdateMovementRange(1);
+
+                if (unit.IsRunning)
+                {
+                    StartCoroutine(UpdateMovementRange(1));
+                }
             }
 
             //Resetuje pozycję obronną, jeśli była aktywna
@@ -313,18 +317,18 @@ public class MovementManager : MonoBehaviour
             return;
         }
 
-        UpdateMovementRange(2);
+        StartCoroutine(UpdateMovementRange(2));
         Retreat(false); // Zresetowanie bezpiecznego odwrotu
     }
 
-    public void UpdateMovementRange(int modifier, Unit unit = null, bool isCharging = false)
+    public IEnumerator UpdateMovementRange(int modifier, Unit unit = null, bool isCharging = false)
     {
         if (Unit.SelectedUnit != null)
         {
             unit = Unit.SelectedUnit.GetComponent<Unit>();
         }
 
-        if(unit == null) return;
+        if(unit == null) yield break;
 
         Stats stats = unit.GetComponent<Stats>();
 
@@ -356,12 +360,12 @@ public class MovementManager : MonoBehaviour
         if ((modifier == 2 || modifier == 3) && !unit.CanDoAction)
         {
             Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
-            return;
+            yield break;
         } 
         else if( modifier == 3 && stats.Race == "Zombie")
         {
             Debug.Log("Ta jednostka nie może wykonywać akcji biegu.");
-            return;
+            yield break;
         } 
 
         //Aktualizuje obecny tryb poruszania postaci
@@ -378,9 +382,14 @@ public class MovementManager : MonoBehaviour
 
         if(unit.IsRunning)
         {
-            // DODAĆ TUTAJ OPCJE DLA MANUALNEGO RZUCANIA KOŚĆMI
-            
-            stats.TempSz += UnitsManager.Instance.TestSkill("Zw", stats, "Athletics", 20)[1] / 2;
+            int rollResult = 0;
+            if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "atletykę"));
+                rollResult = DiceRollManager.Instance.ManualRollResult;
+            }
+
+            stats.TempSz += UnitsManager.Instance.TestSkill("Zw", stats, "Athletics", 20, rollResult)[1] / 2;
         }
 
         // Uwzględnia ogłuszenie i powalenie
@@ -389,7 +398,7 @@ public class MovementManager : MonoBehaviour
         ChangeButtonColor(modifier, unit.IsCharging);
 
         // Aktualizuje podświetlenie pól w zasięgu ruchu
-        GridManager.Instance.HighlightTilesInMovementRange(stats);  
+        GridManager.Instance.HighlightTilesInMovementRange(stats);
     }
 
     //Bezpieczny odwrót
@@ -418,7 +427,7 @@ public class MovementManager : MonoBehaviour
         unit.IsRetreating = value;
         if(value == true)
         {
-            UpdateMovementRange(1);
+            StartCoroutine(UpdateMovementRange(1));
             CombatManager.Instance.ChangeAttackType("StandardAttack");
         }
 
