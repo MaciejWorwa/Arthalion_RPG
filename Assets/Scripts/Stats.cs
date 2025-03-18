@@ -7,6 +7,8 @@ using UnityEngine.TextCore.Text;
 using static UnityEngine.GraphicsBuffer;
 using System.Linq;
 using System;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
+
 public enum SizeCategory
 {
     Tiny = 0,      // drobny
@@ -84,22 +86,32 @@ public class Stats : MonoBehaviour
     [Header("Talenty")]
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
+    public bool Champion; // Czempion
     public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
     public int Feint; // Finta
+    public int Frightening; // Straszny
+    public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
+    public int Hardy; // Twardziel
     public int Implacable; // Nieubłagany
+    public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
     public int Resolute; // Nieugięty
     public int Robust; // Krzepki
+    public bool Sharpshooter; // Strzał w dziesiątkę
+    public int Shieldsman; // Tarczownik
     public int Sniper; // Snajper
+    public int Sprinter; // Szybkobiegacz
+    public int StoutHearted; // Waleczne serce
     public int StrikeMightyBlow; // Silny cios
     public bool StrikeToInjure; // Morderczy Atak
     public int StrikeToStun; // Ogłuszenie
     public int StrongBack; // Mocne plecy
-
+    public int Sturdy; // Tragarz
+    public int SureShot; // Strzał przebijający
 
     //STARE
     public bool ArmouredCasting; // Pancerz Wiary
@@ -107,21 +119,9 @@ public class Stats : MonoBehaviour
     public bool Ethereal; // Eteryczny
     public bool FastHands; //Dotyk mocy
     public bool Fearless; // Nieustraszony
-    public bool Frightening; // Straszny (test Fear)
-    public bool GrudgeBornFury; // Zapiekła nienawiść
-    public bool LightningParry; // Błyskawiczny blok
     public bool MagicSense; //Zmysł magii
-    public bool MasterGunner; // Artylerzysta
-    public bool MightyShot; // Strzał precyzyjny
     public bool MightyMissile; // Morderczy pocisk
-    public bool PowerfulBlow; // Potężny cios (parowanie -30)
-    public bool Sharpshooter; // Strzał przebijający
-    public bool StoutHearted; // Odwaga
-    public bool StreetFighting; // Bijatyka
-    public bool Sturdy; // Krzepki
-    public bool SureShot; // Strzał przebijający
     public bool Terryfying; // Przerażający (test Terror)
-    public bool QuickDraw; // Szybkie wyciągnięcie
     public bool WillOfIron; // Żelazna wola
 
     [Header("Statystyki")]
@@ -172,7 +172,6 @@ public class Stats : MonoBehaviour
         Ogd = RollStat(Ogd);
 
         CalculateMaxHealth();
-        TempHealth = MaxHealth;
 
         // Rozdzielanie punktów ExtraPoints losowo pomiędzy PP i Resilience
         for (int i = 0; i < ExtraPoints; i++)
@@ -188,7 +187,7 @@ public class Stats : MonoBehaviour
         Resolve = Resilience; // Punkty Determinacji są Równe Punktom Bohatera
 
         // Aktualizuje udźwig
-        MaxEncumbrance = (S + Wt) / 10 + StrongBack;
+        MaxEncumbrance = (S + Wt) / 10 + StrongBack + (Sturdy * 2);
     }
     private int RollStat(int statsValue)
     {
@@ -203,6 +202,8 @@ public class Stats : MonoBehaviour
 
     public void CalculateMaxHealth()
     {
+        int previousMaxHealth = MaxHealth;
+
         if (Size == SizeCategory.Tiny)
             MaxHealth = 1;
         else if (Size == SizeCategory.Little)
@@ -217,6 +218,11 @@ public class Stats : MonoBehaviour
             MaxHealth = (S / 10 + 2 * (Wt / 10) + SW / 10) * 4;
         else if (Size == SizeCategory.Monstrous)
             MaxHealth = (S / 10 + 2 * (Wt / 10) + SW / 10) * 8;
+
+        //Uwzględnienie talentu Twardziel
+        MaxHealth += Hardy * (Wt / 10);
+
+        TempHealth += MaxHealth - previousMaxHealth;
     }
 
     // Pobieranie modyfikatora za umiejętność dla danej kategorii broni

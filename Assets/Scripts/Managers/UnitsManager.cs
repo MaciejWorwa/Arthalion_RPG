@@ -10,6 +10,7 @@ using System.IO;
 using static UnityEngine.GraphicsBuffer;
 using System.Linq;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using UnityEngine.XR;
 
 public class UnitsManager : MonoBehaviour
 {
@@ -654,7 +655,7 @@ public class UnitsManager : MonoBehaviour
             stats.TempHealth = stats.MaxHealth;
 
             // Aktualizuje udźwig
-            stats.MaxEncumbrance = (stats.S + stats.Wt) / 10 + stats.StrongBack;
+            stats.MaxEncumbrance = (stats.S + stats.Wt) / 10 + stats.StrongBack + (stats.Sturdy * 2);
 
             //Ustala inicjatywę i aktualizuje kolejkę inicjatywy
             stats.Initiative = stats.I + UnityEngine.Random.Range(1, 11);
@@ -805,14 +806,16 @@ public class UnitsManager : MonoBehaviour
                 Debug.Log($"Nie udało się zmienić wartości cechy '{attributeName}'.");
             }
 
-            if(attributeName == "MaxHealth")
+            if (attributeName == "S" || attributeName == "Wt" || attributeName == "StrongBack")
             {
-                stats.TempHealth = stats.MaxHealth;
+                stats.CalculateMaxHealth();
                 unit.DisplayUnitHealthPoints();
+                stats.MaxEncumbrance = (stats.S + stats.Wt) / 10 + stats.StrongBack + (stats.Sturdy * 2);
             }
-            else if(attributeName == "S" || attributeName == "Wt" || attributeName == "StrongBack")
+            else if(attributeName == "Hardy" || attributeName == "SW") // Talent Twardziel
             {
-                stats.MaxEncumbrance = (stats.S + stats.Wt) / 10 + stats.StrongBack;
+                stats.CalculateMaxHealth();
+                unit.DisplayUnitHealthPoints();
             }
             else if(attributeName == "Name")
             {
@@ -1274,7 +1277,7 @@ public class UnitsManager : MonoBehaviour
                 if(pair.Key.CompareTag("EnemyUnit")) terryfyingEnemyExist = true;
                 else if (pair.Key.CompareTag("PlayerUnit")) terryfyingPlayerExist = true;
             }
-            else if(unitStats.Frightening)
+            else if(unitStats.Frightening > 0)
             {
                 if(pair.Key.CompareTag("EnemyUnit")) frighteningEnemyExist = true;
                 else if (pair.Key.CompareTag("PlayerUnit"))frighteningPlayerExist = true;
@@ -1331,7 +1334,7 @@ public class UnitsManager : MonoBehaviour
         if (unitStats.SW == 0) return;
 
         //Uwzględnia zdolność Odwaga
-        int rollModifier = unitStats.StoutHearted ? 10 : 0;
+        int rollModifier = unitStats.StoutHearted * 10;
 
         int rollResult = UnityEngine.Random.Range(1, 101);
 

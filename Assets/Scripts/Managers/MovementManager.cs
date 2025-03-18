@@ -390,6 +390,9 @@ public class MovementManager : MonoBehaviour
             }
 
             stats.TempSz += UnitsManager.Instance.TestSkill("Zw", stats, "Athletics", 20, rollResult)[1] / 2;
+
+            //Uwzględnia talent Szybkobiegacz
+            stats.TempSz += stats.Sprinter;
         }
 
         // Uwzględnia ogłuszenie i powalenie

@@ -120,6 +120,12 @@ public class RoundsManager : MonoBehaviour
                 }
             }
 
+            // Dla jednostek z talentem Waleczne Serce wykonujemy dodatkową próbę opanownia paniki
+            if (unit.GetComponent<Stats>().StoutHearted > 0 && unit.Broken > 0)
+            {
+                StartCoroutine(StatesManager.Instance.Broken(unit));
+            }
+
             //Aktualizuje osiągnięcia
             unit.GetComponent<Stats>().RoundsPlayed ++;
         }

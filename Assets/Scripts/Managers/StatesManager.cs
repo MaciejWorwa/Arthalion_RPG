@@ -118,7 +118,7 @@ public class StatesManager : MonoBehaviour
         if (unit.Blinded > 0) unit.Blinded--;
     }
 
-    private IEnumerator Broken(Unit unit)
+    public IEnumerator Broken(Unit unit)
     {
         Stats stats = unit.GetComponent<Stats>();
         bool isEngagedInCombat = CombatManager.Instance.AdjacentOpponents(unit.transform.position, unit.tag).Count > 0 ? true : false;
@@ -132,7 +132,7 @@ public class StatesManager : MonoBehaviour
                 rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
-            int successLevel = UnitsManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult)[1];
+            int successLevel = UnitsManager.Instance.TestSkill("SW", stats, "Cool", stats.StoutHearted * 10, rollResult)[1];
             if(successLevel > 0)
             {
                 unit.Broken = Mathf.Max(0, unit.Broken - successLevel);

@@ -304,8 +304,8 @@ public class InventoryManager : MonoBehaviour
         bool selectedWeaponIsNotInSelectedHand = !containsSelectedWeapon || (SelectedHand != Array.IndexOf(equippedWeapons, selectedWeapon));
         if (selectedWeaponIsNotInSelectedHand)
         {
-            //Uwzględnia szybkie wyciągnięcie. Nie dotyczy tryby automatycznego (akcja jest zużywana bezpośrednio w AutoCombatManager, bo jednostka automatycznie wielokrotnie zmienia bronie, dopóki nie trafi na odpowiednią)
-            if(!unit.GetComponent<Stats>().QuickDraw && !GameManager.IsAutoCombatMode && !SaveAndLoadManager.Instance.IsLoading)
+            //Nie dotyczy trybu automatycznego (akcja jest zużywana bezpośrednio w AutoCombatManager, bo jednostka automatycznie wielokrotnie zmienia bronie, dopóki nie trafi na odpowiednią)
+            if(!GameManager.IsAutoCombatMode && !SaveAndLoadManager.Instance.IsLoading)
             {
                 if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction) return;
 

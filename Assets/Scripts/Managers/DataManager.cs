@@ -652,42 +652,42 @@ public class StatsData
 
     public int Ambidextrous; // Oburęczność
     public int AccurateShot; // Celny strzał
+    public bool Champion; // Czempion
     public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
     public int Feint; // Finta
+    public int Frightening; // Straszny
+    public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
+    public int Hardy; // Twardziel
     public int Implacable; // Nieubłagany
+    public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
     public int Resolute; // Nieugięty
     public int Robust; // Krzepki
+    public int Shieldsman; // Tarczownik
+    public bool Sharpshooter; // Strzał w dziesiątkę
     public int Sniper; // Snajper
+    public int Sprinter; // Szybkobiegacz
+    public int StoutHearted; // Waleczne serce
     public int StrikeMightyBlow; // Silny cios
     public bool StrikeToInjure; // Morderczy Atak
     public int StrikeToStun; // Ogłuszenie
     public int StrongBack; // Mocne plecy
+    public int Sturdy; // Tragarz
+    public int SureShot; // Strzał przebijający
 
-    // STARE
+    //STARE
     public bool ArmouredCasting; // Pancerz Wiary
-    public bool DaemonicAura; // Demoniczna aura
+    public bool DaemonicAura; // Demoniczna aura (Wt +2 na niemagiczną broń, odporność na truciznę, ataki demona to broń magiczna)
     public bool Ethereal; // Eteryczny
-    public bool FastHands; // Dotyk mocy
+    public bool FastHands; //Dotyk mocy
     public bool Fearless; // Nieustraszony
-    public bool Frightening; // Straszny (test Fear)
-    public bool GrudgeBornFury; // Zapiekła nienawiść
-    public bool LightningParry; // Błyskawiczny blok
-    public bool MagicSense; // Zmysł magii
-    public bool MasterGunner; // Artylerzysta
-    public bool MightyShot; // Strzał precyzyjny
+    public bool MagicSense; //Zmysł magii
     public bool MightyMissile; // Morderczy pocisk
-    public bool PowerfulBlow; // Potężny cios (parowanie -30)
-    public bool Sharpshooter; // Strzał przebijający
-    public bool StoutHearted; // Odwaga
-    public bool Sturdy; // Krzepki
-    public bool SureShot; // Strzał przebijający
     public bool Terryfying; // Przerażający (test Terror)
-    public bool QuickDraw; // Szybkie wyciągnięcie
     public bool WillOfIron; // Żelazna wola
 
     public int Athletics; // Atletyka

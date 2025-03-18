@@ -132,10 +132,7 @@ public class AutoCombatManager : MonoBehaviour
                     }
 
                     // Zużywa akcję na dobycie broni dopiero po dobyciu odpowiedniej z nich w wyniku powyższej pętli
-                    if(!unit.GetComponent<Stats>().QuickDraw)
-                    {
-                        RoundsManager.Instance.DoAction(unit.GetComponent<Unit>());
-                    }
+                    RoundsManager.Instance.DoAction(unit.GetComponent<Unit>());
                 }
                 else // Upuszcza broń, żeby walczyć przy użyciu pięści
                 {
@@ -254,7 +251,7 @@ public class AutoCombatManager : MonoBehaviour
             bool isFirstWeaponShield = equippedWeapons[0] != null && equippedWeapons[0].Type.Contains("shield");
             bool hasTwoOneHandedWeaponsOrShield = (equippedWeapons[0] != null && equippedWeapons[1] != null && equippedWeapons[0].Name != equippedWeapons[1].Name) || isFirstWeaponShield;
 
-            if(unit.GetComponent<Stats>().LightningParry != true && hasTwoOneHandedWeaponsOrShield != true)
+            if(hasTwoOneHandedWeaponsOrShield != true)
             {
                 //Kończy turę, żeby zostawić sobie akcję na parowanie
                 RoundsManager.Instance.FinishTurn();
