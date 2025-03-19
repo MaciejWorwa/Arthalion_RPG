@@ -575,6 +575,7 @@ public class CombatManager : MonoBehaviour
         // ==================================================================
         // 9) *** OBRONA *** (tylko jeśli to atak w zwarciu lub mamy tarcze i możemy bronić się przed strzałem)
         // ==================================================================
+        DefenceResults = new int[2];
         int defenceSuccessValue = 0;
         int defenceSuccessLevel = 0;
         int defenceRollResult = 0;
@@ -606,7 +607,7 @@ public class CombatManager : MonoBehaviour
             bool canParry = (isMeleeAttack && target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("melee"))) || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2 || (attackerWeapon.Id == 0 && targetWeapon.Id == 0));
             bool canDodge = isMeleeAttack;
 
-            if (canParry || canDodge)
+            if ((canParry || canDodge) && !target.Surprised)
             {
                 Weapon weaponUsedForParry = GetBestParryWeapon(targetStats, targetWeapon);
                 int parryModifier = CalculateParryModifier(target, targetStats, attackerStats, weaponUsedForParry, attackerWeapon);
@@ -621,7 +622,7 @@ public class CombatManager : MonoBehaviour
                 dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
 
                 // Funkcja obrony
-                yield return StartCoroutine(Defense(target, targetStats, attackerStats, attackerWeapon, weaponUsedForParry, targetMeleeSkill, parryValue, dodgeValue, parryModifier, dodgeModifier));
+                yield return StartCoroutine(Defense(target, targetStats, attackerStats, attackerWeapon, weaponUsedForParry, targetMeleeSkill, parryValue, dodgeValue, parryModifier, dodgeModifier, canParry, canDodge));
 
                 defenceSuccessValue = DefenceResults[0];
                 defenceSuccessLevel = DefenceResults[1];
@@ -639,13 +640,16 @@ public class CombatManager : MonoBehaviour
         int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
 
         // Sprawdzenie warunku trafienia
-        bool attackSucceeded = (isRangedAttack && attackerSuccessValue >= 0) || (isMeleeAttack && (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue))));
+        bool attackSucceeded = (isRangedAttack && combinedSuccessLevel >= 0) || (isMeleeAttack && (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue))));
 
         //Resetujemy czas przeładowania broni celu ataku, bo ładowanie zostało zakłócone przez atak, przed którym musi się bronić. W przypadku chybienia z broni dystansowej, nie przeszkadza to w ładowaniu
         if (targetWeapon.ReloadLeft != 0 && (attackSucceeded || isMeleeAttack))
         {
             ResetWeaponLoad(targetWeapon, targetStats);
         }
+
+        //Resetujemy stan zaskoczenia, jeśli był aktywny
+        target.Surprised = false;
 
         // Uwzględnienie cechy broni prochowej (wywołanie paniki). Uwzględnia również talent Niewzruszony
         if (attackerWeapon.Blackpowder && !(targetStats.Unshakable > 0 && !attackSucceeded))
@@ -781,7 +785,7 @@ public class CombatManager : MonoBehaviour
         ChangeAttackType(); // Resetuje typ ataku
 
         // Uwzględnienie talentu "Dwie bronie" i wykonanie drugiego ataku z odwróconym wynikiem kości
-        if(attackerStats.DualWielder > 0 && hasTwoWeapons && secondAttackRollResult == 0)
+        if (attackerStats.DualWielder > 0 && hasTwoWeapons && secondAttackRollResult == 0)
         {
             InventoryManager.Instance.SelectHand(false); // Zmiana na lewą rękę
 
@@ -890,11 +894,11 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Defense functions
-    private IEnumerator Defense(Unit target, Stats targetStats, Stats attackerStats, Weapon attackerWeapon, Weapon targetWeapon, MeleeCategory targetMeleeSkill, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier)
+    private IEnumerator Defense(Unit target, Stats targetStats, Stats attackerStats, Weapon attackerWeapon, Weapon targetWeapon, MeleeCategory targetMeleeSkill, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier, bool canParry, bool canDodge)
     {
         if (!GameManager.IsAutoDefenseMode)
         {
-            yield return StartCoroutine(ManualDefense(target, targetStats, attackerStats, targetWeapon, parryValue, dodgeValue, parryModifier, dodgeModifier, targetMeleeSkill));
+            yield return StartCoroutine(ManualDefense(target, targetStats, attackerStats, targetWeapon, parryValue, dodgeValue, parryModifier, dodgeModifier, targetMeleeSkill, canParry, canDodge));
         }
         else
         {
@@ -969,12 +973,13 @@ public class CombatManager : MonoBehaviour
         return Mathf.Clamp(modifier, -30, 60); // Ograniczenie modyfikatorów do zakresu od -30 do +60
     }
 
-    private IEnumerator ManualDefense(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier, MeleeCategory targetMeleeSkill)
+    private IEnumerator ManualDefense(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier, MeleeCategory targetMeleeSkill, bool canParry, bool canDodge)
     {
         _parryAndDodgePanel.SetActive(true);
         _parryAndDodgePanel.GetComponentInChildren<TMP_Text>().text = "Wybierz reakcję atakowanej postaci.";
-        _dodgeButton.gameObject.SetActive(true);
-        _parryButton.gameObject.SetActive(true);
+        _parryOrDodge = ""; // Resetujemy wybór reakcji obronnej
+        _parryButton.gameObject.SetActive(canParry);
+        _dodgeButton.gameObject.SetActive(canDodge);
 
         // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
         yield return new WaitUntil(() => !_parryAndDodgePanel.activeSelf);
@@ -987,9 +992,6 @@ public class CombatManager : MonoBehaviour
         {
             yield return StartCoroutine(Dodge(target, targetStats, dodgeValue, dodgeModifier));
         }
-
-        // Resetujemy wybór reakcji obronnej
-        _parryOrDodge = "";
     }
 
     private IEnumerator AutoDefense(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier,  MeleeCategory targetMeleeSkill)
@@ -1101,7 +1103,7 @@ public class CombatManager : MonoBehaviour
             }
         }
     }
-    private void ParryOrDodgeButtonClick(string parryOrDodge)
+    public void ParryOrDodgeButtonClick(string parryOrDodge)
     {
         _parryOrDodge = parryOrDodge;
     }
@@ -1260,7 +1262,6 @@ public class CombatManager : MonoBehaviour
         if (targetUnit.Surprised)
         {
             attackModifier += 20;
-            targetUnit.Surprised = false;
         }
         if ((targetUnit.Entangled > 0 || targetUnit.EntangledUnitId != 0) && attackerUnit.Entangled == 0 && attackerUnit.EntangledUnitId == 0)
         {
@@ -1879,8 +1880,11 @@ public class CombatManager : MonoBehaviour
         //Podwaja wartość zbroi w przypadku walki przy użyciu broni Tępej
         if (attackerWeapon.Undamaging) armor *= 2;
 
-        //Zwiększenie pancerza, jeśli cel ataku posiada tarcze
-        armor += targetStats.GetComponent<Inventory>().EquippedWeapons.Where(weapon => weapon != null && weapon.Shield > 0).Select(weapon => weapon.Shield).FirstOrDefault();
+        //Zwiększenie pancerza, jeśli cel ataku posiada tarcze i użył parowania podczas obrony w tym ataku
+        if(_parryOrDodge == "parry")
+        {
+            armor += targetStats.GetComponent<Inventory>().EquippedWeapons.Where(weapon => weapon != null && weapon.Shield > 0).Select(weapon => weapon.Shield).FirstOrDefault();
+        }
 
         // Pobranie kategorii pancerza dla trafionej lokalizacji
         List<string> armorCategories = inventory.ArmorCategories.ContainsKey(hitLocation) ? inventory.ArmorCategories[hitLocation] : new List<string>();
