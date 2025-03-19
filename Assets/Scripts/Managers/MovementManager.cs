@@ -424,6 +424,14 @@ public class MovementManager : MonoBehaviour
         GridManager.Instance.HighlightTilesInMovementRange(stats);
     }
 
+    private void ChangeButtonColor(int modifier, bool isCharging)
+    {  
+        //_chargeButton.GetComponent<Image>().color = modifier == 1 ? Color.white : modifier == 2 ? Color.green : Color.white;
+        _runButton.GetComponent<Image>().color = modifier == 2 && !isCharging ? Color.green : Color.white;   
+    }
+    #endregion
+
+    #region Retreat
     //Bezpieczny odwrót
     public void Retreat(bool value)
     {
@@ -445,53 +453,62 @@ public class MovementManager : MonoBehaviour
             advantage = InitiativeQueueManager.Instance.EnemiesAdvantage;
         }
 
-        if (value == true && !unit.CanMove) //Sprawdza, czy jednostka może wykonać ruch
+        if (value == true)
         {
-            Debug.Log("Ta jednostka nie może w obecnej rundzie wykonać odwrotu.");
-            yield break;
-        }
-
-        //Jeżeli do wyboru jest tylko Unik, bo nie ma wystarczającej ilości przewagi, to wyświetlanie panelu jest pomijane i od razu wykonywany jest test uniku
-        _retreatPanel.SetActive(advantage >= 2);
-
-        if(_retreatPanel.activeSelf)
-        {
-            // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
-            yield return new WaitUntil(() => !_retreatPanel.activeSelf);
-
-            // Jeżeli wybraliśmy unik to czekamy na wynik rzutu
-            int rollResult = 0;
-            if (_retreatWay == "dodge" && !GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
+            if(!unit.CanMove || (!unit.CanDoAction && advantage < 2)) //Sprawdza, czy jednostka może wykonać ruch
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(unit.GetComponent<Stats>(), "unik"));
-                rollResult = DiceRollManager.Instance.ManualRollResult;
+                Debug.Log("Ta jednostka nie może w obecnej rundzie wykonać odwrotu.");
+                yield break;
             }
-            else if (_retreatWay == "dodge")
+            //Jeżeli do wyboru jest tylko Unik, bo nie ma wystarczającej ilości przewagi, albo tylko Przewaga, bo nie ma dostępnych akcji, to panel nie jest wyświetlany
+            _retreatPanel.SetActive(advantage >= 2 && unit.CanDoAction);
+
+            if (_retreatPanel.activeSelf)
             {
-                rollResult = UnityEngine.Random.Range(1, 101);
+                // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
+                yield return new WaitUntil(() => !_retreatPanel.activeSelf);
+
+                // Jeżeli wybraliśmy unik to czekamy na wynik rzutu
+                int rollResult = 0;
+                if (_retreatWay == "dodge" && !GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
+                {
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(unit.GetComponent<Stats>(), "unik"));
+                    rollResult = DiceRollManager.Instance.ManualRollResult;
+                }
+                else if (_retreatWay == "dodge")
+                {
+                    rollResult = UnityEngine.Random.Range(1, 101);
+                }
+                else if(_retreatWay != "advantage") // Zamknięcie okna. Odwrót nie jest wykonywany
+                {
+                    value = false;
+                }
             }
-            else if(_retreatWay == "advantage")
+            else
             {
-                //Zaktualizowanie przewagi
-                InitiativeQueueManager.Instance.CalculateAdvantage(unit.tag, -2);
-                string group = unit.tag == "PlayerUnit" ? "sojuszników" : "przeciwników";
-                Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonuje odwrót korzystając z punktów przewagi. Przewaga {group} została zmniejszona o 2.</color>");
+                // Jest ustalany jedyny możliwy sposób odwrotu
+                _retreatWay = advantage >= 2 ? "advantage" : "dodge";
             }
-            else yield break;// Wyłączenie okna bez wyboru reakcji obronnej skutkuje anulowaniem odwrotu
-        }
 
-
-        if (_retreatWay == "dodge")
-        {
-            // Test ataku przeciwników w zwarciu
-            List<Unit> opponentsUnits = new List<Unit>();
-
-            // Funkcja pomocnicza do zliczania jednostek w sąsiedztwie danej pozycji
-            CountAdjacentUnits(unit.transform.position, unit.tag);
-
-            void CountAdjacentUnits(Vector2 center, string allyTag)
+            if (_retreatWay == "dodge")
             {
-                Vector2[] positions = {
+                // Test uniku
+                int dodgeModifier = CombatManager.Instance.CalculateDodgeModifier(unit, stats);
+                int dodgeValue = stats.Dodge + stats.Zw + dodgeModifier;
+
+                RoundsManager.Instance.DoAction(unit);
+
+                yield return StartCoroutine(CombatManager.Instance.Dodge(unit, stats, dodgeValue, dodgeModifier));
+
+                // Test ataku przeciwników w zwarciu
+                List<Unit> opponentsUnits = new List<Unit>();
+
+                // Funkcja pomocnicza do zliczania jednostek w sąsiedztwie danej pozycji
+                CountAdjacentUnits(unit.transform.position, unit.tag);
+
+                void CountAdjacentUnits(Vector2 center, string allyTag)
+                {
+                    Vector2[] positions = {
                     center + Vector2.right,
                     center + Vector2.left,
                     center + Vector2.up,
@@ -502,77 +519,85 @@ public class MovementManager : MonoBehaviour
                     center + new Vector2(1, -1)
                 };
 
-                foreach (var pos in positions)
-                {
-                    Collider2D collider = Physics2D.OverlapPoint(pos);
-                    if (collider == null || collider.GetComponent<Unit>() == null) continue;
-
-                    if (!collider.CompareTag(allyTag) && !opponentsUnits.Contains(collider.GetComponent<Unit>()) && InventoryManager.Instance.ChooseWeaponToAttack(collider.gameObject).Type.Contains("melee"))
+                    foreach (var pos in positions)
                     {
-                        opponentsUnits.Add(collider.GetComponent<Unit>());
+                        Collider2D collider = Physics2D.OverlapPoint(pos);
+                        if (collider == null || collider.GetComponent<Unit>() == null) continue;
+
+                        if (!collider.CompareTag(allyTag) && !opponentsUnits.Contains(collider.GetComponent<Unit>()) && InventoryManager.Instance.ChooseWeaponToAttack(collider.gameObject).Type.Contains("melee"))
+                        {
+                            opponentsUnits.Add(collider.GetComponent<Unit>());
+                            Debug.Log($"dodajemy {collider.GetComponent<Stats>().Name} do listy jednostek, ktore będą wykonywaly atak okazyjny");
+                        }
                     }
                 }
-            }
 
-            int highestOpponentSuccessLevel = 0;
+                int highestOpponentSuccessValue = 0;
 
-            foreach (Unit attacker in opponentsUnits)
-            {
-                Stats attackerStats = attacker.GetComponent<Stats>();
-                Weapon attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(attacker.gameObject);
-
-                // Ustalamy umiejętności, które będą testowane w zależności od kategorii broni
-                MeleeCategory meleeSkill = EnumConverter.ParseEnum<MeleeCategory>(attackerWeapon.Category) ?? MeleeCategory.Basic;
-
-                int rollOnAttack = 0;
-                if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
+                foreach (Unit attacker in opponentsUnits)
                 {
-                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie"));
-                    rollOnAttack = DiceRollManager.Instance.ManualRollResult;
+                    Stats attackerStats = attacker.GetComponent<Stats>();
+                    Weapon attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(attacker.gameObject);
+
+                    // Ustalamy umiejętności, które będą testowane w zależności od kategorii broni
+                    MeleeCategory meleeSkill = EnumConverter.ParseEnum<MeleeCategory>(attackerWeapon.Category) ?? MeleeCategory.Basic;
+
+                    int rollOnAttack = 0;
+                    if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
+                    {
+                        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie"));
+                        rollOnAttack = DiceRollManager.Instance.ManualRollResult;
+                    }
+                    else
+                    {
+                        rollOnAttack = UnityEngine.Random.Range(1, 101);
+                    }
+                    Debug.Log("attacker " + attacker);
+                    int skillValue = attackerStats.WW + attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
+                    int attackModifier = CombatManager.Instance.CalculateAttackModifier(attacker, attackerWeapon, unit, 0, false);
+
+                    int[] results = CombatManager.Instance.CalculateSuccessLevel(attackerWeapon, rollOnAttack, skillValue, true, attackModifier);
+                    int attackerSuccessValue = results[0];
+                    int attackerSuccessLevel = results[1];
+
+                    if (highestOpponentSuccessValue < attackerSuccessValue)
+                    {
+                        highestOpponentSuccessValue = attackerSuccessValue;
+                        Debug.Log("highestOpponentSuccessValue  " + highestOpponentSuccessValue);
+                    }
+
+                    string successLevelColor = attackerSuccessValue >= 0 ? "green" : "red";
+                    string modifierString = attackModifier != 0 ? $" Modyfikator: {attackModifier}," : "";
+
+                    Debug.Log($"{attackerStats.Name} atakuje przy użyciu {attackerWeapon.Name}. Wynik rzutu: {rollOnAttack}, Wartość umiejętności: {skillValue},{modifierString} PS: <color={successLevelColor}>{attackerSuccessLevel}</color>");
+                }
+
+                Debug.Log("CombatManager.Instance.DefenceResults[0]  " + CombatManager.Instance.DefenceResults[0]);
+                Debug.Log("highestOpponentSuccessValue  " + highestOpponentSuccessValue);
+
+                if (highestOpponentSuccessValue > CombatManager.Instance.DefenceResults[0])
+                {
+                    value = false;
+                    Debug.Log($"{stats.Name} nie udaje się wykonać bezpiecznego odwrotu.");
                 }
                 else
                 {
-                    rollOnAttack = UnityEngine.Random.Range(1, 101);
+                    Debug.Log($"{stats.Name} udało się wykonać bezpieczny odwrót. Może się teraz przemieścić bez wywołania ataku okazyjnego.");
                 }
 
-                int skillValue = attackerStats.WW + attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
-                int attackModifier = CombatManager.Instance.CalculateAttackModifier(attacker, attackerWeapon, unit, 0, false);
-
-                int[] results = CombatManager.Instance.CalculateSuccessLevel(attackerWeapon, rollOnAttack, skillValue, true, attackModifier);
-                int attackerSuccessValue = results[0];
-                int attackerSuccessLevel = results[1];
-
-                if(highestOpponentSuccessLevel < attackerSuccessLevel)
-                {
-                    highestOpponentSuccessLevel = attackerSuccessLevel;
-                }
-
-                string successLevelColor = attackerSuccessValue >= 0 ? "green" : "red";
-                string modifierString = attackModifier != 0 ? $" Modyfikator: {attackModifier}," : "";
-
-                Debug.Log($"{attackerStats.Name} atakuje przy użyciu {attackerWeapon.Name}. Wynik rzutu: {rollOnAttack}, Wartość umiejętności: {skillValue},{modifierString} PS: <color={successLevelColor}>{attackerSuccessLevel}</color>");
+                highestOpponentSuccessValue = 0;
             }
-
-            // Test uniku
-            int dodgeModifier = CombatManager.Instance.CalculateDodgeModifier(unit, stats);
-            int dodgeValue = stats.Dodge + stats.Zw + dodgeModifier;
-            string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
-
-            yield return StartCoroutine(CombatManager.Instance.Dodge(unit, stats, dodgeModifier, dodgeModifierString));
-
-            if(highestOpponentSuccessLevel > CombatManager.Instance.DefenceResults[1])
+            else if (_retreatWay == "advantage")
             {
-                value = false;
-                unit.CanMove = false;
-                SetCanMoveToggle(false);
-                RoundsManager.Instance.DoAction(unit);
-
-                Debug.Log($"{stats.Name} nie udaje się wykonać bezpiecznego odwrotu.");
+                //Zaktualizowanie przewagi
+                InitiativeQueueManager.Instance.CalculateAdvantage(unit.tag, -2);
+                string group = unit.tag == "PlayerUnit" ? "sojuszników" : "przeciwników";
+                Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonuje odwrót korzystając z punktów przewagi. Przewaga {group} została zmniejszona o 2.</color>");
             }
         }
 
         unit.IsRetreating = value;
-        if(value == true)
+        if (value == true)
         {
             StartCoroutine(UpdateMovementRange(1));
             CombatManager.Instance.ChangeAttackType("StandardAttack");
@@ -583,14 +608,9 @@ public class MovementManager : MonoBehaviour
         _retreatWay = "";
     }
 
-    private void ChangeButtonColor(int modifier, bool isCharging)
-    {  
-        //_chargeButton.GetComponent<Image>().color = modifier == 1 ? Color.white : modifier == 2 ? Color.green : Color.white;
-        _runButton.GetComponent<Image>().color = modifier == 2 && !isCharging ? Color.green : Color.white;   
-    }
     #endregion
 
-   
+
     #region Highlight path
     public void HighlightPath(GameObject unit, GameObject tile)
     {

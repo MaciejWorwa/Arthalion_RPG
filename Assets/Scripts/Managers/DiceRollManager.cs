@@ -39,6 +39,14 @@ public class DiceRollManager : MonoBehaviour
     [SerializeField] private GameObject _applyRollResultPanel;
     [SerializeField] private TMP_InputField _rollInputField;
 
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape) && IsWaitingForRoll)
+        {
+            IsWaitingForRoll = false; // Przerywamy oczekiwanie
+        }
+    }
+
     public IEnumerator WaitForRollValue(Stats stats, string rollContext)
     {
         IsWaitingForRoll = true;
