@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 
 public class Inventory : MonoBehaviour
@@ -13,11 +15,11 @@ public class Inventory : MonoBehaviour
     public int GoldCoins;
 
     public Dictionary<string, List<string>> ArmorCategories = new Dictionary<string, List<string>>
-{
-    { "head", new List<string>() },
-    { "arms", new List<string>() },
-    { "torso", new List<string>() },
-    { "legs", new List<string>() }
-};
+    {
+        { "head", new List<string>() },
+        { "arms", new List<string>() },
+        { "torso", new List<string>() },
+        { "legs", new List<string>() }
+    };
 
 }

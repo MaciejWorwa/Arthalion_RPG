@@ -126,6 +126,18 @@ public class RoundsManager : MonoBehaviour
                 StartCoroutine(StatesManager.Instance.Broken(unit));
             }
 
+            // Dla jednostek z talentem Atak wyprzedzający resetujemy pulę ataków
+            if (unit.GetComponent<Stats>().ReactionStrike > 0)
+            {
+                unit.GetComponent<Stats>().ReactionStrikesLeft = unit.GetComponent<Stats>().ReactionStrike;
+            }
+
+            // Dla jednostek z talentem Riposta resetujemy pulę ataków
+            if (unit.GetComponent<Stats>().Riposte > 0)
+            {
+                unit.GetComponent<Stats>().RiposteAttacksLeft = unit.GetComponent<Stats>().Riposte;
+            }
+
             //Aktualizuje osiągnięcia
             unit.GetComponent<Stats>().RoundsPlayed ++;
         }

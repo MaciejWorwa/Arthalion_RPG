@@ -200,7 +200,7 @@ public class Unit : MonoBehaviour
 
         if(Broken > 0)
         {
-            Debug.Log($"{Stats.Name} jest w stanie paniki. Poziom paniki: {Broken}");
+            Debug.Log($"<color=#FF7F50>{Stats.Name} jest w stanie paniki. Poziom paniki: {Broken}</color>");
         }
 
         //Zresetowanie rzucania zaklęć

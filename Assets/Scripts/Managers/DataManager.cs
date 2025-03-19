@@ -650,13 +650,14 @@ public class StatsData
     public int Armor_torso;
     public int Armor_legs;
 
-    public int Ambidextrous; // Oburęczność
     public int AccurateShot; // Celny strzał
+    public int Ambidextrous; // Oburęczność
     public bool Champion; // Czempion
     public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
+    public int DualWielder; // Dwie bronie ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Feint; // Finta
     public int Frightening; // Straszny
     public int FuriousAssault; // Wściekły atak
@@ -665,10 +666,14 @@ public class StatsData
     public int Implacable; // Nieubłagany
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
+    public int ReactionStrike; // Atak wyprzedzający
+    public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
     public int Resolute; // Nieugięty
+    public int Riposte; // Riposta
+    public int RiposteAttacksLeft; // Pozostałe riposty w obecnej rundzie
     public int Robust; // Krzepki
-    public int Shieldsman; // Tarczownik
     public bool Sharpshooter; // Strzał w dziesiątkę
+    public int Shieldsman; // Tarczownik
     public int Sniper; // Snajper
     public int Sprinter; // Szybkobiegacz
     public int StoutHearted; // Waleczne serce
@@ -678,6 +683,7 @@ public class StatsData
     public int StrongBack; // Mocne plecy
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
+    public int Unshakable; // Niewzruszony
 
     //STARE
     public bool ArmouredCasting; // Pancerz Wiary

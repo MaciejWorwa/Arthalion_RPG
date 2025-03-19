@@ -91,6 +91,7 @@ public class Stats : MonoBehaviour
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
+    public int DualWielder; // Dwie bronie ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Feint; // Finta
     public int Frightening; // Straszny
     public int FuriousAssault; // Wściekły atak
@@ -99,7 +100,11 @@ public class Stats : MonoBehaviour
     public int Implacable; // Nieubłagany
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
+    public int ReactionStrike; // Atak wyprzedzający
+    public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
     public int Resolute; // Nieugięty
+    public int Riposte; // Riposta
+    public int RiposteAttacksLeft; // Pozostałe riposty w obecnej rundzie
     public int Robust; // Krzepki
     public bool Sharpshooter; // Strzał w dziesiątkę
     public int Shieldsman; // Tarczownik
@@ -112,6 +117,7 @@ public class Stats : MonoBehaviour
     public int StrongBack; // Mocne plecy
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
+    public int Unshakable; // Niewzruszony
 
     //STARE
     public bool ArmouredCasting; // Pancerz Wiary

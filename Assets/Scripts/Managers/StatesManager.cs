@@ -132,7 +132,7 @@ public class StatesManager : MonoBehaviour
                 rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
-            int successLevel = UnitsManager.Instance.TestSkill("SW", stats, "Cool", stats.StoutHearted * 10, rollResult)[1];
+            int successLevel = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", stats.StoutHearted * 10, rollResult)[1];
             if(successLevel > 0)
             {
                 unit.Broken = Mathf.Max(0, unit.Broken - successLevel);
@@ -169,7 +169,7 @@ public class StatesManager : MonoBehaviour
                 rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
-            int successLevel = UnitsManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
+            int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
             if(successLevel > 0)
             {
                 unit.Poison = Mathf.Max(0, unit.Poison - successLevel);
@@ -242,7 +242,7 @@ public class StatesManager : MonoBehaviour
                 rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
-            int successLevel = UnitsManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
+            int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
             if(successLevel > 0)
             {
                 unit.Stunned = Mathf.Max(0, unit.Stunned - successLevel);
