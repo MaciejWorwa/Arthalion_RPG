@@ -44,11 +44,10 @@ public class UnitsManager : MonoBehaviour
     [SerializeField] private TMP_Text _healthDisplay;
     [SerializeField] private UnityEngine.UI.Slider _healthBar;
     [SerializeField] private UnityEngine.UI.Image _tokenDisplay;
+    [SerializeField] private UnityEngine.UI.Image _tokenBorder;
     [SerializeField] private GameObject _unitPrefab;
     [SerializeField] private CustomDropdown _unitsDropdown;
     public Transform UnitsScrollViewContent;
-    [SerializeField] private UnityEngine.UI.Slider _modifierAttributeSlider;
-    [SerializeField] private UnityEngine.UI.Toggle _rollForHalfValueToggle; // Rzut na połowę cechy (gdy jednostka nie posiada umiejętności)
     [SerializeField] private UnityEngine.UI.Toggle _unitTagToggle;
     [SerializeField] private UnityEngine.UI.Toggle _unitSizeToggle;
     [SerializeField] private UnityEngine.UI.Button _createUnitButton; // Przycisk do tworzenia jednostek na losowych pozycjach
@@ -899,6 +898,7 @@ public class UnitsManager : MonoBehaviour
         UpdateHealthBarColor(stats.TempHealth, stats.MaxHealth, _healthBar.transform.Find("Fill Area/Fill").GetComponent<UnityEngine.UI.Image>());
 
         _tokenDisplay.sprite = unit.transform.Find("Token").GetComponent<SpriteRenderer>().sprite;
+        _tokenBorder.color = unit.tag == "EnemyUnit" ? new Color(0.59f, 0.1f, 0.19f, 1.0f) : new Color(0f, 0.54f, 0.17f, 1.0f);
 
         InventoryManager.Instance.DisplayEquippedWeaponsName();
 

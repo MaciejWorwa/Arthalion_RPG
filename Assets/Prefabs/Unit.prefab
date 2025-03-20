@@ -757,6 +757,7 @@ MonoBehaviour:
   Surprised: 0
   Unconscious: 0
   EntangledUnitId: 0
+  FeintedUnitId: 0
   HelplessDuration: 0
   IsScared: 0
   IsFearTestPassed: 0
@@ -766,12 +767,14 @@ MonoBehaviour:
   AimingBonus: 0
   CastingNumberBonus: 0
   DefensiveBonus: 0
+  FeintModifier: 0
   CanMove: 1
   CanDoAction: 1
   CanCastSpell: 0
   Stats: {fileID: 0}
   NameDisplay: {fileID: 5344260523014033116}
   HealthDisplay: {fileID: 1306580773643467112}
+  LastAttackerStats: {fileID: 0}
 --- !u!114 &-2754630250583481522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -808,45 +811,67 @@ MonoBehaviour:
   TempHealth: 0
   CriticalWounds: 0
   CorruptionPoints: 0
+  SinPoints: 0
   PS: 0
   PP: 0
   Resolve: 0
   Resilience: 0
   ExtraPoints: 0
   Initiative: 0
+  CurrentEncumbrance: 0
+  MaxEncumbrance: 0
   Armor_head: 0
   Armor_arms: 0
   Armor_torso: 0
   Armor_legs: 0
+  Athletics: 0
+  Channeling: 0
+  Cool: 0
+  Dodge: 0
+  Endurance: 0
+  AccurateShot: 0
   Ambidextrous: 0
+  Champion: 0
+  CombatMaster: 0
+  CombatReflexes: 0
+  DirtyFighting: 0
+  Disarm: 0
+  DualWielder: 0
+  Feint: 0
+  Frightening: 0
+  FuriousAssault: 0
+  Gunner: 0
+  Hardy: 0
+  Implacable: 0
+  IronJaw: 0
+  RapidReload: 0
+  ReactionStrike: 0
+  ReactionStrikesLeft: 0
+  Resolute: 0
+  Riposte: 0
+  RiposteAttacksLeft: 0
+  Robust: 0
+  Sharpshooter: 0
+  Shieldsman: 0
+  Sniper: 0
+  Sprinter: 0
+  StoutHearted: 0
+  StrikeMightyBlow: 0
+  StrikeToInjure: 0
+  StrikeToStun: 0
+  StrongBack: 0
+  Sturdy: 0
+  SureShot: 0
+  Unshakable: 0
   ArmouredCasting: 0
   DaemonicAura: 0
-  Disarm: 0
   Ethereal: 0
   FastHands: 0
   Fearless: 0
-  Frightening: 0
-  GrudgeBornFury: 0
-  LightningParry: 0
   MagicSense: 0
-  MasterGunner: 0
-  MightyShot: 0
   MightyMissile: 0
-  PowerfulBlow: 0
-  RapidReload: 0
-  Sharpshooter: 0
-  StoutHearted: 0
-  StreetFighting: 0
-  StrikeMightyBlow: 0
-  StrikeToStun: 0
-  Sturdy: 0
-  SureShot: 0
   Terryfying: 0
-  QuickDraw: 0
   WillOfIron: 0
-  Athletics: 0
-  Channeling: 0
-  Dodge: 0
   HighestDamageDealt: 0
   TotalDamageDealt: 0
   HighestDamageTaken: 0
@@ -870,7 +895,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AllWeapons: []
-  AllArmors: []
   EquippedWeapons:
   - {fileID: 0}
   - {fileID: 0}
@@ -891,6 +915,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Id: 0
+  BaseWeaponStats:
+    S: 0
+    AttackRange: 0
+    ReloadTime: 0
+    Accurate: 0
+    Penetrating: 0
+    Impale: 0
+    Slash: 0
+    Undamaging: 0
+    Imprecise: 0
+    Dangerous: 0
+    Pummel: 0
+    Impact: 0
+    Spread: 0
+    Precise: 0
+    Blast: 0
   Name: "Pi\u0119\u015Bci"
   Type:
   - melee
@@ -902,10 +942,15 @@ MonoBehaviour:
   Damage: 0
   S: -4
   AttackRange: 1.5
+  AmmoType: Brak
   ReloadTime: 0
   ReloadLeft: 0
   AmmoMax: 0
   AmmoLeft: 0
+  Durable: 0
+  Practical: 0
+  Shoddy: 0
+  Unrielable: 0
   Accurate: 0
   Blackpowder: 0
   Blast: 0
@@ -913,7 +958,6 @@ MonoBehaviour:
   Dangerous: 0
   Defensive: 0
   Distract: 0
-  Durable: 0
   Entangle: 0
   Fast: 0
   Hack: 0
@@ -922,13 +966,11 @@ MonoBehaviour:
   Imprecise: 0
   Penetrating: 0
   Pistol: 0
-  Practical: 0
   Precise: 0
   Pummel: 0
   Slash: 0
   Slow: 0
   Shield: 0
-  Shoddy: 0
   Spread: 0
   Tiring: 0
   TrapBlade: 0
@@ -936,8 +978,14 @@ MonoBehaviour:
   Unbreakable: 0
   Undamaging: 0
   Unbalanced: 0
-  Unrielable: 0
   Wrap: 0
+  Armor: 0
+  Bulky: 0
+  Flexible: 0
+  Impenetrable: 0
+  Lightweight: 0
+  Partial: 0
+  WeakPoints: 0
 --- !u!114 &-2613873717699355788
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -952,6 +1000,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Id: 0
   Name: 
+  Location: []
   Quality: 
   Category: 
   Encumbrance: 0
@@ -1005,8 +1054,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.95, y: 0.95, z: 0.95}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 4431166025300685952}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1054,7 +1103,7 @@ SpriteMask:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -7914473902357172534, guid: ce2a47f6774bb7a488f36abe8054bf58, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 1b6a44d91f98c8843bc8978d088fe1fb, type: 3}
   m_MaskAlphaCutoff: 0.163
   m_FrontSortingLayerID: 0
   m_BackSortingLayerID: 0

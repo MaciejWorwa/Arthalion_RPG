@@ -281,16 +281,32 @@ public class InventoryManager : MonoBehaviour
         {
             List<Weapon> equippedArmors = unit.GetComponent<Inventory>().EquippedArmors;
 
+            // Sprawdzamy, czy istnieje już pancerz na tej samej lokacji
+            bool hasAnotherArmor = equippedArmors.Any(armor => armor.Type.Intersect(selectedWeapon.Type).Any());
+            bool isArmorFlexible = false; 
+
+            if (hasAnotherArmor)
+            {
+                // Sprawdzamy, czy każdy z pancerzy na tej samej części ciała ma cechę Flexible lub obecnie wybrana broń ma tą cechę
+                isArmorFlexible = equippedArmors.All(armor => armor.Flexible) || selectedWeapon.Flexible;
+            }
+
             if (equippedArmors.Contains(selectedWeapon))
             {
                 equippedArmors.Remove(selectedWeapon);
                 Debug.Log($"{unit.GetComponent<Stats>().Name} zdjął {selectedWeapon.Name}.");
             }
-            else
+            else if (!hasAnotherArmor || isArmorFlexible)
             {
                 equippedArmors.Add(selectedWeapon);
                 Debug.Log($"{unit.GetComponent<Stats>().Name} założył {selectedWeapon.Name}.");
             }
+            else
+            {
+                Debug.Log("Nie można łączyć elementów pancerza, jeśli żaden z nich nie posiada cechy \"Giętki\".");
+                return;
+            }
+
             CheckForEquippedWeapons();
             CalculateEncumbrance(unit.GetComponent<Stats>());
             return;
@@ -620,6 +636,25 @@ public class InventoryManager : MonoBehaviour
         }
         else if (field.FieldType == typeof(bool))
         {
+            if (attributeName == "Fast" && selectedWeapon.Slow || attributeName == "Slow" && selectedWeapon.Fast)
+            {
+                Debug.Log("Broń z cechą \"Powolna\" nie może posiadać jednocześnie cechy \"Szybka\".");
+                textInput.GetComponent<UnityEngine.UI.Toggle>().isOn = false;
+                return;
+            }
+            if ((attributeName == "Precise" && selectedWeapon.Imprecise) || (attributeName == "Imprecise" && selectedWeapon.Precise))
+            {
+                Debug.Log("Broń z cechą \"Nieprecyzyjna\" nie może posiadać jednocześnie cechy \"Precyzyjna\".");
+                textInput.GetComponent<UnityEngine.UI.Toggle>().isOn = false;
+                return;
+            }
+            if ((attributeName == "Damaging" && selectedWeapon.Undamaging) || (attributeName == "Undamaging" && selectedWeapon.Damaging))
+            {
+                Debug.Log("Broń z cechą \"Tępa\" nie może posiadać jednocześnie cechy \"Przebijająca\".");
+                textInput.GetComponent<UnityEngine.UI.Toggle>().isOn = false;
+                return;
+            }
+
             bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn;
             field.SetValue(selectedWeapon, boolValue);
         }
@@ -832,6 +867,24 @@ public class InventoryManager : MonoBehaviour
             });
         }
 
+        // Wyświetla informację o uszkodzeniu broni
+        if (Unit.SelectedUnit != null)
+        {
+            // Pobieramy wszystkie przyciski z ekwipunku
+            List<UnityEngine.UI.Button> buttons = InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons;
+            List<Weapon> allWeapons = Unit.SelectedUnit.GetComponent<Inventory>().AllWeapons;
+
+            // Iterujemy przez przyciski i broń, aby sprawdzić uszkodzenia
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                if (i < allWeapons.Count) // Upewniamy się, że indeks nie wykracza poza listę
+                {
+                    bool isBroken = allWeapons[i].Damage > 0;
+                    DisplayBrokenWeapons(buttons[i], isBroken);
+                }
+            }
+        }
+
         // Aktualizuje panel edycji broni, jeśli jest otwarty
         if (reloadEditWeaponPanel)
         {
@@ -877,33 +930,33 @@ public class InventoryManager : MonoBehaviour
         if(equippedArmors.Count > 0)
         {
             // Resetowanie list kategorii pancerza
-            inventory.ArmorCategories["head"].Clear();
-            inventory.ArmorCategories["arms"].Clear();
-            inventory.ArmorCategories["torso"].Clear();
-            inventory.ArmorCategories["legs"].Clear();
+            inventory.ArmorByLocation["head"].Clear();
+            inventory.ArmorByLocation["arms"].Clear();
+            inventory.ArmorByLocation["torso"].Clear();
+            inventory.ArmorByLocation["legs"].Clear();
 
             // Sumowanie wartości pancerza
             foreach (Weapon armor in equippedArmors)
             {
                 if (armor.Type.Contains("head"))
                 {
-                    unitStats.Armor_head += armor.Armor;
-                    inventory.ArmorCategories["head"].Add(armor.Category);
+                    unitStats.Armor_head += Math.Max(0, armor.Armor - armor.Damage);
+                    inventory.ArmorByLocation["head"].Add(armor);
                 }
                 if (armor.Type.Contains("arms"))
                 {
-                    unitStats.Armor_arms += armor.Armor;
-                    inventory.ArmorCategories["arms"].Add(armor.Category);
+                    unitStats.Armor_arms += Math.Max(0, armor.Armor - armor.Damage);
+                    inventory.ArmorByLocation["arms"].Add(armor);
                 }
                 if (armor.Type.Contains("torso"))
                 {
-                    unitStats.Armor_torso += armor.Armor;
-                    inventory.ArmorCategories["torso"].Add(armor.Category);
+                    unitStats.Armor_torso += Math.Max(0, armor.Armor - armor.Damage);
+                    inventory.ArmorByLocation["torso"].Add(armor);
                 }
                 if (armor.Type.Contains("legs"))
                 {
-                    unitStats.Armor_legs += armor.Armor;
-                    inventory.ArmorCategories["legs"].Add(armor.Category);
+                    unitStats.Armor_legs += Math.Max(0, armor.Armor - armor.Damage);
+                    inventory.ArmorByLocation["legs"].Add(armor);
                 }
             }
 
@@ -936,6 +989,10 @@ public class InventoryManager : MonoBehaviour
     }
     #endregion
 
+    public void DisplayBrokenWeapons(UnityEngine.UI.Button button, bool value)
+    {
+        button.transform.Find("brokenWeapon_image").gameObject.SetActive(value);
+    }
     public Weapon ChooseWeaponToAttack(GameObject unit)
     {
         Inventory inventory = unit.GetComponent<Inventory>();
@@ -1028,11 +1085,8 @@ public class InventoryManager : MonoBehaviour
     #region Ammo managing
     public void ApplyAmmoModifiers(Weapon weapon)
     {
-        if (!Ammo.Ammos.TryGetValue(weapon.AmmoType, out Ammo effect))
-        {
-            Debug.LogWarning($"Nie znaleziono efektów dla amunicji: {weapon.AmmoType}");
-            return;
-        }
+        // Jeśli dana broń nie posiada wybranej amunicji, to przerywamy funkcję
+        if (weapon.AmmoType == null || !Ammo.Ammos.TryGetValue(weapon.AmmoType, out Ammo effect)) return;
 
         // Resetowanie broni do bazowych statystyk
         ResetToBaseWeaponStats(weapon);

@@ -272,7 +272,7 @@ public class Stats : MonoBehaviour
         //Debug.Log("primaryStatsSum " + primaryStatsSum);
 
         // Uwzględnienie rozmiaru (większy rozmiar = większy mnożnik)
-        float sizeMultiplier = (1f + ((int)Size)) / 10; // Każdy poziom rozmiaru zwiększa overall
+        float sizeMultiplier = Mathf.Pow(2f, 1f + (int)Size) / 10; // Każdy poziom rozmiaru zwiększa overall
         //Debug.Log("sizeMultiplier " + sizeMultiplier);
 
         // Sumowanie zbroi i wytrzymałości
@@ -310,7 +310,7 @@ public class Stats : MonoBehaviour
             {
                 weaponPower += weapon.S + (S / 10 * 8);
             }
-           // Debug.Log("weaponPower " + weaponPower);
+            //Debug.Log("weaponPower " + weaponPower);
         }
 
         // Zliczanie aktywnych talentów
@@ -319,7 +319,7 @@ public class Stats : MonoBehaviour
             .Where(field => field.FieldType == typeof(bool) && (bool)field.GetValue(this))
             .Count();
 
-       // Debug.Log("activeTalentsCount " + activeTalentsCount);
+        //Debug.Log("activeTalentsCount " + activeTalentsCount);
 
         // Obliczanie Overall z uwzględnieniem mnożnika rozmiaru
         int overall = Mathf.RoundToInt(((primaryStatsSum / 3) + weaponPower + MaxHealth + Sz + totalArmor * 2 + activeTalentsCount + skillSum / 3) * sizeMultiplier);

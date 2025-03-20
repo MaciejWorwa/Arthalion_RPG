@@ -775,48 +775,50 @@ public class WeaponData
     public int AmmoMax; // Maksymalna ilość amunicji w magazynku broni ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int AmmoLeft; // Aktualna ilość amunicji w magazynku broni ---------------------- (MECHANIKA DO WPROWADZENIA)
 
-    // NOWE PONIŻEJ
+    //OGÓLNE
+    public int Durable; // Wytrzymały
+    public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
+    public bool Shoddy; //Tandetny
+    public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
+    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Lightweight; // Poręczny (redukuje obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
+
+    //BROŃ
     public bool Accurate; // Celny (+10 do trafienia)
-    public bool Blackpowder; // Prochowa ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public int Blast; // Wybuchowa ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Blackpowder; // Prochowa
+    public int Blast; // Wybuchowa
     public bool Damaging; // Przebijająca
     public bool Dangerous; // Niebezpieczna
     public bool Defensive; // Parujący
     public bool Distract; // Dekoncentrujący (Powoduje cofanie się) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public int Durable; // Wytrzymały (str. 292) ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Entangle; // Unieruchamiający
-    public bool Fast; // Szybka ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Hack; // Rąbiąca ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Fast; // Szybka
+    public bool Hack; // Rąbiąca
     public bool Impact; // Druzgoczący
     public bool Impale; // Nadziewający (str. 298)
     public bool Imprecise; // Nieprecyzyjna (zmiejsza poziom testu ataku o 1)
     public bool Penetrating; // Przekłuwająca
     public bool Pistol; // Pistolet
-    public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
     public bool Precise; // Precyzyjna (zwiększa poziom udanego testu ataku o 1)
-    public bool Pummel; // Ogłuszający ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public int Slash; // Sieczna ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Slow; // Powolny ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Pummel; // Ogłuszający
+    public int Slash; // Sieczna
+    public bool Slow; // Powolny
     public int Shield; // Tarcza
-    public bool Shoddy; // Tandetny  ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public int Spread; // Rozrzucająca  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Spread; // Rozrzucająca
     public bool Tiring; // Ciężka
-    public bool TrapBlade; // Łamacz mieczy ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool TrapBlade; // Łamacz mieczy ---------------------- (MECHANIKA DO WPROWADZENIA, powiązać z cechą Wytrzymały (Durable) str. 292)
     public bool Trip; // Przewracająca ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Unbreakable; // Niełamliwa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Undamaging; // Tępy
     public bool Unbalanced; // Niewyważona
-    public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
     public bool Wrap; // Plącząca (utrudnia parowanie o 1 PS)
 
     //PANCERZ
     public int Armor;
-    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Flexible; // Giętki  ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Impenetrable; // Nieprzebijalny ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Lightweight; // Poręczny (redukuje obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Partial; // Częściowy  ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool WeakPoints; // Wrażliwe punkty  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Flexible; // Giętki
+    public bool Impenetrable; // Nieprzebijalny
+    public bool Partial; // Częściowy
+    public bool WeakPoints; // Wrażliwe punkty
 
     public WeaponData(Weapon weapons)
     {

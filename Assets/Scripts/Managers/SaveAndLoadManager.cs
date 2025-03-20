@@ -161,8 +161,8 @@ public class SaveAndLoadManager : MonoBehaviour
             string inventoryPath = Path.Combine(Application.persistentDataPath, savesFolderName, unitName + "_inventory.json");
             string tokenJsonPath = Path.Combine(Application.persistentDataPath, savesFolderName, unitName + "_token.json");
 
-            //Zresetowanie statystyk broni, żeby zapisana broń nie była zmodyfikowana o wybrany typ amunicji
-            foreach(Weapon weapon in unit.GetComponent<Inventory>().AllWeapons)
+            // Resetowanie broni do wartości bazowych przed zapisem
+            foreach (Weapon weapon in unit.GetComponent<Inventory>().AllWeapons)
             {
                 InventoryManager.Instance.ResetToBaseWeaponStats(weapon);
             }
@@ -184,6 +184,12 @@ public class SaveAndLoadManager : MonoBehaviour
             File.WriteAllText(weaponPath, weaponJsonData);
             File.WriteAllText(inventoryPath, inventoryJsonData);
             File.WriteAllText(tokenJsonPath, tokenJsonData);
+
+            // Po zapisaniu ponownie nakładamy efekty amunicji
+            foreach (Weapon weapon in unit.GetComponent<Inventory>().AllWeapons)
+            {
+                InventoryManager.Instance.ApplyAmmoModifiers(weapon);
+            }
         }
 
         if(savesFolderName == "savedUnitsList")

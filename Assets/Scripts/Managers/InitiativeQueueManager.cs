@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using System.Linq;
 using UnityEditor.Experimental.GraphView;
 using static System.Net.Mime.MediaTypeNames;
+using static UnityEngine.GraphicsBuffer;
 
 public class InitiativeQueueManager : MonoBehaviour
 {
@@ -144,6 +145,12 @@ public class InitiativeQueueManager : MonoBehaviour
         // Odniesienie do wartości inicjatywy
         TextMeshProUGUI initiativeText = optionObj.transform.Find("Initiative_Text").GetComponent<TextMeshProUGUI>();
         initiativeText.text = pair.Value.ToString();
+
+        // Jeśli jednostka posiada broń z cechą "Szybka" to wyświetla odpowiednią ikonkę obok wartości inicjatywy
+        optionObj.transform.Find("FastWeapon_Image").gameObject.SetActive(pair.Key.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Fast));
+
+        // Jeśli jednostka posiada broń z cechą "Powolna" to wyświetla odpowiednią ikonkę obok wartości inicjatywy
+        optionObj.transform.Find("SlowWeapon_Image").gameObject.SetActive(pair.Key.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Slow));
 
         return optionObj;
     }

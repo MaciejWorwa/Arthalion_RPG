@@ -14,12 +14,12 @@ public class Inventory : MonoBehaviour
     public int SilverCoins;
     public int GoldCoins;
 
-    public Dictionary<string, List<string>> ArmorCategories = new Dictionary<string, List<string>>
+    public Dictionary<string, List<Weapon>> ArmorByLocation = new Dictionary<string, List<Weapon>>
     {
-        { "head", new List<string>() },
-        { "arms", new List<string>() },
-        { "torso", new List<string>() },
-        { "legs", new List<string>() }
+        { "head", new List<Weapon>() },
+        { "arms", new List<Weapon>() },
+        { "torso", new List<Weapon>() },
+        { "legs", new List<Weapon>() }
     };
 
 }

@@ -18,6 +18,8 @@ using static UnityEditor.PlayerSettings;
 using NUnit.Framework.Internal;
 using UnityEditor.VersionControl;
 using Unity.VisualScripting;
+using Mono.Cecil.Cil;
+using static UnityEngine.UI.CanvasScaler;
 
 public class CombatManager : MonoBehaviour
 {
@@ -531,13 +533,21 @@ public class CombatManager : MonoBehaviour
             if (attackerSuccessValue >= 0)
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
-                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation));
+
+                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon, rollOnAttack));
                 attackerStats.FortunateEvents++;
             }
             else if (DiceRollManager.Instance.IsDoubleDigit(rollOnAttack) || (attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color> na trafienie!");
                 attackerStats.UnfortunateEvents++;
+
+                //Uwzględnienie cechy broni "Tandetny"
+                if (attackerWeapon.Shoddy)
+                {
+                    attackerWeapon.Damage = attackerWeapon.S;
+                    Debug.Log($"<color=red>{attackerWeapon.Name} ulega zniszczeniu ze względu na cechę \"Tandetny\".</color>");
+                }
             }
         }
 
@@ -552,16 +562,19 @@ public class CombatManager : MonoBehaviour
             if (attackerSuccessValue >= 0)
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
-                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation));
+                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon, rollOnAttack));
                 attackerStats.FortunateEvents++;
             }
-            else
+            else if (isDoubleRoll || isDangerousRoll) // Tu sprawdzamy tylko double albo „niebezpieczny” rzut na 9, bo impale przy nieudanym rzucie nie wywołuje żadnego efektu.
             {
-                // Tu sprawdzamy tylko double albo „niebezpieczny” rzut na 9, bo impale przy nieudanym rzucie nie wywołuje żadnego efektu.
-                if (isDoubleRoll || isDangerousRoll)
+                Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color> na trafienie!");
+                attackerStats.UnfortunateEvents++;
+
+                //Uwzględnienie cechy broni "Tandetny"
+                if (attackerWeapon.Shoddy)
                 {
-                    Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color> na trafienie!");
-                    attackerStats.UnfortunateEvents++;
+                    attackerWeapon.Damage = attackerWeapon.S;
+                    Debug.Log($"<color=red>{attackerWeapon.Name} ulega zniszczeniu ze względu na cechę \"Tandetny\".</color>");
                 }
             }
         }
@@ -581,6 +594,8 @@ public class CombatManager : MonoBehaviour
         int defenceRollResult = 0;
         int parryValue = 0;
         int dodgeValue = 0;
+        bool canParry = false;
+        bool canDodge = false;
 
         if (AttackTypes["Grappling"]) // Zapasy
         {
@@ -604,8 +619,8 @@ public class CombatManager : MonoBehaviour
         else // Zwykły atak bronią
         {
             // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
-            bool canParry = (isMeleeAttack && target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("melee"))) || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2 || (attackerWeapon.Id == 0 && targetWeapon.Id == 0));
-            bool canDodge = isMeleeAttack;
+            canParry = (isMeleeAttack && target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("melee"))) || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2 || (attackerWeapon.Id == 0 && targetWeapon.Id == 0));
+            canDodge = isMeleeAttack;
 
             if ((canParry || canDodge) && !target.Surprised)
             {
@@ -640,7 +655,7 @@ public class CombatManager : MonoBehaviour
         int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
 
         // Sprawdzenie warunku trafienia
-        bool attackSucceeded = (isRangedAttack && combinedSuccessLevel >= 0) || (isMeleeAttack && (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue))));
+        bool attackSucceeded = (isRangedAttack && ((!canParry && attackerSuccessValue > 0) || combinedSuccessLevel > 0 || (canParry && combinedSuccessLevel == 0 && skillValue > parryValue)) || (isMeleeAttack && (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue)))));
 
         //Resetujemy czas przeładowania broni celu ataku, bo ładowanie zostało zakłócone przez atak, przed którym musi się bronić. W przypadku chybienia z broni dystansowej, nie przeszkadza to w ładowaniu
         if (targetWeapon.ReloadLeft != 0 && (attackSucceeded || isMeleeAttack))
@@ -691,7 +706,7 @@ public class CombatManager : MonoBehaviour
 
                 //Ustalamy miejsce trafienia
                 hitLocation = DiceRollManager.Instance.IsDoubleDigit(defenceRollResult) ? DetermineHitLocation() : DetermineHitLocation(defenceRollResult);
-                int attackerArmor = CalculateArmor(targetStats, attackerStats, targetWeapon, hitLocation);
+                int attackerArmor = CalculateArmor(targetStats, attackerStats, targetWeapon, hitLocation, defenceRollResult);
 
                 ApplyDamageToTarget(riposteDamage, attackerArmor, targetStats, targetWeapon, attackerStats, attacker);
 
@@ -700,7 +715,7 @@ public class CombatManager : MonoBehaviour
 
                 if (attackerStats.TempHealth < 0)
                 {
-                    StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, hitLocation));
+                    StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, hitLocation, attackerWeapon, defenceRollResult));
 
                     if (GameManager.IsAutoKillMode)
                     {
@@ -761,20 +776,97 @@ public class CombatManager : MonoBehaviour
 
         // 11) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
-        int armor = CalculateArmor(attackerStats, targetStats, attackerWeapon, hitLocation);
+        int armor = CalculateArmor(attackerStats, targetStats, attackerWeapon, hitLocation, rollOnAttack);
         int damage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, targetStats, attackerWeapon);
         string furiousAssaultString = attackerStats.FuriousAssault > 0 && !furiousAssault ? $" Jednostka może skorzystać z talentu Wściekły Atak i zaatakować {targetStats.Name} ponownie." : "";
         Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.{furiousAssaultString}");
 
         // 12) Zadaj obrażenia
-        ApplyDamageToTarget(damage, armor, attackerStats, attackerWeapon, targetStats, target);
+        // Lista jednostek, które otrzymają obrażenia
+        HashSet<Unit> affectedUnits = new HashSet<Unit> { target }; // Dodajemy target od razu
+
+        // Jeśli broń ma cechę Spread (Rozrzucająca), znajdujemy wszystkie jednostki w obszarze rozrzutu
+        if (attackerWeapon.Spread > 0 && attackDistance > 0)
+        {
+            float spreadRadius = attackerWeapon.Spread / 2f;
+
+            if (attackDistance <= attackerWeapon.AttackRange / 10) // Bezpośredni dystans
+            {
+                damage += attackerWeapon.Spread;
+                Debug.Log($"Uwzględnienie cechy broni \"Rozrzucająca\" w bezpośrednim dystansie. Dodatkowe obrażenia: {attackerWeapon.Spread}");
+            }
+            else
+            {
+                // Znajduje wszystkie jednostki w obszarze rozrzutu
+                List<Collider2D> allColliders = Physics2D.OverlapCircleAll(target.transform.position, spreadRadius).ToList();
+
+                foreach (Collider2D collider in allColliders)
+                {
+                    if (affectedUnits.Count >= attackerWeapon.Spread)
+                        break; // Ogranicza liczbę jednostek do wartości Spread
+
+                    Unit unit = collider.GetComponent<Unit>();
+                    if (unit != null)
+                    {
+                        affectedUnits.Add(unit);
+                        Debug.Log($"Do celów ataku dodano jednostkę: {unit.name}");
+                    }
+                }
+
+                if (attackDistance <= attackerWeapon.AttackRange * 2) // Bliski, średni i daleki dystans
+                {
+                    Debug.Log($"Uwzględnienie cechy broni \"Rozrzucająca\". Ilość trafionych jednostek: {affectedUnits.Count}");
+                }
+                else if (attackDistance <= attackerWeapon.AttackRange * 3) // Bardzo daleki dystans
+                {
+                    damage -= attackerWeapon.Spread;
+                    Debug.Log($"Uwzględnienie cechy broni \"Rozrzucająca\" w bardzo dalekim dystansie. Ilość trafionych jednostek: {affectedUnits.Count}. Obrażenia pomniejszone o: {attackerWeapon.Spread}");
+                }
+            }
+        }
+
+        // Jeśli broń ma cechę Blast (Wybuchowa), znajdujemy wszystkie jednostki w obszarze wybuchu
+        if (attackerWeapon.Blast > 0)
+        {
+            float spreadRadius = attackerWeapon.Blast / 2f;
+
+            // Znajduje wszystkie jednostki w obszarze rozrzutu
+            List<Collider2D> allColliders = Physics2D.OverlapCircleAll(target.transform.position, spreadRadius).ToList();
+
+            foreach (Collider2D collider in allColliders)
+            {
+                Unit unit = collider.GetComponent<Unit>();
+                if (unit != null)
+                {
+                    affectedUnits.Add(unit);
+                    Debug.Log($"Do celów ataku dodano jednostkę: {unit.name}");
+                }
+            }
+        }
+
+        // Zastosowanie obrażeń dla każdej jednostki w affectedUnits
+        if (affectedUnits.Count > 1)
+        {
+            foreach (Unit affectedUnit in affectedUnits)
+            {
+                Stats affectedStats = affectedUnit.GetComponent<Stats>();
+                int affectedUnitArmor = CalculateArmor(attackerStats, affectedStats, attackerWeapon, hitLocation, rollOnAttack);
+                int affectedUnitDamage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, affectedStats, attackerWeapon);
+
+                ApplyDamageToTarget(affectedUnitDamage, affectedUnitArmor, attackerStats, attackerWeapon, affectedStats, affectedUnit, attackDistance);
+            }
+        }
+        else
+        {
+            ApplyDamageToTarget(damage, armor, attackerStats, attackerWeapon, targetStats, target, attackDistance);
+        }
 
         // 13) Animacja ataku i ewentualnie sprawdzenie śmierci
         StartCoroutine(AnimationManager.Instance.PlayAnimation("attack", attacker.gameObject, target.gameObject));
 
         if (targetStats.TempHealth < 0)
         {
-            StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation));
+            StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon));
 
             if(GameManager.IsAutoKillMode)
             {
@@ -796,7 +888,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Weapon attackerWeapon, Stats targetStats, Unit target)
+    private void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Weapon attackerWeapon, Stats targetStats, Unit target, float attackDistance = 0)
     {
         int targetWt = targetStats.Wt / 10;
         int reducedDamage = armor + targetWt + targetStats.Robust;
@@ -934,6 +1026,7 @@ public class CombatManager : MonoBehaviour
         if (weaponUsedForParry.Unbalanced) modifier -= 10;
         if (attackerWeapon.Wrap && _isTrainedWeaponCategory) modifier -= 10;
         if (attackerWeapon.Slow) modifier += 10;
+        if (attackerWeapon.Fast && _isTrainedWeaponCategory) modifier -= 10;
         if (attackerStats.Size > targetStats.Size) modifier -= (attackerStats.Size - targetStats.Size) * 20; // Kara do parowania za rozmiar
         if (attackerStats.Size > targetStats.Size) Debug.Log($"modyfikator parowania za rozmiar -{(attackerStats.Size - targetStats.Size) * 20}");
         if (targetStats.Shieldsman > 0 && target.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Shield > 0)) modifier += targetStats.Shieldsman * 10; // Modyfikator za talent Tarczownik
@@ -1045,7 +1138,7 @@ public class CombatManager : MonoBehaviour
                 Debug.Log($"{targetStats.Name} wyrzucił <color=green>FUKSA</color>!");
 
                 //Trafienie krytyczne
-                StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, DetermineHitLocation()));
+                StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, DetermineHitLocation(), targetWeapon, defenceRollResult));
 
                 targetStats.FortunateEvents++;
             }
@@ -1053,6 +1146,13 @@ public class CombatManager : MonoBehaviour
             {
                 Debug.Log($"{targetStats.Name} wyrzucił <color=red>PECHA</color>!");
                 targetStats.UnfortunateEvents++;
+
+                //Uwzględnienie cechy broni "Tandetny"
+                if (targetWeapon.Shoddy)
+                {
+                    targetWeapon.Damage = targetWeapon.S;
+                    Debug.Log($"<color=red>{targetWeapon.Name} ulega zniszczeniu ze względu na cechę \"Tandetny\".</color>");
+                }
             }
         }
     }
@@ -1534,9 +1634,25 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Critical wounds
-    private IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, String hitLocation)
+    private IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, String hitLocation, Weapon attackerWeapon, int rollOnAttack = 0)
     {
         //TA METODA JEST DO ROZBUDOWANIA. Można dodać konkretne dodatkowe efekty np. ogłuszenie, krwawienie itp. w zależności również od lokacji
+
+        // Pobranie pancerza dla trafionej lokalizacji
+        List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(hitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[hitLocation] : new List<Weapon>();
+
+        // Element pancerza, który został trafiony
+        Weapon selectedArmor = armorByLocation
+             .FirstOrDefault(weapon => (weapon.Category == "plate" || weapon.Shield > 0) && weapon.Armor - weapon.Damage > 0) // Najpierw szuka zbroi płytowej lub tarczy, ale tylko jeśli Armor > 0 (inaczej oznacza, że pancerz jest już całkowicie zniszczony)
+             ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "chain" && weapon.Armor - weapon.Damage > 0) // Potem zbroja kolcza, ale tylko jeśli Armor > 0
+             ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "leather" && weapon.Armor - weapon.Damage > 0); // Na końcu zbroja skórzana, ale tylko jeśli Armor > 0
+
+        //Uwzględnienie cechy Nieprzebijalny
+        if(rollOnAttack != 0 && selectedArmor != null && selectedArmor.Impenetrable && rollOnAttack % 2 != 0)
+        {
+            Debug.Log($"{selectedArmor.Name} posiada cechę \"Nieprzebijalny\". Trafienie krytyczne jest ignorowane.");
+            yield break;
+        }
 
         int rollResult;
         if (!GameManager.IsAutoDiceRollingMode && attackerStats.CompareTag("PlayerUnit"))
@@ -1555,6 +1671,13 @@ public class CombatManager : MonoBehaviour
         {
             int extraRoll = UnityEngine.Random.Range(1, 101);
             if(extraRoll > rollResult) rollResult = extraRoll;
+        }
+
+        // Uwzględnienie cechy broni "Sieczna"
+        if (attackerWeapon.Slash > 0 && _isTrainedWeaponCategory)
+        {
+            targetStats.GetComponent<Unit>().Bleeding++;
+            Debug.Log($"<color=#FF7F50>Atak bronią sieczną powoduje krwawienie u {targetStats.Name}. Możesz wydać {attackerWeapon.Slash} punkt/y przewagi, aby zwiększyć o 1 poziom tego krwawienia.</color>");
         }
 
         int modifier = targetStats.TempHealth < 0 ? Math.Abs(targetStats.TempHealth * 10) : 0;
@@ -1864,7 +1987,7 @@ public class CombatManager : MonoBehaviour
         return message;
     }
 
-    private int CalculateArmor(Stats attackerStats, Stats targetStats, Weapon attackerWeapon, string hitLocation)
+    private int CalculateArmor(Stats attackerStats, Stats targetStats, Weapon attackerWeapon, string hitLocation, int attackRollResult)
     {
         int armor = hitLocation switch
         {
@@ -1883,29 +2006,101 @@ public class CombatManager : MonoBehaviour
         //Zwiększenie pancerza, jeśli cel ataku posiada tarcze i użył parowania podczas obrony w tym ataku
         if(_parryOrDodge == "parry")
         {
-            armor += targetStats.GetComponent<Inventory>().EquippedWeapons.Where(weapon => weapon != null && weapon.Shield > 0).Select(weapon => weapon.Shield).FirstOrDefault();
+            armor += inventory.EquippedWeapons.Where(weapon => weapon != null && weapon.Shield > 0).Select(weapon => weapon.Shield).FirstOrDefault();
         }
 
-        // Pobranie kategorii pancerza dla trafionej lokalizacji
-        List<string> armorCategories = inventory.ArmorCategories.ContainsKey(hitLocation) ? inventory.ArmorCategories[hitLocation] : new List<string>();
+        // Pobranie pancerza dla trafionej lokalizacji
+        List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(hitLocation) ? inventory.ArmorByLocation[hitLocation] : new List<Weapon>();
+
+        // Sprawdza, czy trafienie jest trafieniem krytycznym
+        bool isCriticalHit = DiceRollManager.Instance.IsDoubleDigit(attackRollResult);
+
+        // Uwzględnienie cechy pancerza "Częściowy"
+        if (isCriticalHit || attackRollResult % 2 == 0)
+        {
+            foreach (Weapon armorItem in armorByLocation)
+            {
+                if (armorItem.Partial)
+                {
+                    armor -= armorItem.Armor;
+                }
+            }
+        }
+
+        // Uwzględnienie cechy pancerza "Wrażliwe punkty"
+        if (isCriticalHit && attackerWeapon.Impale)
+        {
+            foreach (Weapon armorItem in armorByLocation)
+            {
+                if (armorItem.WeakPoints)
+                {
+                    armor -= armorItem.Armor;
+                }
+            }
+        }
 
         // Sprawdzenie, czy żadna część pancerza nie jest metalowa
-        bool noMetalArmor = armorCategories.All(category => category == "leather");
+        bool noMetalArmor = armorByLocation.All(weapon => weapon.Category == "leather");
 
         if (attackerWeapon.Penetrating && noMetalArmor && _isTrainedWeaponCategory)
         {
-            Debug.Log("Broń przekłuwająca całkowicie ignoruje niemetalowy pancerz.");
             armor = 0;
+            Debug.Log("Broń przekłuwająca całkowicie ignoruje niemetalowy pancerz.");
         }
         else if (attackerWeapon.Penetrating && armor > 0 && _isTrainedWeaponCategory)
         {
             armor--;
         }
 
+        // Element pancerza, który został trafiony
+        Weapon selectedArmor = armorByLocation
+             .FirstOrDefault(weapon => (weapon.Category == "plate" || weapon.Shield > 0) && weapon.Armor - weapon.Damage > 0) // Najpierw szuka zbroi płytowej lub tarczy, ale tylko jeśli Armor > 0 (inaczej oznacza, że pancerz jest już całkowicie zniszczony)
+             ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "chain" && weapon.Armor - weapon.Damage > 0) // Potem zbroja kolcza, ale tylko jeśli Armor > 0
+             ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "leather" && weapon.Armor - weapon.Damage > 0); // Na końcu zbroja skórzana, ale tylko jeśli Armor > 0
+
+        //Uwzględnienie broni Rąbiącej
+        if (attackerWeapon.Hack && _isTrainedWeaponCategory)
+        {
+            //Sprawdza, czy jednostka broniąca się posiada tarcze i użyła parowania. Jeśli tak dodaje ją do listy broni dla danej lokacji
+            if (_parryOrDodge == "parry" && inventory.EquippedWeapons.Any(weapon => weapon != null && weapon.Shield > 0))
+            {
+                Weapon shield = inventory.EquippedWeapons.FirstOrDefault(weapon => weapon != null && weapon.Shield > 0);
+                armorByLocation.Add(shield);
+            }
+
+            if (selectedArmor != null)
+            {
+                if(selectedArmor.Durable == 0) // Uwzględnienie cechy Wytrzymały
+                {
+                    selectedArmor.Damage++;
+                }
+                else
+                {
+                    selectedArmor.Durable--;
+                }
+
+                string message = $"Broń rąbiąca uszkadza {selectedArmor.Name}.";
+
+                if (selectedArmor.Damage >= selectedArmor.Armor)
+                {
+                    message += " <color=red>Ten element pancerza jest już uszkodzony tak bardzo, że stał się bezużyteczny.</color>";
+                }
+
+                Debug.Log(message);
+            }
+        }
+
         //Uwzgędnienie talentu Strzał Przebijający
-        if(attackerWeapon.Type.Contains("ranged") && attackerStats.SureShot > 0)
+        if (attackerWeapon.Type.Contains("ranged") && attackerStats.SureShot > 0)
         {
             armor = Math.Max(0, armor - attackerStats.SureShot);
+        }
+
+        //Uwzgędnienie cechy pancerza "Tandetny"
+        if (selectedArmor != null && selectedArmor.Shoddy && isCriticalHit)
+        {
+            selectedArmor.Damage = selectedArmor.Armor;
+            Debug.Log($"<color=red>{selectedArmor.Name} ulega zniszczeniu ze względu na cechę \"Tandetny\".</color>");
         }
 
         return armor;

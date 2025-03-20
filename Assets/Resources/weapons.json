@@ -492,7 +492,8 @@
       "Type": [ "head" ],
       "Category": "leather",
       "Armor": 1,
-      "Partial": true
+      "Partial": true,
+      "Flexible": true
     },
     {
       "Id": 48,
@@ -500,7 +501,8 @@
       "Type": [ "torso" ],
       "Category": "leather",
       "Armor": 1,
-      "Encumbrance": 1
+      "Encumbrance": 1,
+      "Flexible": true
     },
     {
       "Id": 49,
@@ -508,7 +510,8 @@
       "Type": [ "arms", "torso" ],
       "Category": "leather",
       "Armor": 1,
-      "Encumbrance": 1
+      "Encumbrance": 1,
+      "Flexible": true
     },
     {
       "Id": 50,
@@ -516,7 +519,8 @@
       "Type": [ "legs" ],
       "Category": "leather",
       "Armor": 1,
-      "Encumbrance": 1
+      "Encumbrance": 1,
+      "Flexible": true
     }
   ]
 }
