@@ -1,12 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using TMPro;
-using UnityEngine.UI;
 using System.Linq;
-using UnityEditor.Experimental.GraphView;
-using static System.Net.Mime.MediaTypeNames;
-using static UnityEngine.GraphicsBuffer;
+using TMPro;
+using UnityEngine;
 
 public class InitiativeQueueManager : MonoBehaviour
 {
@@ -32,7 +28,7 @@ public class InitiativeQueueManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    public Dictionary <Unit, int> InitiativeQueue = new Dictionary<Unit, int>();
+    public Dictionary<Unit, int> InitiativeQueue = new Dictionary<Unit, int>();
     public Unit ActiveUnit;
     public Transform InitiativeScrollViewContent;
     public Transform PlayersCamera_InitiativeScrollViewContent;
@@ -46,11 +42,15 @@ public class InitiativeQueueManager : MonoBehaviour
     public int EnemiesAdvantage;
     [SerializeField] private TMP_InputField _playersAdvantageInput;
     [SerializeField] private TMP_InputField _enemiesAdvantageInput;
+    [SerializeField] private TMP_InputField _playersView_playersAdvantageInput;
+    [SerializeField] private TMP_InputField _playersView_enemiesAdvantageInput;
 
     private void Start()
     {
         _playersAdvantageInput.text = "0";
         _enemiesAdvantageInput.text = "0";
+        _playersView_playersAdvantageInput.text = "0";
+        _playersView_enemiesAdvantageInput.text = "0";
     }
 
     #region Initiative queue
@@ -58,7 +58,7 @@ public class InitiativeQueueManager : MonoBehaviour
     {
         //Nie dodaje do kolejki inicjatywy jednostek, które są ukryte
         Collider2D collider = Physics2D.OverlapPoint(unit.gameObject.transform.position);
-        if(collider.CompareTag("TileCover")) return;
+        if (collider.CompareTag("TileCover")) return;
 
         InitiativeQueue.Add(unit, unit.GetComponent<Stats>().Initiative);
 
@@ -163,7 +163,7 @@ public class InitiativeQueueManager : MonoBehaviour
     public void SelectUnitByQueue()
     {
         StartCoroutine(InvokeSelectUnitCoroutine());
-            
+
         IEnumerator InvokeSelectUnitCoroutine()
         {
             yield return new WaitForSeconds(0.05f);
@@ -184,7 +184,7 @@ public class InitiativeQueueManager : MonoBehaviour
             else if (GameManager.IsAutoSelectUnitMode && ActiveUnit == null && (!GameManager.IsAutoCombatMode || GameManager.IsStatsHidingMode))
             {
                 RoundsManager.Instance.NextRound();
-            }     
+            }
         }
     }
     #endregion
@@ -253,12 +253,14 @@ public class InitiativeQueueManager : MonoBehaviour
             if (PlayersAdvantage == 0 && value < 0) return; // Jeśli przewaga wynosi 0 i ma zostać zmniejszona, kończymy funkcję
             PlayersAdvantage += value;
             _playersAdvantageInput.text = PlayersAdvantage.ToString();
+            _playersView_playersAdvantageInput.text = PlayersAdvantage.ToString();
         }
         else if (unitTag == "EnemyUnit")
         {
             if (EnemiesAdvantage == 0 && value < 0) return; // Jeśli przewaga wynosi 0 i ma zostać zmniejszona, kończymy funkcję
             EnemiesAdvantage += value;
             _enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
+            _playersView_enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
         }
 
         string group = unitTag == "PlayerUnit" ? "sojuszników" : "przeciwników";
@@ -275,11 +277,11 @@ public class InitiativeQueueManager : MonoBehaviour
 
     public void SetAdvantageByInput(TMP_InputField inputField)
     {
-        if(inputField == _playersAdvantageInput)
+        if (inputField == _playersAdvantageInput || inputField == _playersView_playersAdvantageInput)
         {
             PlayersAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
         }
-        else if(inputField == _enemiesAdvantageInput)
+        else if (inputField == _enemiesAdvantageInput || inputField == _playersView_enemiesAdvantageInput)
         {
             EnemiesAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
         }
@@ -292,5 +294,7 @@ public class InitiativeQueueManager : MonoBehaviour
 
         _playersAdvantageInput.text = PlayersAdvantage.ToString();
         _enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
+        _playersView_playersAdvantageInput.text = PlayersAdvantage.ToString();
+        _playersView_enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
     }
 }

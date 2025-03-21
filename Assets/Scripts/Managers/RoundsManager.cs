@@ -1,16 +1,9 @@
 using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System.Linq;
 using TMPro;
-using UnityEngine.UI;
-using System.IO;
-using Unity.VisualScripting;
-using static UnityEngine.UI.CanvasScaler;
-using UnityEngine.UIElements;
+using UnityEngine;
 
 public class RoundsManager : MonoBehaviour
-{   
+{
     // Prywatne statyczne pole przechowujące instancję
     private static RoundsManager instance;
 
@@ -35,6 +28,7 @@ public class RoundsManager : MonoBehaviour
     }
     public static int RoundNumber;
     [SerializeField] private TMP_Text _roundNumberDisplay;
+    [SerializeField] private TMP_Text _playersRoundNumberDisplay;
     public UnityEngine.UI.Button NextRoundButton;
     [SerializeField] private UnityEngine.UI.Toggle _canDoActionToggle;
     [SerializeField] private GameObject _useFortunePointsButton;
@@ -44,6 +38,7 @@ public class RoundsManager : MonoBehaviour
     {
         RoundNumber = 0;
         _roundNumberDisplay.text = "Zaczynamy?";
+        _playersRoundNumberDisplay.text = "";
 
         NextRoundButton.transform.GetChild(0).GetComponent<TMP_Text>().text = "Start";
 
@@ -54,12 +49,17 @@ public class RoundsManager : MonoBehaviour
     {
         RoundNumber++;
         _roundNumberDisplay.text = "Runda: " + RoundNumber;
-        NextRoundButton.transform.GetChild(0).GetComponent<TMP_Text>().text = "Następna runda";
- 
+        _playersRoundNumberDisplay.text = "Runda: " + RoundNumber;
+
+        if( RoundNumber > 0 )
+        {
+            NextRoundButton.transform.GetChild(0).GetComponent<TMP_Text>().text = "Następna runda";
+        }
+
         Debug.Log($"<color=#4dd2ff>------------------------------------------------------------------------------------ RUNDA {RoundNumber} ------------------------------------------------------------------------------------</color>");
 
         //Aktualizuje przewagę, jeśli któraś ze stron wyraźnie dominuje siłą
-        if(UnitsManager.Instance.BothTeamsExist())
+        if (UnitsManager.Instance.BothTeamsExist())
         {
             InitiativeQueueManager.Instance.CalculateAdvantageBasedOnDominance();
         }
@@ -67,7 +67,7 @@ public class RoundsManager : MonoBehaviour
         //Resetuje ilość dostępnych akcji dla wszystkich jednostek
         foreach (Unit unit in UnitsManager.Instance.AllUnits)
         {
-            if(unit == null) continue;
+            if (unit == null) continue;
 
             //Stosuje zdolności specjalne różnych jednostek (np. regeneracja żywotności trolla)
             unit.GetComponent<Stats>().CheckForSpecialRaceAbilities();
@@ -80,7 +80,7 @@ public class RoundsManager : MonoBehaviour
 
             if (unit.Stunned > 0)
             {
-                unit.CanDoAction = false;              
+                unit.CanDoAction = false;
             }
             if (unit.Unconscious)
             {
@@ -108,7 +108,7 @@ public class RoundsManager : MonoBehaviour
 
                 foreach (var u in UnitsManager.Instance.AllUnits)
                 {
-                    if(u.UnitId == unit.EntangledUnitId && u.Entangled > 0)
+                    if (u.UnitId == unit.EntangledUnitId && u.Entangled > 0)
                     {
                         entangledUnitExist = true;
                     }
@@ -139,11 +139,11 @@ public class RoundsManager : MonoBehaviour
             }
 
             //Aktualizuje osiągnięcia
-            unit.GetComponent<Stats>().RoundsPlayed ++;
+            unit.GetComponent<Stats>().RoundsPlayed++;
         }
 
         //Wykonuje testy grozy i strachu jeśli na polu bitwy są jednostki straszne lub przerażające
-        if(GameManager.IsFearIncluded == true)
+        if (GameManager.IsFearIncluded == true)
         {
             UnitsManager.Instance.LookForScaryUnits();
         }
@@ -151,7 +151,7 @@ public class RoundsManager : MonoBehaviour
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
         //Odświeża panel jednostki, aby zaktualizowac ewentualną informację o długości trwania stanu (np. ogłuszenia) wybranej jednostki
-        if(Unit.SelectedUnit != null)
+        if (Unit.SelectedUnit != null)
         {
             UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
         }
@@ -163,7 +163,7 @@ public class RoundsManager : MonoBehaviour
         }
 
         //Wykonuje automatyczną akcję za każdą jednostkę
-        if(GameManager.IsAutoCombatMode)
+        if (GameManager.IsAutoCombatMode)
         {
             StartCoroutine(AutoCombat());
         }
@@ -174,13 +174,13 @@ public class RoundsManager : MonoBehaviour
         NextRoundButton.gameObject.SetActive(false);
         _useFortunePointsButton.SetActive(false);
 
-        for(int i=0; i < UnitsManager.Instance.AllUnits.Count; i++)
+        for (int i = 0; i < UnitsManager.Instance.AllUnits.Count; i++)
         {
             if (UnitsManager.Instance.AllUnits[i] == null) continue;
-            
+
             InitiativeQueueManager.Instance.SelectUnitByQueue();
             yield return new WaitForSeconds(0.1f);
-            
+
             Unit unit = null;
             if (Unit.SelectedUnit != null)
             {
@@ -202,7 +202,7 @@ public class RoundsManager : MonoBehaviour
                 // Czeka, aż jednostka zakończy ruch, zanim wybierze kolejną jednostkę
                 yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
                 yield return new WaitForSeconds(0.5f);
-            }      
+            }
         }
 
         NextRoundButton.gameObject.SetActive(true);
@@ -213,12 +213,12 @@ public class RoundsManager : MonoBehaviour
     public void DoAction(Unit unit)
     {
         //Zapobiega zużywaniu akcji przed rozpoczęciem bitwy
-        if(RoundNumber == 0) return;
+        if (RoundNumber == 0) return;
 
         if (unit.CanDoAction)
         {
             // Automatyczny zapis, aby możliwe było użycie punktów szczęścia lub zepsucia
-            if(!GameManager.IsAutoCombatMode)
+            if (!GameManager.IsAutoCombatMode)
             {
                 SaveAndLoadManager.Instance.SaveUnits(UnitsManager.Instance.AllUnits, "autosave");
                 _isFortunePointSpent = false;
@@ -255,7 +255,7 @@ public class RoundsManager : MonoBehaviour
 
     public void DisplayActionsLeft()
     {
-        if(Unit.SelectedUnit == null)
+        if (Unit.SelectedUnit == null)
         {
             _useFortunePointsButton.SetActive(false);
         }
@@ -296,7 +296,7 @@ public class RoundsManager : MonoBehaviour
             Debug.Log($"{stats.Name} zużywa Punkt Szczęścia. Wykonaj akcję ponownie.");
             stats.PS--;
         }
-        
+
         _isFortunePointSpent = true;
 
         SaveAndLoadManager.Instance.SaveFortunePoints("autosave", stats, stats.PS);
@@ -323,7 +323,7 @@ public class RoundsManager : MonoBehaviour
     public void LoadRoundsManagerData(RoundsManagerData data)
     {
         RoundNumber = data.RoundNumber;
-        if(RoundNumber > 0)
+        if (RoundNumber > 0)
         {
             _roundNumberDisplay.text = "Runda: " + RoundNumber;
             NextRoundButton.transform.GetChild(0).GetComponent<TMP_Text>().text = "Następna runda";

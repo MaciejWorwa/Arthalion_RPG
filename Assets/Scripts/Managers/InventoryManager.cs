@@ -1,16 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using TMPro;
 using System.Reflection;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
-using UnityEngine.Windows;
-using UnityEngine.TextCore.Text;
+using TMPro;
 using Unity.VisualScripting;
-using static UnityEngine.UI.CanvasScaler;
+using UnityEngine;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -36,7 +30,7 @@ public class InventoryManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    
+
     // Lista wszystkich dostępnych broni
     public List<WeaponData> AllWeaponData = new List<WeaponData>();
     [SerializeField] private GameObject _buttonPrefab; // Przycisk odpowiadający każdej z broni
@@ -61,21 +55,21 @@ public class InventoryManager : MonoBehaviour
     void Start()
     {
         //Wczytuje listę wszystkich broni
-        DataManager.Instance.LoadAndUpdateWeapons(); 
+        DataManager.Instance.LoadAndUpdateWeapons();
 
         //Ustawia domyślną rękę na prawą
-        SelectHand(true);    
+        SelectHand(true);
     }
 
     #region Inventory panel managing
     private void Update()
     {
-        if (UnityEngine.Input.GetKeyDown(KeyCode.I) 
-                && Unit.SelectedUnit != null 
-                && !GameManager.Instance.IsAnyInputFieldFocused() 
-                && !UnityEngine.Input.GetKey(KeyCode.LeftControl) 
-                && !UnityEngine.Input.GetKey(KeyCode.RightControl) 
-                && !UnityEngine.Input.GetKey(KeyCode.LeftCommand) 
+        if (UnityEngine.Input.GetKeyDown(KeyCode.I)
+                && Unit.SelectedUnit != null
+                && !GameManager.Instance.IsAnyInputFieldFocused()
+                && !UnityEngine.Input.GetKey(KeyCode.LeftControl)
+                && !UnityEngine.Input.GetKey(KeyCode.RightControl)
+                && !UnityEngine.Input.GetKey(KeyCode.LeftCommand)
                 && !UnityEngine.Input.GetKey(KeyCode.RightCommand))
         {
             OpenInventory();
@@ -151,7 +145,7 @@ public class InventoryManager : MonoBehaviour
         //Dodaje przedmiot do ekwipunku
         unit.GetComponent<Inventory>().AllWeapons.Add(newWeapon);
 
-        if(!SaveAndLoadManager.Instance.IsLoading) //Zapobiega wypisywaniu wszystkich broni podczas wczytywania stanu gry
+        if (!SaveAndLoadManager.Instance.IsLoading) //Zapobiega wypisywaniu wszystkich broni podczas wczytywania stanu gry
         {
             //Sortuje listę alfabetycznie
             unit.GetComponent<Inventory>().AllWeapons.Sort((x, y) => x.Name.CompareTo(y.Name));
@@ -173,7 +167,7 @@ public class InventoryManager : MonoBehaviour
     #region Removing weapon from inventory
     public void RemoveWeaponFromInventory()
     {
-        if(Unit.SelectedUnit == null || InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons.Count == 0) return;
+        if (Unit.SelectedUnit == null || InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons.Count == 0) return;
 
         GameObject unit = Unit.SelectedUnit;
 
@@ -195,7 +189,7 @@ public class InventoryManager : MonoBehaviour
         Unit.SelectedUnit.GetComponent<Weapon>().WeaponsWithReloadLeft.Remove(selectedWeapon.Id);
 
         //Jeżeli usuwamy broń, która była aktualnym komponentem Weapon danej jednostki to ustawiamy ten komponent na Pięści, aby zapobiec używaniu statystyk usuniętej broni podczas ataków
-        if(selectedWeapon.Id == Unit.SelectedUnit.GetComponent<Weapon>().Id)
+        if (selectedWeapon.Id == Unit.SelectedUnit.GetComponent<Weapon>().Id)
         {
             Unit.SelectedUnit.GetComponent<Weapon>().ResetWeapon();
         }
@@ -283,7 +277,7 @@ public class InventoryManager : MonoBehaviour
 
             // Sprawdzamy, czy istnieje już pancerz na tej samej lokacji
             bool hasAnotherArmor = equippedArmors.Any(armor => armor.Type.Intersect(selectedWeapon.Type).Any());
-            bool isArmorFlexible = false; 
+            bool isArmorFlexible = false;
 
             if (hasAnotherArmor)
             {
@@ -321,7 +315,7 @@ public class InventoryManager : MonoBehaviour
         if (selectedWeaponIsNotInSelectedHand)
         {
             //Nie dotyczy trybu automatycznego (akcja jest zużywana bezpośrednio w AutoCombatManager, bo jednostka automatycznie wielokrotnie zmienia bronie, dopóki nie trafi na odpowiednią)
-            if(!GameManager.IsAutoCombatMode && !SaveAndLoadManager.Instance.IsLoading)
+            if (!GameManager.IsAutoCombatMode && !SaveAndLoadManager.Instance.IsLoading)
             {
                 if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction) return;
 
@@ -330,7 +324,7 @@ public class InventoryManager : MonoBehaviour
             }
 
             //W przypadku, gdy dana broń jest już trzymana, ale chcemy jedynie zmienić rękę to usuwa tą broń z poprzedniej ręki
-            if(containsSelectedWeapon)
+            if (containsSelectedWeapon)
             {
                 equippedWeapons[Array.IndexOf(equippedWeapons, selectedWeapon)] = null;
             }
@@ -357,7 +351,7 @@ public class InventoryManager : MonoBehaviour
         }
 
         //Jeżeli postać trzymała wcześniej broń dwuręczną to "zdejmujemy" ją również z drugiej ręki
-        if(equippedWeapons[0] != null && equippedWeapons[0].TwoHanded == true)
+        if (equippedWeapons[0] != null && equippedWeapons[0].TwoHanded == true)
         {
             int otherHand = SelectedHand == 0 ? 1 : 0;
             equippedWeapons[otherHand] = null;
@@ -367,7 +361,7 @@ public class InventoryManager : MonoBehaviour
         equippedWeapons[SelectedHand] = selectedWeapon;
 
         //Jeśli broń jest dwuręczna to postać bierze ją także do drugiej ręki
-        if(selectedWeapon.TwoHanded == true)
+        if (selectedWeapon.TwoHanded == true)
         {
             equippedWeapons[0] = selectedWeapon;
             equippedWeapons[1] = selectedWeapon;
@@ -402,8 +396,8 @@ public class InventoryManager : MonoBehaviour
             int difference = newOverall - Unit.SelectedUnit.GetComponent<Stats>().Overall;
             Unit.SelectedUnit.GetComponent<Stats>().Overall = newOverall;
 
-            if(difference >= 0)
-            { 
+            if (difference >= 0)
+            {
                 InitiativeQueueManager.Instance.CalculateDominance();
             }
             else
@@ -520,14 +514,14 @@ public class InventoryManager : MonoBehaviour
             activeButtons = new UnityEngine.UI.Button[] { _leftHandButtonInventory, _leftHandButtonLowerBar };
             inactiveButtons = new UnityEngine.UI.Button[] { _rightHandButtonInventory, _rightHandButtonLowerBar };
         }
-        
+
         // Ustawia kolor aktywnych przycisków na zielony, a nieaktywnych na domyślny
-        foreach(var activeButton in activeButtons)
+        foreach (var activeButton in activeButtons)
         {
             Color activeColor = new Color(0.3f, 0.65f, 0.125f);
             activeButton.GetComponent<UnityEngine.UI.Image>().color = activeColor;
         }
-        foreach(var inactiveButton in inactiveButtons)
+        foreach (var inactiveButton in inactiveButtons)
         {
             Color inactiveColor = Color.white;
             inactiveButton.GetComponent<UnityEngine.UI.Image>().color = inactiveColor;
@@ -543,12 +537,12 @@ public class InventoryManager : MonoBehaviour
         string leftHandWeapon = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons[1]?.Name;
         string handInfoText = null;
 
-        if (rightHandWeapon == buttonText) handInfoText = "P";     
+        if (rightHandWeapon == buttonText) handInfoText = "P";
         if (leftHandWeapon == buttonText) handInfoText = "L";
         if (rightHandWeapon == buttonText && leftHandWeapon == buttonText) handInfoText = "P + L";
-            
+
         button.transform.Find("hand_text").GetComponent<TMP_Text>().text = handInfoText;
-        if(handInfoText == null)
+        if (handInfoText == null)
         {
             button.transform.Find("hand_text").gameObject.SetActive(false);
         }
@@ -775,11 +769,11 @@ public class InventoryManager : MonoBehaviour
 
                 if (string.IsNullOrEmpty(value)) // Sprawdza, czy wartość jest pusta
                 {
-                    if(attributeName == "Quality")
+                    if (attributeName == "Quality")
                     {
                         dropdown.value = 1; // Ustawia na zwykłą jakość (index 1)
                     }
-                    else if(attributeName == "AmmoType")
+                    else if (attributeName == "AmmoType")
                     {
                         dropdown.value = 0; // Ustawia typ amunicji na "Brak"
                     }
@@ -927,7 +921,7 @@ public class InventoryManager : MonoBehaviour
         unitStats.Armor_torso = 0;
         unitStats.Armor_legs = 0;
 
-        if(equippedArmors.Count > 0)
+        if (equippedArmors.Count > 0)
         {
             // Resetowanie list kategorii pancerza
             inventory.ArmorByLocation["head"].Clear();
@@ -1001,7 +995,7 @@ public class InventoryManager : MonoBehaviour
         int otherHand = SelectedHand == 0 ? 1 : 0;
         Weapon weapon = inventory.EquippedWeapons[SelectedHand] != null ? inventory.EquippedWeapons[SelectedHand] : inventory.EquippedWeapons[otherHand];
 
-        if(weapon == null)
+        if (weapon == null)
         {
             unit.GetComponent<Weapon>().ResetWeapon();
             weapon = unit.GetComponent<Weapon>();
@@ -1012,7 +1006,7 @@ public class InventoryManager : MonoBehaviour
 
     public void DisplayEquippedWeaponsName()
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
         Weapon[] equippedWeapons = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons;
 
@@ -1046,7 +1040,7 @@ public class InventoryManager : MonoBehaviour
 
     public void DisplayReloadTime()
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
         Weapon[] equippedWeapons = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons;
 
@@ -1166,7 +1160,7 @@ public class InventoryManager : MonoBehaviour
         else if (inputValue < 0)
         {
             // Odejmowanie (inputValue jest ujemne)
-            SubtractCoins(inventory, inputField, -inputValue); 
+            SubtractCoins(inventory, inputField, -inputValue);
         }
         else
         {
@@ -1256,7 +1250,7 @@ public class InventoryManager : MonoBehaviour
             {
                 inv.SilverCoins -= silverNeeded;
                 // Po “przelaniu” Silver → Copper, musimy jeszcze odjąć pozostały deficyt z Copper
-                inv.CopperCoins = silverNeeded * 12 - deficit; 
+                inv.CopperCoins = silverNeeded * 12 - deficit;
             }
             else
             {
@@ -1336,7 +1330,7 @@ public class InventoryManager : MonoBehaviour
         // 1) Nadmiar Copper → Silver
         if (inv.CopperCoins >= 12)
         {
-            int silverGained = inv.CopperCoins / 12;  
+            int silverGained = inv.CopperCoins / 12;
             inv.SilverCoins += silverGained;
             inv.CopperCoins %= 12;
         }

@@ -1,12 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
-using TMPro;
+using UnityEngine;
 using UnityEngine.UI;
-using UnityEditor.Experimental.GraphView;
-using System;
-using static UnityEngine.GraphicsBuffer;
 
 public class MovementManager : MonoBehaviour
 {
@@ -67,11 +64,11 @@ public class MovementManager : MonoBehaviour
     public void MoveSelectedUnit(GameObject selectedTile, GameObject unitGameObject)
     {
         // Nie pozwala wykonać akcji ruchu, dopóki poprzedni ruch nie zostanie zakończony. Sprawdza też, czy gra nie jest wstrzymana (np. poprzez otwarcie dodatkowych paneli)
-        if( IsMoving == true || GameManager.IsGamePaused) return;
+        if (IsMoving == true || GameManager.IsGamePaused) return;
 
         Unit unit = unitGameObject.GetComponent<Unit>();
 
-        if(!unit.CanMove && !unit.IsRunning)
+        if (!unit.CanMove && !unit.IsRunning)
         {
             Debug.Log("Ta jednostka nie może wykonać ruchu w tej rundzie.");
             return;
@@ -88,7 +85,7 @@ public class MovementManager : MonoBehaviour
 
         // Pozycja postaci przed zaczęciem wykonywania ruchu
         Vector2 startCharPos = unit.transform.position;
-        
+
         // Aktualizuje informację o zajęciu pola, które postać opuszcza
         GridManager.Instance.ResetTileOccupancy(startCharPos);
 
@@ -101,12 +98,12 @@ public class MovementManager : MonoBehaviour
         // Sprawdza czy wybrane pole jest w zasięgu ruchu postaci. W przypadku automatycznej walki ten warunek nie jest wymagany.
         if (path.Count > 0 && (path.Count <= movementRange || GameManager.IsAutoCombatMode))
         {
-            if(!unit.IsRunning && RoundsManager.RoundNumber != 0)
+            if (!unit.IsRunning && RoundsManager.RoundNumber != 0)
             {
                 unit.CanMove = false;
                 SetCanMoveToggle(false);
 
-                if(!unit.IsRetreating) // Odwrót
+                if (!unit.IsRetreating) // Odwrót
                 {
                     Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonał/a ruch. </color>");
                 }
@@ -137,7 +134,7 @@ public class MovementManager : MonoBehaviour
             selectedTile.GetComponent<Tile>().IsOccupied = true;
 
             //Zapobiega zaznaczeniu jako zajęte pola docelowego, do którego jednostka w trybie automatycznej walki niekoniecznie da radę dojść
-            if(GameManager.IsAutoCombatMode)
+            if (GameManager.IsAutoCombatMode)
             {
                 AutoCombatManager.Instance.TargetTile = selectedTile.GetComponent<Tile>();
             }
@@ -179,7 +176,7 @@ public class MovementManager : MonoBehaviour
             }
 
             //Na wypadek, gdyby w wyniku ataku okazyjnego podczas ruchu jednostka została zabita i usunięta
-            if(unitGameObject == null)
+            if (unitGameObject == null)
             {
                 IsMoving = false;
                 yield break;
@@ -192,15 +189,15 @@ public class MovementManager : MonoBehaviour
         {
             IsMoving = false;
             Retreat(false);
-            
-            if(Unit.SelectedUnit != null)
+
+            if (Unit.SelectedUnit != null)
             {
                 GridManager.Instance.HighlightTilesInMovementRange(Unit.SelectedUnit.GetComponent<Stats>());
             }
         }
 
         //Zaznacza jako zajęte faktyczne pole, na którym jednostka zakończy ruch, a nie pole do którego próbowała dojść
-        if(GameManager.IsAutoCombatMode)
+        if (GameManager.IsAutoCombatMode)
         {
             AutoCombatManager.Instance.CheckForTargetTileOccupancy(unitGameObject);
         }
@@ -331,7 +328,7 @@ public class MovementManager : MonoBehaviour
     #region Charge and Run modes
     public void Run()
     {
-        if(Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Unit>().Prone)
+        if (Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Unit>().Prone)
         {
             Debug.Log("Jednostka w stanie powalenia nie może wykonywać biegu.");
             return;
@@ -348,7 +345,7 @@ public class MovementManager : MonoBehaviour
             unit = Unit.SelectedUnit.GetComponent<Unit>();
         }
 
-        if(unit == null) yield break;
+        if (unit == null) yield break;
 
         Stats stats = unit.GetComponent<Stats>();
 
@@ -381,18 +378,18 @@ public class MovementManager : MonoBehaviour
         {
             Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
             yield break;
-        } 
-        else if( modifier == 3 && stats.Race == "Zombie")
+        }
+        else if (modifier == 3 && stats.Race == "Zombie")
         {
             Debug.Log("Ta jednostka nie może wykonywać akcji biegu.");
             yield break;
-        } 
+        }
 
         //Aktualizuje obecny tryb poruszania postaci
         unit.IsCharging = isCharging;
         unit.IsRunning = modifier == 2 && !isCharging ? true : false;
 
-        if(unit.IsRunning)
+        if (unit.IsRunning)
         {
             CombatManager.Instance.ChangeAttackType("StandardAttack"); //Resetuje szarże jako obecny typ ataku i ustawia standardowy atak
         }
@@ -400,7 +397,7 @@ public class MovementManager : MonoBehaviour
         //Oblicza obecną szybkość
         stats.TempSz *= modifier;
 
-        if(unit.IsRunning)
+        if (unit.IsRunning)
         {
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
@@ -416,7 +413,7 @@ public class MovementManager : MonoBehaviour
         }
 
         // Uwzględnia ogłuszenie i powalenie
-        if(unit.Stunned > 0 || unit.Prone)  stats.TempSz /= 2;
+        if (unit.Stunned > 0 || unit.Prone) stats.TempSz /= 2;
 
         ChangeButtonColor(modifier, unit.IsCharging);
 
@@ -425,9 +422,9 @@ public class MovementManager : MonoBehaviour
     }
 
     private void ChangeButtonColor(int modifier, bool isCharging)
-    {  
+    {
         //_chargeButton.GetComponent<Image>().color = modifier == 1 ? Color.white : modifier == 2 ? Color.green : Color.white;
-        _runButton.GetComponent<Image>().color = modifier == 2 && !isCharging ? Color.green : Color.white;   
+        _runButton.GetComponent<Image>().color = modifier == 2 && !isCharging ? Color.green : Color.white;
     }
     #endregion
 
@@ -455,7 +452,7 @@ public class MovementManager : MonoBehaviour
 
         if (value == true)
         {
-            if(!unit.CanMove || (!unit.CanDoAction && advantage < 2)) //Sprawdza, czy jednostka może wykonać ruch
+            if (!unit.CanMove || (!unit.CanDoAction && advantage < 2)) //Sprawdza, czy jednostka może wykonać ruch
             {
                 Debug.Log("Ta jednostka nie może w obecnej rundzie wykonać odwrotu.");
                 yield break;
@@ -479,7 +476,7 @@ public class MovementManager : MonoBehaviour
                 {
                     rollResult = UnityEngine.Random.Range(1, 101);
                 }
-                else if(_retreatWay != "advantage") // Zamknięcie okna. Odwrót nie jest wykonywany
+                else if (_retreatWay != "advantage") // Zamknięcie okna. Odwrót nie jest wykonywany
                 {
                     value = false;
                 }
@@ -614,9 +611,9 @@ public class MovementManager : MonoBehaviour
     #region Highlight path
     public void HighlightPath(GameObject unit, GameObject tile)
     {
-        var path = FindPath(unit.transform.position, new Vector2 (tile.transform.position.x, tile.transform.position.y));
+        var path = FindPath(unit.transform.position, new Vector2(tile.transform.position.x, tile.transform.position.y));
 
-        if(path.Count <= unit.GetComponent<Stats>().TempSz)
+        if (path.Count <= unit.GetComponent<Stats>().TempSz)
         {
             foreach (Vector2 tilePosition in path)
             {

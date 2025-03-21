@@ -1,13 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-using UnityEngine;
-using UnityEngine.TextCore.Text;
-using static UnityEngine.GraphicsBuffer;
-using System.Linq;
 using System;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 public enum SizeCategory
 {
@@ -206,7 +200,7 @@ public class Stats : MonoBehaviour
         return statsValue + rollResult;
     }
 
-    public void CalculateMaxHealth()
+    public void CalculateMaxHealth(bool isSizeChange = false)
     {
         int previousMaxHealth = MaxHealth;
 
@@ -228,8 +222,44 @@ public class Stats : MonoBehaviour
         //Uwzględnienie talentu Twardziel
         MaxHealth += Hardy * (Wt / 10);
 
-        TempHealth += MaxHealth - previousMaxHealth;
+        if(isSizeChange)
+        {
+            TempHealth = MaxHealth;
+        }
+        else
+        {
+            TempHealth += MaxHealth - previousMaxHealth;
+        }
+
+        if(GetComponent<Unit>().Stats != null)
+        {
+            GetComponent<Unit>().DisplayUnitHealthPoints();
+        }
     }
+
+    public void ChangeUnitSize(int newSize)
+    {
+        if (!Enum.IsDefined(typeof(SizeCategory), newSize)) return; // Sprawdzenie poprawności wartości
+
+        SizeCategory previousSize = Size;
+        SizeCategory newSizeCategory = (SizeCategory)newSize; // Konwersja int -> SizeCategory
+
+        if (newSizeCategory == previousSize) return;
+
+        int sizeDifference = newSize - (int)previousSize;
+
+        // Aktualizacja statystyk zgodnie z różnicą w rozmiarze
+        S = Mathf.Max(0, S + sizeDifference * 10);
+        Wt = Mathf.Max(0, Wt + sizeDifference * 10);
+        Zw = Mathf.Max(0, Zw - sizeDifference * 5); // Większy rozmiar = mniejsza zręczność
+
+        // Aktualizacja rozmiaru
+        Size = newSizeCategory;
+
+        // Przeliczenie zdrowia
+        CalculateMaxHealth(true);
+    }
+
 
     // Pobieranie modyfikatora za umiejętność dla danej kategorii broni
     public int GetSkillModifier<T>(Dictionary<T, int> modifiers, T category) where T : Enum

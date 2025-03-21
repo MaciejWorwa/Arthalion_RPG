@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
-using static UnityEngine.UI.CanvasScaler;
 
 public class AutoCombatManager : MonoBehaviour
 {
@@ -42,7 +41,7 @@ public class AutoCombatManager : MonoBehaviour
         GameObject closestOpponent = GetClosestOpponent(unit.gameObject, closestOpponentInDistanceRangeNeeded);
 
         //Jeżeli jednostka walczy bronią dystansową ale nie ma żadnego przeciwnika do którego może strzelać to obiera za cel przeciwnika w zwarciu. Będzie się to wiązało z próbą dobycia broni typu "melee"
-        if(closestOpponent == null && closestOpponentInDistanceRangeNeeded)
+        if (closestOpponent == null && closestOpponentInDistanceRangeNeeded)
         {
             closestOpponentInDistanceRangeNeeded = false;
             closestOpponent = GetClosestOpponent(unit.gameObject, closestOpponentInDistanceRangeNeeded);
@@ -57,14 +56,14 @@ public class AutoCombatManager : MonoBehaviour
             if (weapon.Type.Contains("ranged"))
             {
                 //Sprawdza konieczne warunki do wykonania ataku dystansowego
-                if(CombatManager.Instance.ValidateRangedAttack(unit, closestOpponent.GetComponent<Unit>(), weapon, distance) == false)
+                if (CombatManager.Instance.ValidateRangedAttack(unit, closestOpponent.GetComponent<Unit>(), weapon, distance) == false)
                 {
                     AttemptToChangeDistanceAndAttack(unit, closestOpponent, weapon);
                     return;
                 }
             }
 
-            ExecuteAttack(unit, closestOpponent, weapon, distance);    
+            ExecuteAttack(unit, closestOpponent, weapon, distance);
         }
         else
         {
@@ -163,7 +162,7 @@ public class AutoCombatManager : MonoBehaviour
     {
         // Szuka wolnej pozycji obok celu, do której droga postaci jest najkrótsza
         GameObject targetTile = CombatManager.Instance.GetTileAdjacentToTarget(unit.gameObject, closestOpponent);
-        Vector2 targetTilePosition;;
+        Vector2 targetTilePosition; ;
 
         if (targetTile != null)
         {
@@ -240,18 +239,18 @@ public class AutoCombatManager : MonoBehaviour
         //Resetuje szybkość jednostki
         StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
 
-        if (unit.CanDoAction) 
+        if (unit.CanDoAction)
         {
             //Przyjmuje pozycję obronną
             CombatManager.Instance.DefensiveStance();
         }
-        else if (unit.CanDoAction) 
+        else if (unit.CanDoAction)
         {
             var equippedWeapons = unit.GetComponent<Inventory>().EquippedWeapons;
             bool isFirstWeaponShield = equippedWeapons[0] != null && equippedWeapons[0].Type.Contains("shield");
             bool hasTwoOneHandedWeaponsOrShield = (equippedWeapons[0] != null && equippedWeapons[1] != null && equippedWeapons[0].Name != equippedWeapons[1].Name) || isFirstWeaponShield;
 
-            if(hasTwoOneHandedWeaponsOrShield != true)
+            if (hasTwoOneHandedWeaponsOrShield != true)
             {
                 //Kończy turę, żeby zostawić sobie akcję na parowanie
                 RoundsManager.Instance.FinishTurn();
@@ -262,16 +261,16 @@ public class AutoCombatManager : MonoBehaviour
     public void CheckForTargetTileOccupancy(GameObject unit)
     {
         //Zaznacza jako zajęte faktyczne pole, na którym jednostka zakończy ruch, a nie pole do którego próbowała dojść
-        if(TargetTile != null)
+        if (TargetTile != null)
         {
             Vector2 unitPos = new Vector2(unit.transform.position.x, unit.transform.position.y);
-            if((Vector2)TargetTile.transform.position != unitPos)
+            if ((Vector2)TargetTile.transform.position != unitPos)
             {
                 TargetTile.IsOccupied = false;
 
                 // Ignoruje warstwę "Unit" podczas wykrywania kolizji, skupiając się tylko na warstwie 0 (default)
                 Collider2D collider = Physics2D.OverlapPoint(unitPos, 0);
-                if(collider != null && collider.GetComponent<Tile>() != null)
+                if (collider != null && collider.GetComponent<Tile>() != null)
                 {
                     collider.GetComponent<Tile>().IsOccupied = true;
                 }

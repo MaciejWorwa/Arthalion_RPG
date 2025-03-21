@@ -1,17 +1,15 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
 using UnityEngine.UI;
-using System;
-using static UnityEngine.GraphicsBuffer;
 
 public class MagicManager : MonoBehaviour
 {
-     // Prywatne statyczne pole przechowujące instancję
+    // Prywatne statyczne pole przechowujące instancję
     private static MagicManager instance;
 
     // Publiczny dostęp do instancji
@@ -36,7 +34,7 @@ public class MagicManager : MonoBehaviour
 
     [SerializeField] private CustomDropdown _spellbookDropdown;
     [SerializeField] private Button _castSpellButton;
-    public List <Spell> SpellBook = new List<Spell>();
+    public List<Spell> SpellBook = new List<Spell>();
     public static bool IsTargetSelecting;
     private float _spellDistance;
 
@@ -64,9 +62,9 @@ public class MagicManager : MonoBehaviour
 
     public void ChannelingMagic()
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
-        if(Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus > 0)
+        if (Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus > 0)
         {
             Debug.Log("Ta jednostka już wcześniej splotła magię.");
             return;
@@ -75,7 +73,7 @@ public class MagicManager : MonoBehaviour
         Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
 
         //Sprawdzenie, czy wybrana postać może splatać magię
-        if(stats.Channeling == 0)
+        if (stats.Channeling == 0)
         {
             Debug.Log($"Wybrana jednostka nie potrafi splatać magii.");
             return;
@@ -93,7 +91,7 @@ public class MagicManager : MonoBehaviour
         {
             int rollResult;
 
-            if(!GameManager.IsAutoDiceRollingMode)
+            if (!GameManager.IsAutoDiceRollingMode)
             {
                 // Czekaj na kliknięcie przycisku
                 Debug.Log("Wpisz wynik rzutu na SW.");
@@ -127,20 +125,20 @@ public class MagicManager : MonoBehaviour
                 Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus = 0;
                 Debug.Log($"{message} Splatanie magii zakończone niepowodzeniem.");
             }
-        }    
+        }
     }
 
     public void CastingSpellMode()
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
         // if(Unit.SelectedUnit.GetComponent<Stats>().Mag == 0)
         // {
         //     Debug.Log("Wybrana jednostka nie może rzucać zaklęć.");
         //     return;
         // }
-        
-        if(!Unit.SelectedUnit.GetComponent<Unit>().CanCastSpell)
+
+        if (!Unit.SelectedUnit.GetComponent<Unit>().CanCastSpell)
         {
             Debug.Log("Wybrana jednostka nie może w tej rundzie rzucić więcej zaklęć.");
             return;
@@ -175,7 +173,7 @@ public class MagicManager : MonoBehaviour
         Unit spellcasterUnit = Unit.SelectedUnit.GetComponent<Unit>();
         Spell spell = Unit.SelectedUnit.GetComponent<Spell>();
 
-        if(!GameManager.IsAutoDiceRollingMode)
+        if (!GameManager.IsAutoDiceRollingMode)
         {
             CombatManager.Instance.IsManualPlayerAttack = true;
         }
@@ -292,7 +290,7 @@ public class MagicManager : MonoBehaviour
         // Test poziomu mocy zaklęcia
         IEnumerator CastingNumberRollCoroutine()
         {
-            if(!GameManager.IsAutoDiceRollingMode && isSuccessful != false)
+            if (!GameManager.IsAutoDiceRollingMode && isSuccessful != false)
             {
                 // Czekaj na kliknięcie przycisku
                 Debug.Log("Wpisz poziom mocy uzyskany na kościach.");
@@ -304,16 +302,16 @@ public class MagicManager : MonoBehaviour
                 CombatManager.Instance.IsManualPlayerAttack = false;
 
                 //Aktualizuje aktywną postać na kolejce inicjatywy, jeśli atakujący nie ma już dostępnych akcji. Ta funkcja jest tu wywołana, dlatego że chcemy zastosować opóźnienie i poczekać ze zmianą jednostki do momentu wpisania wartości rzutów
-                if(!spellcasterUnit.CanDoAction == true)
+                if (!spellcasterUnit.CanDoAction == true)
                 {
                     InitiativeQueueManager.Instance.SelectUnitByQueue();
                 }
             }
-            else if(isSuccessful != false)
+            else if (isSuccessful != false)
             {
                 isSuccessful = CastingNumberRoll(spellcasterStats, spell.CastingNumber) >= spell.CastingNumber ? true : false;
             }
-            
+
             ResetSpellCasting();
             spell.CastingTimeLeft = spell.CastingTime;
             spellcasterUnit.CastingNumberBonus = 0;
@@ -344,7 +342,7 @@ public class MagicManager : MonoBehaviour
                     HandleSpellEffect(spellcasterStats, collider.GetComponent<Stats>(), spell);
                 }
             }
-        }   
+        }
     }
 
     public void ResetSpellCasting()
@@ -407,13 +405,13 @@ public class MagicManager : MonoBehaviour
         castingNumber += modifier;
 
         string modifierString = "";
-        if(modifier != 0)
+        if (modifier != 0)
         {
             modifierString = $" Modyfikator: {modifier}.";
         }
 
         Debug.Log(resultString);
-        if((castingNumber + modifier) < spellCastingNumber)
+        if ((castingNumber + modifier) < spellCastingNumber)
         {
             Debug.Log($"Uzyskany poziom mocy na kościach: {castingNumber - modifier}.{modifierString} Wymagany poziom mocy: <color=red>{spellCastingNumber}</color>");
         }
@@ -432,19 +430,19 @@ public class MagicManager : MonoBehaviour
     //Modyfikator do poziomu mocy
     private int CalculateCastingNumberModifier()
     {
-        if(Unit.SelectedUnit == null) return 0;
+        if (Unit.SelectedUnit == null) return 0;
 
         //Modyfikator do poziomu mocy
         int modifier = 0;
 
-        Stats stats = Unit.SelectedUnit.GetComponent<Stats>() ;
+        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
 
         //Uwzględnienie splecenia magii
         modifier += Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus;
 
         bool etherArmor = false;
 
-        if(UnitsStatsAffectedBySpell != null && UnitsStatsAffectedBySpell.Count > 0)
+        if (UnitsStatsAffectedBySpell != null && UnitsStatsAffectedBySpell.Count > 0)
         {
             //Przeszukanie statystyk jednostek, na które działają zaklęcia czasowe
             for (int i = 0; i < UnitsStatsAffectedBySpell.Count; i++)
@@ -477,7 +475,7 @@ public class MagicManager : MonoBehaviour
         // Wyświetl panel do wpisania wyniku
         if (_applyCastingNumberPanel != null)
         {
-           _applyCastingNumberPanel.SetActive(true);
+            _applyCastingNumberPanel.SetActive(true);
         }
 
         // Wyzeruj pole tekstowe
@@ -501,7 +499,7 @@ public class MagicManager : MonoBehaviour
 
     public void OnSubmitRoll(bool isChanneling)
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
         if (!isChanneling && _castingNumberInputField != null && int.TryParse(_castingNumberInputField.text, out int result))
         {
@@ -540,10 +538,10 @@ public class MagicManager : MonoBehaviour
         Unit targetUnit = targetStats.GetComponent<Unit>();
 
         //Uwzględnienie czasu trwania zaklęcia, które wpływa na statystyki postaci
-        if(spell.Duration != 0 && spell.Type.Contains("buff"))
+        if (spell.Duration != 0 && spell.Type.Contains("buff"))
         {
             //Zakończenie wpływu poprzedniego zaklęcia, jeżeli na wybraną jednostkę już jakieś działało. JEST TO ZROBIONE TYMCZASOWO. TEN LIMIT ZOSTAŁ WPROWADZONY DLA UPROSZCZENIA KODU.
-            if(UnitsStatsAffectedBySpell != null && UnitsStatsAffectedBySpell.Any(stat => stat.GetComponent<Unit>().UnitId == targetUnit.UnitId))
+            if (UnitsStatsAffectedBySpell != null && UnitsStatsAffectedBySpell.Any(stat => stat.GetComponent<Unit>().UnitId == targetUnit.UnitId))
             {
                 ResetSpellEffect(targetUnit);
                 Debug.Log($"Poprzednie zaklęcie wpływające na {targetStats.Name} zostało zresetowane. W obecnej wersji symulatora nie ma możliwości kumulowania efektów wielu zaklęć.");
@@ -696,13 +694,13 @@ public class MagicManager : MonoBehaviour
 
         //Aktualizuje osiągnięcia
         spellcasterStats.TotalDamageDealt += damage;
-        if(damage > spellcasterStats.HighestDamageDealt)
+        if (damage > spellcasterStats.HighestDamageDealt)
         {
             spellcasterStats.HighestDamageDealt = damage;
         }
 
         targetStats.TotalDamageTaken += damage;
-        if(damage > targetStats.HighestDamageTaken)
+        if (damage > targetStats.HighestDamageTaken)
         {
             targetStats.HighestDamageTaken = damage;
         }

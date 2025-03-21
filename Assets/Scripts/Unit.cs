@@ -1,14 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
-using System.Reflection;
-using System.IO;
-using static UnityEngine.UI.CanvasScaler;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
-using static UnityEngine.GraphicsBuffer;
-using UnityEditor.Experimental.GraphView;
 
 public class Unit : MonoBehaviour
 {
@@ -76,7 +67,7 @@ public class Unit : MonoBehaviour
 
         StartCoroutine(MovementManager.Instance.UpdateMovementRange(1, this));
 
-        if(Stats.Name.Contains(Stats.Race)) // DO POKMINIENIA, JAKI INNY WARUNEK DAĆ, BO TEN NIE JEST IDEALNY, BO KTOŚ MOŻE NAZWAĆ ZAPISANEGO GOBLINA NP. "FAJNY GOBLIN"
+        if (Stats.Name.Contains(Stats.Race)) // DO POKMINIENIA, JAKI INNY WARUNEK DAĆ, BO TEN NIE JEST IDEALNY, BO KTOŚ MOŻE NAZWAĆ ZAPISANEGO GOBLINA NP. "FAJNY GOBLIN"
         {
             Stats.TempHealth = Stats.MaxHealth;
         }
@@ -87,28 +78,28 @@ public class Unit : MonoBehaviour
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
     }
     private void OnMouseUp()
-    { 
-        if(GameManager.Instance.IsPointerOverUI() || GameManager.IsMapHidingMode || UnitsManager.IsMultipleUnitsSelecting || MovementManager.Instance.IsMoving) return;
+    {
+        if (GameManager.Instance.IsPointerOverUI() || GameManager.IsMapHidingMode || UnitsManager.IsMultipleUnitsSelecting || MovementManager.Instance.IsMoving) return;
 
         SelectUnit();
     }
 
     private void OnMouseOver()
     {
-        if(Input.GetMouseButton(1) && SelectedUnit != null && SelectedUnit != this.gameObject && !MagicManager.IsTargetSelecting)
+        if (Input.GetMouseButton(1) && SelectedUnit != null && SelectedUnit != this.gameObject && !MagicManager.IsTargetSelecting)
         {
             StartCoroutine(CombatManager.Instance.OpenHitLocationPanel());
         }
-        else if(Input.GetMouseButtonUp(1) && SelectedUnit != null && SelectedUnit != this.gameObject && !MagicManager.IsTargetSelecting)
+        else if (Input.GetMouseButtonUp(1) && SelectedUnit != null && SelectedUnit != this.gameObject && !MagicManager.IsTargetSelecting)
         {
             //Sprawdza, czy atakowanym jest nasz sojusznik i czy tryb Friendly Fire jest aktywny
-            if(GameManager.IsFriendlyFire == false && this.gameObject.CompareTag(SelectedUnit.tag))
+            if (GameManager.IsFriendlyFire == false && this.gameObject.CompareTag(SelectedUnit.tag))
             {
                 Debug.Log("Nie możesz atakować swoich sojuszników. Jest to możliwe tylko w trybie Friendly Fire.");
                 return;
             }
 
-            if(Unconscious && SelectedUnit != null) // Gdy jednostka jest nieprzytomna to atak automatycznie oznacza śmierć
+            if (Unconscious && SelectedUnit != null) // Gdy jednostka jest nieprzytomna to atak automatycznie oznacza śmierć
             {
                 // Sprawdzamy, czy atakujący może wykonać akcję
                 if (!SelectedUnit.GetComponent<Unit>().CanDoAction)
@@ -127,7 +118,7 @@ public class Unit : MonoBehaviour
                     CombatManager.Instance.HandleDeath(Stats, gameObject, SelectedUnit.GetComponent<Stats>());
                 }
             }
-            else if(CombatManager.Instance.AttackTypes["Grappling"]) // Zapasy
+            else if (CombatManager.Instance.AttackTypes["Grappling"]) // Zapasy
             {
                 CombatManager.Instance.Grappling(SelectedUnit.GetComponent<Unit>(), this);
             }
@@ -139,7 +130,7 @@ public class Unit : MonoBehaviour
         else if (Input.GetMouseButtonUp(1) && SelectedUnit != null && MagicManager.IsTargetSelecting)
         {
             MagicManager.Instance.CastSpell(this.gameObject);
-        }   
+        }
     }
     public void SelectUnit()
     {
@@ -159,7 +150,7 @@ public class Unit : MonoBehaviour
             MovementManager.Instance.Retreat(false); //Resetuje bezpieczny odwrót
 
             //Zamyka aktywne panele
-            GameManager.Instance.HideActivePanels(); 
+            GameManager.Instance.HideActivePanels();
 
             LastSelectedUnit = SelectedUnit;
             SelectedUnit = null;
@@ -198,7 +189,7 @@ public class Unit : MonoBehaviour
         //Zaznacza lub odznacza jednostkę na kolejce inicjatywy
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
-        if(Broken > 0)
+        if (Broken > 0)
         {
             Debug.Log($"<color=#FF7F50>{Stats.Name} jest w stanie paniki. Poziom paniki: {Broken}</color>");
         }
@@ -280,15 +271,15 @@ public class Unit : MonoBehaviour
         ResetUnitHealthState();
 
         //Wyświetla symbol obrazujący stan zdrowia jednostki
-        if(Stats.TempHealth < 0)
+        if (Stats.TempHealth < 0)
         {
             gameObject.transform.Find("Canvas/Dead_image").gameObject.SetActive(true);
         }
-        else if(Stats.TempHealth <= Stats.MaxHealth / 3)
+        else if (Stats.TempHealth <= Stats.MaxHealth / 3)
         {
             gameObject.transform.Find("Canvas/Heavy_wounded_image").gameObject.SetActive(true);
         }
-        else if(Stats.TempHealth < Stats.MaxHealth)
+        else if (Stats.TempHealth < Stats.MaxHealth)
         {
             gameObject.transform.Find("Canvas/Wounded_image").gameObject.SetActive(true);
         }

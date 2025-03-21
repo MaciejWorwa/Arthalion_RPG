@@ -147,7 +147,7 @@ public class DiceRollManager : MonoBehaviour
         }
 
         // Uwzglêdnienie modyfikatora z panelu jednostki
-        if(RollModifier != 0)
+        if (RollModifier != 0)
         {
             modifier += RollModifier;
         }

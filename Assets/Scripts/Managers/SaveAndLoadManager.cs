@@ -4,16 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
 using TMPro;
-using Unity.VisualScripting;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
-using static UnityEngine.UI.CanvasScaler;
-using SimpleFileBrowser;
-using System.Xml.Linq;
 
 public class SaveAndLoadManager : MonoBehaviour
 {
@@ -44,7 +36,7 @@ public class SaveAndLoadManager : MonoBehaviour
     [SerializeField] private TMP_InputField _searchInputField;
     [SerializeField] private Transform _savesScrollViewContent;
     [SerializeField] private GameObject _buttonPrefab; // Przycisk odpowiadający każdemu zapisowi na liście
-    [SerializeField] private GameObject _loadGamePanel; 
+    [SerializeField] private GameObject _loadGamePanel;
     [SerializeField] private GameObject _saveGamePanel;
     [SerializeField] private UnityEngine.UI.Toggle _sortByDateToggle;
 
@@ -86,7 +78,7 @@ public class SaveAndLoadManager : MonoBehaviour
 
     public void SaveGame(string saveName = "")
     {
-        if(saveName != null && saveName.Length > 0)
+        if (saveName != null && saveName.Length > 0)
         {
             _saveNameInput.text = saveName;
         }
@@ -104,7 +96,7 @@ public class SaveAndLoadManager : MonoBehaviour
             Debug.Log($"<color=red>Zapis nieudany. Aby zapisać grę, musisz stworzyć chociaż jedną postać.</color>");
             return;
         }
-        
+
         SaveUnits(allUnits);
 
         SaveRoundsManager(_saveNameInput.text);
@@ -146,7 +138,7 @@ public class SaveAndLoadManager : MonoBehaviour
             Directory.Delete(filePath, true); // Usuwa katalog wraz z zawartością
         }
 
-        if(!Directory.Exists(filePath))
+        if (!Directory.Exists(filePath))
         {
             Directory.CreateDirectory(filePath);
         }
@@ -192,7 +184,7 @@ public class SaveAndLoadManager : MonoBehaviour
             }
         }
 
-        if(savesFolderName == "savedUnitsList")
+        if (savesFolderName == "savedUnitsList")
         {
             Debug.Log($"Jednostka '{Unit.SelectedUnit.GetComponent<Stats>().Name}' została zapisana.");
             DataManager.Instance.LoadAndUpdateStats();
@@ -281,7 +273,7 @@ public class SaveAndLoadManager : MonoBehaviour
         // Zbieranie danych TileCover
         foreach (var tileCover in MapEditor.Instance.AllTileCovers)
         {
-            if(tileCover == null) continue;
+            if (tileCover == null) continue;
             TileCoverData data = new TileCoverData(tileCover.transform.position, tileCover.GetComponent<TileCover>().Number);
             container.TileCovers.Add(data);
         }
@@ -380,7 +372,7 @@ public class SaveAndLoadManager : MonoBehaviour
                 GameObject mainCamera = GameObject.Find("Main Camera");
                 GameObject playersCamera = GameObject.Find("Players Camera");
 
-                if(mainCamera != null)
+                if (mainCamera != null)
                 {
                     mainCamera.GetComponent<CameraManager>().ChangeBackgroundColor(loadedColor);
                 }
@@ -388,35 +380,35 @@ public class SaveAndLoadManager : MonoBehaviour
                 if (playersCamera != null)
                 {
                     GameObject.Find("Players Camera").GetComponent<CameraManager>().ChangeBackgroundColor(loadedColor);
-                }   
+                }
             }
-        }      
+        }
     }
 
     public void LoadGame(string saveName = "")
     {
         CustomDropdown dropdown = _savesScrollViewContent.GetComponent<CustomDropdown>();
-        if(dropdown == null || (saveName == "" && dropdown.SelectedButton == null))
+        if (dropdown == null || (saveName == "" && dropdown.SelectedButton == null))
         {
             Debug.Log($"<color=red>Aby wczytać grę musisz wybrać plik z listy.</color>");
             return;
         }
 
-        if(saveName.Length < 1)
+        if (saveName.Length < 1)
         {
             saveName = dropdown.SelectedButton.GetComponentInChildren<TextMeshProUGUI>().text;
         }
 
         string saveFolderPath = Path.Combine(Application.persistentDataPath, saveName);
 
-        if(!Directory.Exists(saveFolderPath))
+        if (!Directory.Exists(saveFolderPath))
         {
             Debug.Log("Nie znaleziono pliku o podanej nazwie.");
             return;
         }
 
         //Automatycznie zapisuje aktualną grę przed wczytaniem innej
-        if(GameManager.IsAutosaveMode && CurrentGameName != null && CurrentGameName.Length > 0)
+        if (GameManager.IsAutosaveMode && CurrentGameName != null && CurrentGameName.Length > 0)
         {
             SaveGame(CurrentGameName);
         }
@@ -439,14 +431,14 @@ public class SaveAndLoadManager : MonoBehaviour
 
         // Usuwa wszystkie obecne na polu bitwy jednostki
         foreach (var unit in unitsToRemove)
-        {  
-            if(unit != null)
-            {           
+        {
+            if (unit != null)
+            {
                 UnitsManager.Instance.DestroyUnit(unit.gameObject);
             }
         }
 
-        if(saveName != "autosave" && IsOnlyUnitsLoading != true)
+        if (saveName != "autosave" && IsOnlyUnitsLoading != true)
         {
             //Wczytanie mapy
             LoadMap();
@@ -454,7 +446,7 @@ public class SaveAndLoadManager : MonoBehaviour
 
         StartCoroutine(LoadAllUnitsWithDelay(saveFolderPath));
 
-        if(_loadGamePanel!= null)
+        if (_loadGamePanel != null)
         {
             _loadGamePanel.SetActive(false);
         }
@@ -464,13 +456,13 @@ public class SaveAndLoadManager : MonoBehaviour
     {
         var unitFiles = Directory.GetFiles(saveFolderPath, "*_unit.json");
 
-        if(unitFiles == null)
+        if (unitFiles == null)
         {
             IsLoading = false;
             yield break;
         }
 
-        if(Unit.SelectedUnit != null)
+        if (Unit.SelectedUnit != null)
         {
             Unit.SelectedUnit.GetComponent<Unit>().SelectUnit();
         }
@@ -514,7 +506,7 @@ public class SaveAndLoadManager : MonoBehaviour
 
             GameObject unitGameObject = UnitsManager.Instance.CreateUnit(statsData.Id, statsData.Name, position);
 
-            if(unitGameObject == null) yield break;
+            if (unitGameObject == null) yield break;
 
             //Wczytanie taga i koloru jednostki
             if (unitData.Tag == "PlayerUnit")
@@ -542,16 +534,16 @@ public class SaveAndLoadManager : MonoBehaviour
             LoadComponentDataWithReflection<WeaponData, Weapon>(unitGameObject, weaponFilePath);
 
             // Wczytanie umiejętności w walce każdą kategorią broni
-            unitGameObject.GetComponent<Stats>().Melee = statsData.MeleeSerialized.ToDictionary(x => Enum.Parse<MeleeCategory>(x.Key),x => x.Value);
-            unitGameObject.GetComponent<Stats>().Ranged = statsData.RangedSerialized.ToDictionary(x => Enum.Parse<RangedCategory>(x.Key),x => x.Value);
-   
+            unitGameObject.GetComponent<Stats>().Melee = statsData.MeleeSerialized.ToDictionary(x => Enum.Parse<MeleeCategory>(x.Key), x => x.Value);
+            unitGameObject.GetComponent<Stats>().Ranged = statsData.RangedSerialized.ToDictionary(x => Enum.Parse<RangedCategory>(x.Key), x => x.Value);
+
             //Dodaje jednostkę do kolejki inicjatywy
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unitGameObject.GetComponent<Unit>());
 
             //Wczytanie ekwipunku jednostki
             InventoryData inventoryData = JsonUtility.FromJson<InventoryData>(File.ReadAllText(inventoryFilePath));
             Unit.SelectedUnit = unitGameObject;
-            foreach(var weapon in inventoryData.AllWeapons)
+            foreach (var weapon in inventoryData.AllWeapons)
             {
                 Weapon unitWeapon = Unit.SelectedUnit.GetComponent<Weapon>();
 
@@ -575,13 +567,13 @@ public class SaveAndLoadManager : MonoBehaviour
             }
             //Wczytanie aktualnie dobytych broni
             Inventory inventory = Unit.SelectedUnit.GetComponent<Inventory>();
-            foreach(var weapon in inventory.AllWeapons)
+            foreach (var weapon in inventory.AllWeapons)
             {
-                if(weapon.Id == inventoryData.EquippedWeaponsId[0])
+                if (weapon.Id == inventoryData.EquippedWeaponsId[0])
                 {
                     inventory.EquippedWeapons[0] = weapon;
                 }
-                if(weapon.Id == inventoryData.EquippedWeaponsId[1])
+                if (weapon.Id == inventoryData.EquippedWeaponsId[1])
                 {
                     inventory.EquippedWeapons[1] = weapon;
                 }
@@ -603,7 +595,7 @@ public class SaveAndLoadManager : MonoBehaviour
                 string tokenJson = File.ReadAllText(tokenJsonPath);
                 TokenData tokenData = JsonUtility.FromJson<TokenData>(tokenJson);
 
-                if(tokenData.filePath.Length > 1)
+                if (tokenData.filePath.Length > 1)
                 {
                     StartCoroutine(TokensManager.Instance.LoadTokenImage(tokenData.filePath, Unit.SelectedUnit));
                 }
@@ -637,7 +629,7 @@ public class SaveAndLoadManager : MonoBehaviour
             InitiativeQueueManager.Instance.CalculateDominance();
         }
 
-        if(saveFolderPath != Path.Combine(Application.persistentDataPath, "temp"))
+        if (saveFolderPath != Path.Combine(Application.persistentDataPath, "temp"))
         {
             LoadRoundsManager(saveFolderPath);
             LoadInitiativeQueueManager(saveFolderPath);
@@ -649,7 +641,7 @@ public class SaveAndLoadManager : MonoBehaviour
 
         IsLoading = false;
 
-        if(saveFolderPath != Path.Combine(Application.persistentDataPath, "temp"))
+        if (saveFolderPath != Path.Combine(Application.persistentDataPath, "temp"))
         {
             Debug.Log($"<color=green>Wczytano stan gry: {CurrentGameName}</color>");
         }
@@ -688,7 +680,7 @@ public class SaveAndLoadManager : MonoBehaviour
             gameObject.GetComponent<Unit>().DisplayUnitHealthPoints();
         }
     }
- 
+
     private void LoadRoundsManager(string savesFolderPath)
     {
         string filePath = Path.Combine(savesFolderPath, "RoundsManager.json");
@@ -755,7 +747,7 @@ public class SaveAndLoadManager : MonoBehaviour
         _searchInputField.text = "";
 
         CustomDropdown dropdown = _savesScrollViewContent.GetComponent<CustomDropdown>();
-        if(dropdown == null || dropdown.SelectedButton == null)
+        if (dropdown == null || dropdown.SelectedButton == null)
         {
             Debug.Log($"<color=red>Aby wczytać grę musisz wybrać plik z listy.</color>");
             return;
@@ -782,7 +774,7 @@ public class SaveAndLoadManager : MonoBehaviour
             Debug.LogError("Pliku z mapą nie znaleziono.");
         }
 
-        if(_loadGamePanel!= null)
+        if (_loadGamePanel != null)
         {
             _loadGamePanel.SetActive(false);
         }
@@ -835,7 +827,7 @@ public class SaveAndLoadManager : MonoBehaviour
             buttonText.text = folderName;
 
             UnityEngine.UI.Button button = buttonObj.GetComponent<UnityEngine.UI.Button>();
-            
+
             //Dodaje opcję do CustomDropdowna ze wszystkimi zapisami
             dropdown.Buttons.Add(button);
 
@@ -852,7 +844,7 @@ public class SaveAndLoadManager : MonoBehaviour
     public void RemoveSaveFile()
     {
         CustomDropdown dropdown = _savesScrollViewContent.GetComponent<CustomDropdown>();
-        if(dropdown == null || dropdown.SelectedButton == null)
+        if (dropdown == null || dropdown.SelectedButton == null)
         {
             Debug.Log($"<color=red>Aby usunąć zapis musisz wybrać plik z listy.</color>");
             return;
@@ -879,7 +871,7 @@ public class SaveAndLoadManager : MonoBehaviour
 
         Destroy(dropdown.Buttons[indexToRemove].gameObject);
         dropdown.Buttons.RemoveAt(indexToRemove);
-        
+
         // Aktualizuje SelectedIndex i zaznaczenie
         dropdown.SelectedIndex = 0;
         dropdown.SelectedButton = null;

@@ -1,16 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
-using UnityEngine.UIElements;
-using System.Reflection;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using static UnityEngine.GraphicsBuffer;
-using System.Linq;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
-using UnityEngine.XR;
+using System.Reflection;
+using TMPro;
+using UnityEngine;
 
 public class UnitsManager : MonoBehaviour
 {
@@ -71,7 +64,7 @@ public class UnitsManager : MonoBehaviour
 
         _removeUnitConfirmButton.onClick.AddListener(() =>
         {
-            if(Unit.SelectedUnit!= null)
+            if (Unit.SelectedUnit != null)
             {
                 DestroyUnit(Unit.SelectedUnit);
                 _removeUnitConfirmPanel.SetActive(false);
@@ -85,18 +78,18 @@ public class UnitsManager : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Delete) && (Unit.SelectedUnit != null || (AreaSelector.Instance.SelectedUnits != null && AreaSelector.Instance.SelectedUnits.Count > 1)))
+        if (Input.GetKeyDown(KeyCode.Delete) && (Unit.SelectedUnit != null || (AreaSelector.Instance.SelectedUnits != null && AreaSelector.Instance.SelectedUnits.Count > 1)))
         {
-            if(_removeUnitConfirmPanel.activeSelf == false)
+            if (_removeUnitConfirmPanel.activeSelf == false)
             {
                 _removeUnitConfirmPanel.SetActive(true);
             }
             else
             {
                 //Jeśli jest zaznaczone więcej jednostek, to usuwa wszystkie
-                if(AreaSelector.Instance.SelectedUnits != null && AreaSelector.Instance.SelectedUnits.Count > 1)
+                if (AreaSelector.Instance.SelectedUnits != null && AreaSelector.Instance.SelectedUnits.Count > 1)
                 {
-                    for (int i = AreaSelector.Instance.SelectedUnits.Count - 1; i >= 0; i--) 
+                    for (int i = AreaSelector.Instance.SelectedUnits.Count - 1; i >= 0; i--)
                     {
                         DestroyUnit(AreaSelector.Instance.SelectedUnits[i].gameObject);
                     }
@@ -123,7 +116,7 @@ public class UnitsManager : MonoBehaviour
     public void CreateUnitOnSelectedTile(Vector2 position)
     {
         CreateUnit(_unitsDropdown.GetSelectedIndex(), "", position);
-    
+
         //Resetuje kolor przycisku z wybraną jednostką na liście jednostek
         CreateUnitButton.SelectedUnitButtonImage.color = new Color(0.55f, 0.66f, 0.66f, 0.05f);
     }
@@ -177,18 +170,18 @@ public class UnitsManager : MonoBehaviour
 
             selectedTile = GameObject.Find($"Tile {position.x - GridManager.Instance.transform.position.x} {position.y - GridManager.Instance.transform.position.y}");
         }
-        else if(selectedTile == null)
+        else if (selectedTile == null)
         {
             Debug.Log("Nie można stworzyć jednostki.");
             return null;
         }
 
         //Odnacza jednostkę, jeśli jakaś jest zaznaczona
-        if(Unit.SelectedUnit != null && IsTileSelecting)
+        if (Unit.SelectedUnit != null && IsTileSelecting)
         {
             Unit.SelectedUnit.GetComponent<Unit>().SelectUnit();
         }
-      
+
         //Tworzy nową postać na odpowiedniej pozycji
         GameObject newUnitObject = Instantiate(_unitPrefab, position, Quaternion.identity);
         Stats stats = newUnitObject.GetComponent<Stats>();
@@ -228,7 +221,7 @@ public class UnitsManager : MonoBehaviour
         unit.UnitId = newUnitId;
 
         //Ustala nazwę jednostki (potrzebne, do wczytywania jednostek z listy zapisanych jednostek)
-        if(_unitsDropdown.SelectedButton != null && IsSavedUnitsManaging)
+        if (_unitsDropdown.SelectedButton != null && IsSavedUnitsManaging)
         {
             stats.Name = _unitsDropdown.SelectedButton.GetComponentInChildren<TextMeshProUGUI>().text;
         }
@@ -256,7 +249,7 @@ public class UnitsManager : MonoBehaviour
             {
                 SaveAndLoadManager.Instance.IsLoading = true;
             }
-        
+
             string savedUnitsFolder = Path.Combine(Application.persistentDataPath, "savedUnitsList");
             string baseFileName = stats.Name;
 
@@ -279,13 +272,13 @@ public class UnitsManager : MonoBehaviour
                 }
 
                 //Wczytanie aktualnie dobytych broni
-                foreach(var weapon in inventory.AllWeapons)
+                foreach (var weapon in inventory.AllWeapons)
                 {
-                    if(weapon.Id == inventoryData.EquippedWeaponsId[0])
+                    if (weapon.Id == inventoryData.EquippedWeaponsId[0])
                     {
                         inventory.EquippedWeapons[0] = weapon;
                     }
-                    if(weapon.Id == inventoryData.EquippedWeaponsId[1])
+                    if (weapon.Id == inventoryData.EquippedWeaponsId[1])
                     {
                         inventory.EquippedWeapons[1] = weapon;
                     }
@@ -304,7 +297,7 @@ public class UnitsManager : MonoBehaviour
                 string tokenJson = File.ReadAllText(tokenJsonPath);
                 TokenData tokenData = JsonUtility.FromJson<TokenData>(tokenJson);
 
-                if(tokenData.filePath.Length > 1)
+                if (tokenData.filePath.Length > 1)
                 {
                     StartCoroutine(TokensManager.Instance.LoadTokenImage(tokenData.filePath, newUnitObject));
                 }
@@ -351,7 +344,7 @@ public class UnitsManager : MonoBehaviour
             {
                 stats.RollForBaseStats();
             }
-   
+
             // Dodaje do ekwipunku początkową broń adekwatną dla danej jednostki i wyposaża w nią
             if (stats.PrimaryWeaponIds != null && stats.PrimaryWeaponIds.Count > 0 && !IsSavedUnitsManaging)
             {
@@ -375,7 +368,7 @@ public class UnitsManager : MonoBehaviour
     {
         IsSavedUnitsManaging = value;
 
-        if(IsSavedUnitsManaging)
+        if (IsSavedUnitsManaging)
         {
             IsUnitEditing = false;
 
@@ -396,7 +389,7 @@ public class UnitsManager : MonoBehaviour
     #region Removing units
     public void DestroyUnitMode()
     {
-        if(GameManager.IsMapHidingMode)
+        if (GameManager.IsMapHidingMode)
         {
             Debug.Log("Aby usuwać jednostki, wyjdź z trybu ukrywania obszarów.");
             return;
@@ -407,10 +400,10 @@ public class UnitsManager : MonoBehaviour
         //Zmienia kolor przycisku usuwania jednostek na aktywny
         _removeUnitButton.GetComponent<UnityEngine.UI.Image>().color = IsUnitRemoving ? Color.green : Color.white;
 
-        if(IsUnitRemoving)
+        if (IsUnitRemoving)
         {
             //Jeżeli jest włączony tryb zaznaczania wielu jednostek to go resetuje
-            if(IsMultipleUnitsSelecting)
+            if (IsMultipleUnitsSelecting)
             {
                 SelectMultipleUnitsMode();
             }
@@ -419,7 +412,7 @@ public class UnitsManager : MonoBehaviour
     }
     public void DestroyUnit(GameObject unitObject = null)
     {
-        if(unitObject == null)
+        if (unitObject == null)
         {
             unitObject = Unit.SelectedUnit;
         }
@@ -437,7 +430,7 @@ public class UnitsManager : MonoBehaviour
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
         //Uwolnienie jednostki uwięzionej przez jednostkę, która umiera
-        if(unit.EntangledUnitId != 0)
+        if (unit.EntangledUnitId != 0)
         {
             foreach (var u in AllUnits)
             {
@@ -497,7 +490,7 @@ public class UnitsManager : MonoBehaviour
         if (IsMultipleUnitsSelecting)
         {
             //Jeżeli jest włączony tryb usuwania jednostek to go resetuje
-            if(IsUnitRemoving)
+            if (IsUnitRemoving)
             {
                 DestroyUnitMode();
             }
@@ -510,7 +503,7 @@ public class UnitsManager : MonoBehaviour
     public void EditUnitModeOn(Animator panelAnimator)
     {
         IsUnitEditing = true;
-        
+
         _createUnitButton.gameObject.SetActive(false);
         _removeUnitButton.gameObject.SetActive(false);
         _selectUnitsButton.gameObject.SetActive(false);
@@ -523,7 +516,7 @@ public class UnitsManager : MonoBehaviour
         }
 
         //Jeśli panel edycji jednostek jest schowany to wysuwamy go
-        if(AnimationManager.Instance.PanelStates[panelAnimator] == false)
+        if (AnimationManager.Instance.PanelStates[panelAnimator] == false)
         {
             AnimationManager.Instance.TogglePanel(panelAnimator);
         }
@@ -554,13 +547,13 @@ public class UnitsManager : MonoBehaviour
     public void EditUnitModeOff()
     {
         IsUnitEditing = false;
-        
+
         _createUnitButton.gameObject.SetActive(true);
         _removeUnitButton.gameObject.SetActive(true);
         _selectUnitsButton.gameObject.SetActive(true);
         _updateUnitButton.gameObject.SetActive(false);
 
-        if(IsSavedUnitsManaging)
+        if (IsSavedUnitsManaging)
         {
             _removeSavedUnitFromListButton.gameObject.SetActive(false);
         }
@@ -568,14 +561,14 @@ public class UnitsManager : MonoBehaviour
 
     public void UpdateUnitNameOrRace()
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
-        if(_unitsDropdown.SelectedButton == null)
+        if (_unitsDropdown.SelectedButton == null)
         {
             Debug.Log("Wybierz rasę z listy. Zmiana rasy wpłynie na statystyki.");
             return;
         }
-    
+
         GameObject unit = Unit.SelectedUnit;
         Stats stats = unit.GetComponent<Stats>();
 
@@ -588,7 +581,7 @@ public class UnitsManager : MonoBehaviour
         else
         {
             unit.tag = "EnemyUnit";
-            unit.GetComponent<Unit>().DefaultColor = new Color(0.59f, 0.1f, 0.19f, 1.0f);;
+            unit.GetComponent<Unit>().DefaultColor = new Color(0.59f, 0.1f, 0.19f, 1.0f); ;
         }
         unit.GetComponent<Unit>().ChangeUnitColor(unit);
 
@@ -649,7 +642,7 @@ public class UnitsManager : MonoBehaviour
                 stats.RollForBaseStats();
                 unit.GetComponent<Unit>().DisplayUnitHealthPoints();
             }
-            
+
             //Aktualizuje aktualną żywotność
             stats.TempHealth = stats.MaxHealth;
 
@@ -694,7 +687,7 @@ public class UnitsManager : MonoBehaviour
         stats.Initiative = stats.I + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
 
         //Uwzględnienie kary do Zręczności za pancerz
-        if(stats.Armor_head >= 3 || stats.Armor_torso >= 3 || stats.Armor_arms >= 3 || stats.Armor_legs >= 3)
+        if (stats.Armor_head >= 3 || stats.Armor_torso >= 3 || stats.Armor_arms >= 3 || stats.Armor_legs >= 3)
         {
             stats.Initiative -= 10;
         }
@@ -761,13 +754,13 @@ public class UnitsManager : MonoBehaviour
             if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() == null)
             {
                 // int przez InputField
-                int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int inputValue) 
-                            ? inputValue 
+                int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int inputValue)
+                            ? inputValue
                             : 0;
 
                 field.SetValue(stats, value);
 
-                if(attributeName == "Mag")
+                if (attributeName == "Mag")
                 {
                     DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć
                 }
@@ -780,7 +773,7 @@ public class UnitsManager : MonoBehaviour
             }
             else if (field.FieldType == typeof(bool))
             {
-                bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn; 
+                bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn;
                 field.SetValue(stats, boolValue);
             }
             else if (field.FieldType == typeof(string))
@@ -794,7 +787,11 @@ public class UnitsManager : MonoBehaviour
                 TMP_Dropdown dropdown = textInput.GetComponent<TMP_Dropdown>();
                 Array enumValues = Enum.GetValues(field.FieldType);
 
-                if (dropdown.value >= 0 && dropdown.value < enumValues.Length)
+                if (dropdown.value >= 0 && attributeName == "Size")
+                {
+                    stats.ChangeUnitSize(dropdown.value);
+                }
+                else if (dropdown.value >= 0 && dropdown.value < enumValues.Length)
                 {
                     object selectedEnumValue = enumValues.GetValue(dropdown.value);
                     field.SetValue(stats, selectedEnumValue);
@@ -811,12 +808,12 @@ public class UnitsManager : MonoBehaviour
                 unit.DisplayUnitHealthPoints();
                 stats.MaxEncumbrance = (stats.S + stats.Wt) / 10 + stats.StrongBack + (stats.Sturdy * 2);
             }
-            else if(attributeName == "Hardy" || attributeName == "SW") // Talent Twardziel
+            else if (attributeName == "Hardy" || attributeName == "SW") // Talent Twardziel
             {
                 stats.CalculateMaxHealth();
                 unit.DisplayUnitHealthPoints();
             }
-            else if(attributeName == "Name")
+            else if (attributeName == "Name")
             {
                 unit.DisplayUnitName();
             }
@@ -824,7 +821,7 @@ public class UnitsManager : MonoBehaviour
 
         UpdateUnitPanel(Unit.SelectedUnit);
 
-        if(!SaveAndLoadManager.Instance.IsLoading)
+        if (!SaveAndLoadManager.Instance.IsLoading)
         {
             //Aktualizuje pasek przewagi w bitwie
             int newOverall = stats.CalculateOverall();
@@ -927,7 +924,7 @@ public class UnitsManager : MonoBehaviour
 
     public void LoadAttributesByButtonClick()
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
         GameObject unit = Unit.SelectedUnit;
         LoadAttributes(unit);
@@ -935,7 +932,7 @@ public class UnitsManager : MonoBehaviour
 
     public void LoadAchievementsByButtonClick()
     {
-        if(Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) return;
 
         GameObject unit = Unit.SelectedUnit;
         LoadAchievements(unit);
@@ -1033,8 +1030,8 @@ public class UnitsManager : MonoBehaviour
 
     public void ChangeTemporaryHealthPoints(int amount)
     {
-        if(Unit.SelectedUnit == null) return;
-        
+        if (Unit.SelectedUnit == null) return;
+
         Unit.SelectedUnit.GetComponent<Stats>().TempHealth += amount;
 
         Unit.SelectedUnit.GetComponent<Unit>().DisplayUnitHealthPoints();
@@ -1052,7 +1049,7 @@ public class UnitsManager : MonoBehaviour
             string achivementName = obj.name.Replace("_text", "");
             FieldInfo field = unit.GetComponent<Stats>().GetType().GetField(achivementName);
 
-            if(field == null) continue;
+            if (field == null) continue;
 
             // Jeśli znajdzie takie pole, to zmienia wartość wyświetlanego tekstu na wartość tej cechy
             if (field.FieldType == typeof(int)) // to działa dla cech opisywanych wartościami int
@@ -1089,15 +1086,15 @@ public class UnitsManager : MonoBehaviour
         {
             Stats unitStats = pair.Key.GetComponent<Stats>();
 
-            if(unitStats.Terryfying)
+            if (unitStats.Terryfying)
             {
-                if(pair.Key.CompareTag("EnemyUnit")) terryfyingEnemyExist = true;
+                if (pair.Key.CompareTag("EnemyUnit")) terryfyingEnemyExist = true;
                 else if (pair.Key.CompareTag("PlayerUnit")) terryfyingPlayerExist = true;
             }
-            else if(unitStats.Frightening > 0)
+            else if (unitStats.Frightening > 0)
             {
-                if(pair.Key.CompareTag("EnemyUnit")) frighteningEnemyExist = true;
-                else if (pair.Key.CompareTag("PlayerUnit"))frighteningPlayerExist = true;
+                if (pair.Key.CompareTag("EnemyUnit")) frighteningEnemyExist = true;
+                else if (pair.Key.CompareTag("PlayerUnit")) frighteningPlayerExist = true;
             }
         }
 
@@ -1113,20 +1110,20 @@ public class UnitsManager : MonoBehaviour
             return;
         }
 
-        if(terryfyingEnemyExist)
+        if (terryfyingEnemyExist)
         {
             AllUnitsTerrorRoll("PlayerUnit");
         }
-        else if(frighteningEnemyExist)
+        else if (frighteningEnemyExist)
         {
             AllUnitsFearRoll("PlayerUnit");
         }
 
-        if(terryfyingPlayerExist)
+        if (terryfyingPlayerExist)
         {
             AllUnitsTerrorRoll("EnemyUnit");
         }
-        else if(frighteningPlayerExist)
+        else if (frighteningPlayerExist)
         {
             AllUnitsFearRoll("EnemyUnit");
         }
@@ -1137,7 +1134,7 @@ public class UnitsManager : MonoBehaviour
         foreach (var unit in AllUnits)
         {
             //Pomija jednostki, których nie dotyczy ten rzut (czyli sojusznicy strasznej jednostki, postacie ze zdolnością nieustraszony lub jednostki, które wcześniej zdały test)
-            if(unit.CompareTag(unitTag) == false || unit.GetComponent<Stats>().Fearless == true || unit.IsFearTestPassed || unit.GetComponent<Stats>().WillOfIron == true) continue;
+            if (unit.CompareTag(unitTag) == false || unit.GetComponent<Stats>().Fearless == true || unit.IsFearTestPassed || unit.GetComponent<Stats>().WillOfIron == true) continue;
 
             FearRoll(unit);
         }
@@ -1186,9 +1183,9 @@ public class UnitsManager : MonoBehaviour
         foreach (var unit in AllUnits)
         {
             //Pomija jednostki, których nie dotyczy ten rzut (czyli sojusznicy strasznej jednostki, postacie ze zdolnością Żelazna Wola lub jednostki, które wcześniej zdały test)
-            if(unit.CompareTag(unitTag) == false || unit.IsFearTestPassed || unit.GetComponent<Stats>().WillOfIron == true) continue;
+            if (unit.CompareTag(unitTag) == false || unit.IsFearTestPassed || unit.GetComponent<Stats>().WillOfIron == true) continue;
 
-            if(unit.GetComponent<Stats>().Fearless == true) 
+            if (unit.GetComponent<Stats>().Fearless == true)
             {
                 FearRoll(unit);
                 continue;
@@ -1218,7 +1215,7 @@ public class UnitsManager : MonoBehaviour
         {
             unit.CanDoAction = false;
             unit.IsScared = true;
-            unitStats.CorruptionPoints ++;
+            unitStats.CorruptionPoints++;
 
             Debug.Log($"<color=red> {unitStats.Name} nie zdał testu grozy. Wynik rzutu: {rollResult} </color>");
         }

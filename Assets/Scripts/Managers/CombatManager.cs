@@ -1,25 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using UnityEngine;
-using UnityEngine.TextCore.Text;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
 using System.Linq;
-using static SimpleFileBrowser.FileBrowser;
-using UnityEditor;
-using System.Drawing;
 using TMPro;
-using System;
-using static UnityEngine.GraphicsBuffer;
-using UnityEditor.Experimental.GraphView;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
-using static UnityEditor.PlayerSettings;
-using NUnit.Framework.Internal;
-using UnityEditor.VersionControl;
-using Unity.VisualScripting;
-using Mono.Cecil.Cil;
-using static UnityEngine.UI.CanvasScaler;
+using UnityEditor;
+using UnityEngine;
 
 public class CombatManager : MonoBehaviour
 {
@@ -127,7 +112,7 @@ public class CombatManager : MonoBehaviour
         {
             attackTypeName = "StandardAttack";
         }
-        else if(attackTypeName == null)
+        else if (attackTypeName == null)
         {
             attackTypeName = "Grappling";
         }
@@ -237,7 +222,7 @@ public class CombatManager : MonoBehaviour
                     return;
                 }
 
-                if(!unit.CanDoAction || !unit.CanMove)
+                if (!unit.CanDoAction || !unit.CanMove)
                 {
                     Debug.Log("Ta jednostka nie może wykonać szarży w obecnej rundzie.");
                     return;
@@ -296,7 +281,10 @@ public class CombatManager : MonoBehaviour
             yield return null; // Czekaj na następną ramkę
         }
 
-        // 1) Pobierz statystyki i broń
+        // 1) Oblicz dystans między walczącymi
+        float attackDistance = CalculateDistance(attacker.gameObject, target.gameObject);
+
+        // 2) Pobierz statystyki i broń
         Stats attackerStats = attacker.Stats;
         Stats targetStats = target.Stats;
 
@@ -310,7 +298,7 @@ public class CombatManager : MonoBehaviour
             targetStats.GetComponent<Weapon>().ResetWeapon();
             targetWeapon = targetStats.GetComponent<Weapon>();
 
-            if(attacker.Entangled > 0 && target.EntangledUnitId != attacker.UnitId)
+            if (attacker.Entangled > 0 && target.EntangledUnitId != attacker.UnitId)
             {
                 Debug.Log("Celem ataku musi być jednostka, z którą toczą się zapasy.");
                 yield break;
@@ -336,8 +324,8 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        bool isRangedAttack = attackerWeapon.Type.Contains("ranged");
-        bool isMeleeAttack = attackerWeapon.Type.Contains("melee");
+        bool isMeleeAttack = attackerWeapon.Type.Contains("melee") || (attackerWeapon.Pistol && attackDistance <= 1.5f);
+        bool isRangedAttack = !isMeleeAttack && attackerWeapon.Type.Contains("ranged");
         bool hasTwoWeapons = attacker.GetComponent<Inventory>().EquippedWeapons.All(weapon => weapon != null && weapon.Shield == 0 && !weapon.TwoHanded);
 
         //Wściekły Atak dotyczy tylko ataków w zwarciu
@@ -367,9 +355,6 @@ public class CombatManager : MonoBehaviour
             StartCoroutine(Feint(attackerStats, targetStats, targetWeapon));
             yield break;
         }
-
-        // 2) Oblicz dystans
-        float attackDistance = CalculateDistance(attacker.gameObject, target.gameObject);
 
         // 3) Sprawdź zasięg i ewentualnie wykonaj szarżę
         float effectiveAttackRange = attackerWeapon.AttackRange;
@@ -451,8 +436,8 @@ public class CombatManager : MonoBehaviour
 
         //Zwiększenie modyfikatora do ataku za atak okazyjny
         if (opportunityAttack) attackModifier += 20;
-        if(attackModifier > 60) attackModifier = 60; // Górny limit modyfikatora
-        if(attackModifier < -30) attackModifier = -30; // Dolny limit modyfikatora
+        if (attackModifier > 60) attackModifier = 60; // Górny limit modyfikatora
+        if (attackModifier < -30) attackModifier = -30; // Dolny limit modyfikatora
 
         //Zresetowanie celowania, jeżeli było aktywne
         if (attacker.AimingBonus != 0)
@@ -466,7 +451,7 @@ public class CombatManager : MonoBehaviour
         attacker.FeintModifier = 0;
 
         int rollOnAttack = secondAttackRollResult != 0 ? secondAttackRollResult : 0;
-        if(rollOnAttack == 0)
+        if (rollOnAttack == 0)
         {
             if (IsManualPlayerAttack)
             {
@@ -522,7 +507,7 @@ public class CombatManager : MonoBehaviour
             Debug.Log($"Atak jest skierowany w {TranslateHitLocation(hitLocation)}.");
             _hitLocation = null;
         }
-        
+
         // Obsługa fuksa / pecha
         bool isFortunateOrUnfortunateEvent = false; // Zmienna używana do tego, aby nie powielać dwa razy szczęścia lub pecha w przypadku specyficznych broni
 
@@ -723,7 +708,7 @@ public class CombatManager : MonoBehaviour
                     }
                 }
 
-                if(targetStats.RiposteAttacksLeft > 0) targetStats.RiposteAttacksLeft--;
+                if (targetStats.RiposteAttacksLeft > 0) targetStats.RiposteAttacksLeft--;
             }
 
             yield break;
@@ -733,7 +718,7 @@ public class CombatManager : MonoBehaviour
         InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, 1);
 
         // Sprawdzenie, czy atak ogłuszy przeciwnika
-        if(hitLocation == "head" && (attackerWeapon.Pummel || (attackerWeapon.Id == 4 && attackerStats.StrikeToStun > 0)))
+        if (hitLocation == "head" && (attackerWeapon.Pummel || (attackerWeapon.Id == 4 && attackerStats.StrikeToStun > 0)))
         {
             StartCoroutine(Stun(attackerStats, targetStats));
         }
@@ -868,7 +853,7 @@ public class CombatManager : MonoBehaviour
         {
             StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon));
 
-            if(GameManager.IsAutoKillMode)
+            if (GameManager.IsAutoKillMode)
             {
                 HandleDeath(targetStats, target.gameObject, attackerStats);
             }
@@ -895,7 +880,7 @@ public class CombatManager : MonoBehaviour
         int finalDamage = 0;
 
         // W zapasach zbroja nie jest uzwględniania
-        if(AttackTypes["Grappling"])
+        if (AttackTypes["Grappling"])
         {
             reducedDamage -= armor;
         }
@@ -907,7 +892,7 @@ public class CombatManager : MonoBehaviour
         else
         {
             // Jeśli atak nie przebił pancerza, ale broń NIE JEST tępa, to broń zadaje 1 obrażeń
-            if (!attackerWeapon.Undamaging) 
+            if (!attackerWeapon.Undamaging)
             {
                 finalDamage = 1;
                 reducedDamage = damage - 1;
@@ -1087,7 +1072,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator AutoDefense(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier,  MeleeCategory targetMeleeSkill)
+    private IEnumerator AutoDefense(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier, MeleeCategory targetMeleeSkill)
     {
         if (parryModifier >= dodgeModifier)
         {
@@ -1099,7 +1084,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator Parry(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int parryModifier,  MeleeCategory targetMeleeSkill)
+    private IEnumerator Parry(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int parryModifier, MeleeCategory targetMeleeSkill)
     {
         int defenceRollResult;
         string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
@@ -1318,7 +1303,7 @@ public class CombatManager : MonoBehaviour
 
         // Modyfikator za celowanie
         attackModifier += attackerUnit.AimingBonus;
-        if(attackerUnit.AimingBonus != 0) Debug.Log($"Uwzględniono modyfikator +20 za celowanie. Łączny modyfikator: " + attackModifier);
+        if (attackerUnit.AimingBonus != 0) Debug.Log($"Uwzględniono modyfikator +20 za celowanie. Łączny modyfikator: " + attackModifier);
 
         // Modyfikator za różnicę rozmiarów
         if (attackerStats.Size < targetStats.Size)
@@ -1366,7 +1351,7 @@ public class CombatManager : MonoBehaviour
         if ((targetUnit.Entangled > 0 || targetUnit.EntangledUnitId != 0) && attackerUnit.Entangled == 0 && attackerUnit.EntangledUnitId == 0)
         {
             // DODAĆ TUTAJ W PRZYSZŁOŚCI, ŻEBY UWZGLĘDNIAŁO, KTO Z WALCZĄCYCH W ZAPASACH MA ILE POZIOMÓW POCHWYCENIA. NA TEGO, KTO MA MNIEJ JEST MODYFIKATOR +10, A TEGO KTO WIĘCEJ +20
-      
+
             attackModifier += targetUnit.Entangled == 0 ? 10 : 20;
         }
 
@@ -1374,7 +1359,7 @@ public class CombatManager : MonoBehaviour
 
         // Modyfikator za wyczerpanie
         if (attackerUnit.Fatiqued > 0) attackModifier -= attackerUnit.Fatiqued * 10;
-        else if(attackerUnit.Poison > 0) attackModifier -= 10;
+        else if (attackerUnit.Poison > 0) attackModifier -= 10;
 
         Debug.Log($"Uwzględniono modyfikatory za stany atakującego. Łączny modyfikator: " + attackModifier);
 
@@ -1390,7 +1375,7 @@ public class CombatManager : MonoBehaviour
             attackModifier += outNumber;
             Debug.Log("Uwzględniono modyfikator za przewagę liczebną. Łączny modyfikator: " + attackModifier);
 
-            if(attackerUnit.FeintedUnitId == targetUnit.UnitId)
+            if (attackerUnit.FeintedUnitId == targetUnit.UnitId)
             {
                 attackModifier += attackerUnit.FeintModifier;
                 Debug.Log("Uwzględniono modyfikator za fintę. Łączny modyfikator: " + attackModifier);
@@ -1600,7 +1585,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Uwzględnia cechę Druzgoczący
-        if (attackerWeapon.Impact && !attackerWeapon.Undamaging && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 2 && _isTrainedWeaponCategory) 
+        if (attackerWeapon.Impact && !attackerWeapon.Undamaging && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 2 && _isTrainedWeaponCategory)
         {
             damage += attackRoll % 10; // Dodaje liczbę jedności z rzutu na atak
             Debug.Log($"Dodatkowe obrażenia za cechę Druzgoczący: {attackRoll % 10}");
@@ -1648,7 +1633,7 @@ public class CombatManager : MonoBehaviour
              ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "leather" && weapon.Armor - weapon.Damage > 0); // Na końcu zbroja skórzana, ale tylko jeśli Armor > 0
 
         //Uwzględnienie cechy Nieprzebijalny
-        if(rollOnAttack != 0 && selectedArmor != null && selectedArmor.Impenetrable && rollOnAttack % 2 != 0)
+        if (rollOnAttack != 0 && selectedArmor != null && selectedArmor.Impenetrable && rollOnAttack % 2 != 0)
         {
             Debug.Log($"{selectedArmor.Name} posiada cechę \"Nieprzebijalny\". Trafienie krytyczne jest ignorowane.");
             yield break;
@@ -1670,7 +1655,7 @@ public class CombatManager : MonoBehaviour
         if (attackerStats.StrikeToInjure)
         {
             int extraRoll = UnityEngine.Random.Range(1, 101);
-            if(extraRoll > rollResult) rollResult = extraRoll;
+            if (extraRoll > rollResult) rollResult = extraRoll;
         }
 
         // Uwzględnienie cechy broni "Sieczna"
@@ -2004,7 +1989,7 @@ public class CombatManager : MonoBehaviour
         if (attackerWeapon.Undamaging) armor *= 2;
 
         //Zwiększenie pancerza, jeśli cel ataku posiada tarcze i użył parowania podczas obrony w tym ataku
-        if(_parryOrDodge == "parry")
+        if (_parryOrDodge == "parry")
         {
             armor += inventory.EquippedWeapons.Where(weapon => weapon != null && weapon.Shield > 0).Select(weapon => weapon.Shield).FirstOrDefault();
         }
@@ -2070,7 +2055,7 @@ public class CombatManager : MonoBehaviour
 
             if (selectedArmor != null)
             {
-                if(selectedArmor.Durable == 0) // Uwzględnienie cechy Wytrzymały
+                if (selectedArmor.Durable == 0) // Uwzględnienie cechy Wytrzymały
                 {
                     selectedArmor.Damage++;
                 }
@@ -2118,7 +2103,7 @@ public class CombatManager : MonoBehaviour
 
         Vector2 targetTilePosition;
 
-        if(targetTile != null)
+        if (targetTile != null)
         {
             targetTilePosition = new Vector2(targetTile.transform.position.x, targetTile.transform.position.y);
         }
@@ -2128,7 +2113,7 @@ public class CombatManager : MonoBehaviour
             return;
         }
 
-        if(attacker.GetComponent<Unit>().Prone)
+        if (attacker.GetComponent<Unit>().Prone)
         {
             Debug.Log("Jednostka w stanie powalenia nie może wykonywać szarży.");
             return;
@@ -2153,10 +2138,10 @@ public class CombatManager : MonoBehaviour
             {
                 yield return new WaitForSeconds(delay);
 
-                if(attacker == null || target == null) yield break;
+                if (attacker == null || target == null) yield break;
 
                 //Uwzględnienie talentu Atak wyprzedzający
-                if(targetStats.ReactionStrikesLeft > 0)
+                if (targetStats.ReactionStrikesLeft > 0)
                 {
                     Debug.Log($"REACTION STRIKES LEFT: {targetStats.ReactionStrikesLeft}");
 
@@ -2201,7 +2186,7 @@ public class CombatManager : MonoBehaviour
     // Szuka wolnej pozycji obok celu szarży, do której droga postaci jest najkrótsza
     public GameObject GetTileAdjacentToTarget(GameObject attacker, GameObject target)
     {
-        if(target == null) return null;
+        if (target == null) return null;
 
         Vector2 targetPos = target.transform.position;
 
@@ -2233,24 +2218,24 @@ public class CombatManager : MonoBehaviour
 
             path = MovementManager.Instance.FindPath(attacker.transform.position, pos);
 
-            if(path.Count == 0) continue;
+            if (path.Count == 0) continue;
 
             // Aktualizuje najkrótszą drogę
             if (path.Count < shortestPathLength)
             {
                 shortestPathLength = path.Count;
                 targetTile = tile;
-            }  
+            }
         }
 
-        if(shortestPathLength > attacker.GetComponent<Stats>().TempSz && !GameManager.IsAutoCombatMode)
+        if (shortestPathLength > attacker.GetComponent<Stats>().TempSz && !GameManager.IsAutoCombatMode)
         {
             return null;
         }
         else
         {
             return targetTile;
-        }      
+        }
     }
     #endregion
 
@@ -2512,7 +2497,7 @@ public class CombatManager : MonoBehaviour
     }
     public void UpdateDefensiveStanceButtonColor()
     {
-        if(Unit.SelectedUnit.GetComponent<Unit>().DefensiveBonus > 0)
+        if (Unit.SelectedUnit.GetComponent<Unit>().DefensiveBonus > 0)
         {
             _defensiveStanceButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.green;
 
@@ -2536,18 +2521,18 @@ public class CombatManager : MonoBehaviour
     }
     private IEnumerator ReloadCoroutine()
     {
-        if(Unit.SelectedUnit == null) yield break;
+        if (Unit.SelectedUnit == null) yield break;
 
         Weapon weapon = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons[0];
         Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
 
-        if (weapon == null || weapon.ReloadLeft == 0) 
+        if (weapon == null || weapon.ReloadLeft == 0)
         {
             Debug.Log($"Wybrana broń nie wymaga ładowania.");
             yield break;
         }
 
-        if(weapon.ReloadLeft > 0)
+        if (weapon.ReloadLeft > 0)
         {
             if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction)
             {
@@ -2576,16 +2561,16 @@ public class CombatManager : MonoBehaviour
 
             //Test Broni Zasięgowej danej kategorii
             int successLevel = DiceRollManager.Instance.TestSkill("US", stats, rangedSkill.ToString(), 0, reloadRollResult)[1];
-            if(successLevel > 0)
+            if (successLevel > 0)
             {
                 weapon.ReloadLeft = Mathf.Max(0, weapon.ReloadLeft - successLevel);
 
             }
 
-            StartCoroutine(AnimationManager.Instance.PlayAnimation("reload", Unit.SelectedUnit));       
+            StartCoroutine(AnimationManager.Instance.PlayAnimation("reload", Unit.SelectedUnit));
         }
-        
-        if(weapon.ReloadLeft == 0)
+
+        if (weapon.ReloadLeft == 0)
         {
             Debug.Log($"Broń {stats.Name} załadowana.");
 
@@ -2595,9 +2580,9 @@ public class CombatManager : MonoBehaviour
         else
         {
             Debug.Log($"{stats.Name} ładuje broń. Pozostał/y {weapon.ReloadLeft} PS do pełnego załadowania.");
-        }  
+        }
 
-        InventoryManager.Instance.DisplayReloadTime();    
+        InventoryManager.Instance.DisplayReloadTime();
     }
 
     private void ResetWeaponLoad(Weapon attackerWeapon, Stats attackerStats)
@@ -2609,7 +2594,7 @@ public class CombatManager : MonoBehaviour
         //Uwzględnia zdolność Błyskawicznego Przeładowania
         if (attackerStats.RapidReload > 0)
         {
-            attackerWeapon.ReloadLeft--;   
+            attackerWeapon.ReloadLeft--;
         }
 
         //Uwzględnia zdolność Artylerzysta
@@ -2619,7 +2604,7 @@ public class CombatManager : MonoBehaviour
         }
 
         //Zapobiega ujemnej wartości czasu przeładowania
-        if(attackerWeapon.ReloadLeft < 0)
+        if (attackerWeapon.ReloadLeft < 0)
         {
             attackerWeapon.ReloadLeft = 0;
         }
@@ -2685,20 +2670,20 @@ public class CombatManager : MonoBehaviour
     // Sprawdza czy ruch powoduje atak okazyjny
     public void CheckForOpportunityAttack(GameObject movingUnit, Vector2 selectedTilePosition)
     {
-        //Przy bezpiecznym odwrocie nie występuje atak okazyjny
-        if(Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Unit>().IsRetreating) return;
+        //Przy bezpiecznym odwrocie nie występuje atak okazyjny.
+        if (Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Unit>().IsRetreating) return;
 
         List<Unit> adjacentOpponents = AdjacentOpponents(movingUnit.transform.position, movingUnit.tag);
 
-        if(adjacentOpponents.Count == 0) return;
+        if (adjacentOpponents.Count == 0) return;
 
         // Atak okazyjny wywolywany dla kazdego wroga bedacego w zwarciu z bohaterem gracza
         foreach (Unit unit in adjacentOpponents)
         {
             Weapon weapon = InventoryManager.Instance.ChooseWeaponToAttack(unit.gameObject);
 
-            //Jeżeli jest to jednostka unieruchomiona, nieprzytomna, w panice lub jednostka z bronią dystansową to ją pomijamy
-            if (weapon.Type.Contains("ranged") || unit.Unconscious || unit.EntangledUnitId != 0 || unit.Entangled > 0 || unit.Broken > 0) continue;
+            //Jeżeli jest to jednostka unieruchomiona, nieprzytomna, w panice, mniejsza rozmiarem lub jednostka z bronią dystansową to ją pomijamy
+            if (weapon.Type.Contains("ranged") || unit.Unconscious || unit.EntangledUnitId != 0 || unit.Entangled > 0 || unit.Broken > 0 || unit.GetComponent<Stats>().Size < movingUnit.GetComponent<Stats>().Size) continue;
 
             // Sprawdzenie czy ruch powoduje oddalenie się od przeciwników (czyli atak okazyjny)
             float distanceFromOpponentAfterMove = Vector2.Distance(selectedTilePosition, unit.transform.position);
@@ -2708,7 +2693,7 @@ public class CombatManager : MonoBehaviour
                 Debug.Log($"Ruch spowodował atak okazyjny od {unit.GetComponent<Stats>().Name}.");
 
                 // Wywołanie ataku okazyjnego
-                Attack(unit, movingUnit.GetComponent<Unit>(), true);             
+                Attack(unit, movingUnit.GetComponent<Unit>(), true);
             }
         }
     }
@@ -2950,7 +2935,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Zresetowanie ładowania broni dystansowej celu rozbrajania, bo musi się bronić
-        if(targetWeapon.ReloadLeft != 0)
+        if (targetWeapon.ReloadLeft != 0)
         {
             ResetWeaponLoad(targetWeapon, targetStats);
         }

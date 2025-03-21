@@ -1,18 +1,12 @@
-using System.Collections;
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
-using System.Reflection;
-using System.Linq;
-using UnityEngine.UIElements;
 using System.Collections.Generic;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
-using Unity.VisualScripting;
-using System;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using TMPro;
+using UnityEngine;
 
 public class DataManager : MonoBehaviour
-{ 
+{
     // Prywatne statyczne pole przechowujące instancję
     private static DataManager instance;
 
@@ -174,7 +168,7 @@ public class DataManager : MonoBehaviour
             FieldInfo[] fields = typeof(StatsData).GetFields(BindingFlags.Instance | BindingFlags.Public);
             foreach (var field in fields)
             {
-                if(field.Name == "Name") continue; //NIE WIEM, CZY TO MA SENS
+                if (field.Name == "Name") continue; //NIE WIEM, CZY TO MA SENS
                 var targetField = typeof(Stats).GetField(field.Name, BindingFlags.Instance | BindingFlags.Public);
                 targetField?.SetValue(statsToUpdate, field.GetValue(statsData));
             }
@@ -184,7 +178,7 @@ public class DataManager : MonoBehaviour
 
         bool buttonExists;
 
-        if(UnitsManager.Instance.IsSavedUnitsManaging)
+        if (UnitsManager.Instance.IsSavedUnitsManaging)
         {
             buttonExists = _unitScrollViewContent.GetComponentsInChildren<TextMeshProUGUI>().Any(t => t.text == statsData.Name);
         }
@@ -192,13 +186,13 @@ public class DataManager : MonoBehaviour
         {
             buttonExists = _unitScrollViewContent.GetComponentsInChildren<TextMeshProUGUI>().Any(t => t.text == statsData.Race);
         }
-    
+
         if (!buttonExists)
         {
             GameObject buttonObj = Instantiate(_buttonPrefab, _unitScrollViewContent);
             TextMeshProUGUI buttonText = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
 
-            if(UnitsManager.Instance.IsSavedUnitsManaging)
+            if (UnitsManager.Instance.IsSavedUnitsManaging)
             {
                 buttonText.text = statsData.Name;
             }
@@ -280,7 +274,7 @@ public class DataManager : MonoBehaviour
 
         Destroy(dropdown.Buttons[indexToRemove].gameObject);
         dropdown.Buttons.RemoveAt(indexToRemove);
-        
+
         // Aktualizuje SelectedIndex i zaznaczenie
         dropdown.SelectedIndex = 0;
         dropdown.SelectedButton = null;
@@ -305,7 +299,7 @@ public class DataManager : MonoBehaviour
 
         // Deserializacja danych JSON
         WeaponData[] weaponsArray = null;
-        if(weaponData == null)
+        if (weaponData == null)
         {
             weaponsArray = JsonHelper.FromJson<WeaponData>(jsonFile.text);
             InventoryManager.Instance.AllWeaponData = weaponsArray.ToList();
@@ -325,14 +319,14 @@ public class DataManager : MonoBehaviour
 
         //Odniesienie do broni postaci
         Weapon weaponToUpdate = null;
-        if(Unit.SelectedUnit != null)
+        if (Unit.SelectedUnit != null)
         {
             weaponToUpdate = Unit.SelectedUnit.GetComponent<Weapon>();
         }
 
         foreach (var weapon in weaponsArray)
         {
-            if(_weaponQualityDropdown.transform.parent.gameObject.activeSelf) //Sprawdza, czy jest otwarte okno wyboru broni. W innym wypadku oznacza to, że bronie są wczytywane z pliku i nie chcemy zmieniać ich jakości
+            if (_weaponQualityDropdown.transform.parent.gameObject.activeSelf) //Sprawdza, czy jest otwarte okno wyboru broni. W innym wypadku oznacza to, że bronie są wczytywane z pliku i nie chcemy zmieniać ich jakości
             {
                 //Ustala jakość wykonania broni
                 weapon.Quality = _weaponQualityDropdown.options[_weaponQualityDropdown.value].text;
@@ -348,13 +342,13 @@ public class DataManager : MonoBehaviour
                     if (targetField != null)
                     {
                         //Zapobiega zresetowaniu się czasu przeładowania przy zmianach broni. Gdy postać wcześniej posiadała/używała daną broń to jej ReloadLeft zostaje zapamiętany
-                        if(weaponToUpdate.WeaponsWithReloadLeft.ContainsKey(weapon.Id) && field.Name == "ReloadLeft")
+                        if (weaponToUpdate.WeaponsWithReloadLeft.ContainsKey(weapon.Id) && field.Name == "ReloadLeft")
                         {
                             weaponToUpdate.ReloadLeft = weaponToUpdate.WeaponsWithReloadLeft[weapon.Id];
                             continue;
                         }
 
-                        targetField.SetValue(weaponToUpdate, field.GetValue(weapon));             
+                        targetField.SetValue(weaponToUpdate, field.GetValue(weapon));
                     }
                 }
 
@@ -362,14 +356,14 @@ public class DataManager : MonoBehaviour
                 InventoryManager.Instance.AddWeaponToInventory(weapon, Unit.SelectedUnit);
 
                 //Dodaje Id broni do słownika ekwipunku postaci
-                if(weaponToUpdate.WeaponsWithReloadLeft.ContainsKey(weapon.Id) == false)
+                if (weaponToUpdate.WeaponsWithReloadLeft.ContainsKey(weapon.Id) == false)
                 {
                     weaponToUpdate.WeaponsWithReloadLeft.Add(weapon.Id, 0);
                 }
             }
 
             //Gdy wczytujemy ekwipunek postaci to przerywamy funkcję, żeby na liście dostępnych broni nie pojawiały się customowe przedmioty
-            if(weaponData != null) return;
+            if (weaponData != null) return;
 
             bool buttonExists = _weaponScrollViewContent.GetComponentsInChildren<TextMeshProUGUI>(true).Any(t => t.text == weapon.Name);
 
@@ -382,7 +376,7 @@ public class DataManager : MonoBehaviour
                 buttonText.text = weapon.Name;
 
                 UnityEngine.UI.Button button = buttonObj.GetComponent<UnityEngine.UI.Button>();
-                
+
                 //Dodaje opcję do CustomDropdowna ze wszystkimi brońmi
                 _weaponScrollViewContent.GetComponent<CustomDropdown>().Buttons.Add(button);
 
@@ -412,7 +406,7 @@ public class DataManager : MonoBehaviour
         }
 
         // Deserializacja danych JSON
-        List <SpellData> spellsList = null;
+        List<SpellData> spellsList = null;
         spellsList = JsonHelper.FromJson<SpellData>(jsonFile.text).ToList();
 
         if (spellsList == null)
@@ -423,7 +417,7 @@ public class DataManager : MonoBehaviour
 
         //Odniesienie do klasy spell postaci
         Spell spellToUpdate = null;
-        if(Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Spell>() != null && !string.IsNullOrEmpty(spellName))
+        if (Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Spell>() != null && !string.IsNullOrEmpty(spellName))
         {
             spellToUpdate = Unit.SelectedUnit.GetComponent<Spell>();
         }
@@ -518,7 +512,7 @@ public static class JsonHelper
         {
             Debug.LogError("Deserializacja JSON nie powiodła się. Sprawdź składnię i strukturę JSON.");
             return null;
-        }    
+        }
     }
 
     [System.Serializable]
@@ -546,7 +540,7 @@ public class UnitData
     public float[] position;
 
     public bool IsSelected;
-    public bool IsTurnFinished; 
+    public bool IsTurnFinished;
     public bool IsRunning; // Biegnie
     public bool IsCharging; // Szarżuje
 
@@ -1029,9 +1023,9 @@ public class MapElementsData
     {
         Name = mapElement.gameObject.name.Replace("(Clone)", "");
         Tag = mapElement.gameObject.tag;
-        IsHighObstacle= mapElement.IsHighObstacle;
-        IsLowObstacle= mapElement.IsLowObstacle;
-        IsCollider= mapElement.IsCollider;
+        IsHighObstacle = mapElement.IsHighObstacle;
+        IsLowObstacle = mapElement.IsLowObstacle;
+        IsCollider = mapElement.IsCollider;
 
         position = new float[3];
         position[0] = mapElement.gameObject.transform.position.x;

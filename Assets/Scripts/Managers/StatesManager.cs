@@ -1,14 +1,11 @@
+using System.Collections;
 using System.Reflection;
-using System;
 using TMPro;
 using UnityEngine;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
-using static UnityEngine.GraphicsBuffer;
-using System.Collections;
 
 public class StatesManager : MonoBehaviour
 {
-  // Prywatne statyczne pole przechowujące instancję
+    // Prywatne statyczne pole przechowujące instancję
     private static StatesManager instance;
 
     // Publiczny dostęp do instancji
@@ -89,7 +86,7 @@ public class StatesManager : MonoBehaviour
             }
 
             int rollDifficulty = unit.Bleeding * 10;
-            if(rollResult < rollDifficulty)
+            if (rollResult < rollDifficulty)
             {
                 Debug.Log($"<color=#FF7F50>{stats.Name} wykonuje rzut obronny przed śmiercią w wyniku krwawienia. Wynik rzutu: {rollResult} Modyfikator: {-rollDifficulty}. {stats.Name} umiera.</color>");
 
@@ -109,7 +106,7 @@ public class StatesManager : MonoBehaviour
                 Debug.Log($"<color=#FF7F50>{stats.Name} wyrzucił/a dublet. Krwawienie zmniejsza się o 1 poziom.</color>");
                 unit.Bleeding--;
 
-                if(unit.Bleeding == 0) unit.Fatiqued++; // Zwiększenie Wyczerpania
+                if (unit.Bleeding == 0) unit.Fatiqued++; // Zwiększenie Wyczerpania
             }
         }
     }
@@ -123,7 +120,7 @@ public class StatesManager : MonoBehaviour
         Stats stats = unit.GetComponent<Stats>();
         bool isEngagedInCombat = CombatManager.Instance.AdjacentOpponents(unit.transform.position, unit.tag).Count > 0 ? true : false;
 
-        if(unit.Broken > 0 && !isEngagedInCombat)
+        if (unit.Broken > 0 && !isEngagedInCombat)
         {
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
@@ -133,7 +130,7 @@ public class StatesManager : MonoBehaviour
             }
 
             int successLevel = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", stats.StoutHearted * 10, rollResult)[1];
-            if(successLevel > 0)
+            if (successLevel > 0)
             {
                 unit.Broken = Mathf.Max(0, unit.Broken - successLevel);
             }
@@ -152,7 +149,7 @@ public class StatesManager : MonoBehaviour
 
     private void Deafened(Unit unit)
     {
-        if(unit.Deafened > 0) unit.Deafened --;
+        if (unit.Deafened > 0) unit.Deafened--;
     }
 
     private IEnumerator Poison(Unit unit)
@@ -160,7 +157,7 @@ public class StatesManager : MonoBehaviour
         if (unit.Poison == 0) yield break;
         Stats stats = unit.GetComponent<Stats>();
 
-        if(unit.Poison > 0)
+        if (unit.Poison > 0)
         {
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
@@ -170,7 +167,7 @@ public class StatesManager : MonoBehaviour
             }
 
             int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
-            if(successLevel > 0)
+            if (successLevel > 0)
             {
                 unit.Poison = Mathf.Max(0, unit.Poison - successLevel);
             }
@@ -187,7 +184,7 @@ public class StatesManager : MonoBehaviour
             }
         }
 
-        if(stats.TempHealth > 0)
+        if (stats.TempHealth > 0)
         {
             stats.TempHealth -= unit.Poison;
             Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Poison} punktów żywotności w wyniku zatrucia.</color>");
@@ -207,7 +204,7 @@ public class StatesManager : MonoBehaviour
             unit.Entangled += value;
         }
 
-        if(unit.Entangled > 0) unit.CanMove = false;
+        if (unit.Entangled > 0) unit.CanMove = false;
     }
 
 
@@ -233,7 +230,7 @@ public class StatesManager : MonoBehaviour
     {
         Stats stats = unit.GetComponent<Stats>();
 
-        if(unit.Stunned > 0)
+        if (unit.Stunned > 0)
         {
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
@@ -243,7 +240,7 @@ public class StatesManager : MonoBehaviour
             }
 
             int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
-            if(successLevel > 0)
+            if (successLevel > 0)
             {
                 unit.Stunned = Mathf.Max(0, unit.Stunned - successLevel);
             }
@@ -265,7 +262,7 @@ public class StatesManager : MonoBehaviour
         Stats stats = unit.GetComponent<Stats>();
 
         unit.Unconscious = value;
-        if(unit.Unconscious)
+        if (unit.Unconscious)
         {
             Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność.</color>");
         }
@@ -283,7 +280,7 @@ public class StatesManager : MonoBehaviour
 
         // Pobiera nazwę cechy z nazwy obiektu InputField (bez "_input")
         string stateName = textInput.name.Replace("_input", "");
-        
+
         // Szukamy pola
         FieldInfo field = unit.GetType().GetField(stateName);
 
