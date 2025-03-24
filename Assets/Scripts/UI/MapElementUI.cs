@@ -19,6 +19,13 @@ public class MapElementUI : MonoBehaviour, IPointerClickHandler
             ResetColor(SelectedElementImage);
         }
 
+        //Jeżeli ponownie klikniemy na ten sam element to wychodzimy z trybu dodawania elementów
+        if(SelectedElement == Resources.Load<GameObject>(this.gameObject.name))
+        {
+            MapEditor.Instance.ResetAllSelectedElements();
+            return;
+        }
+
         // Odniesienie do wybranego elementu w panelu
         SelectedElementImage = this.GetComponent<Image>();
 
@@ -27,8 +34,6 @@ public class MapElementUI : MonoBehaviour, IPointerClickHandler
 
         //Zmień kolor nowo wybranego elementu
         HighlightElement(SelectedElementImage);
-
-        GameManager.IsMapElementPlacing = true;
 
         Debug.Log("Wybierz pole, na którym chcesz umieścić wybrany element otoczenia. Przytrzymując lewy przycisk myszy i przesuwając po mapie, możesz umieszczać wiele elementów naraz.");
     }

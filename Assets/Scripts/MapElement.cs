@@ -24,30 +24,32 @@ public class MapElement : MonoBehaviour
         }
     }
 
+    private void OnMouseUp()
+    {
+        // Jeżeli nie jesteśmy w kreatorze pola bitwy to funkcja dodawania przeszkód jest wyłączona. 
+        if (SceneManager.GetActiveScene().buildIndex != 0) return;
+
+        if (MapElementUI.SelectedElement != null)
+        {
+            MapEditor.Instance.PlaceElementOnSelectedTile(transform.position);
+        }
+    }
+
     private void OnMouseOver()
     {
-        // Jeżeli nie jesteśmy w kreatorze pola bitwy to funkcja usuwania przeszkód jest wyłączona. 
+        // Jeżeli nie jesteśmy w kreatorze pola bitwy to funkcja usuwania i dodawania przeszkód jest wyłączona. 
         // Tak samo nie wywołujemy jej, gdy lewy przycisk myszy nie jest wciśnięty
         if (SceneManager.GetActiveScene().buildIndex != 0) return;
 
         if (GameManager.IsMousePressed)
         {
-            DestroyElement();
-        }
-    }
-
-    private void DestroyElement()
-    {
-        if (MapEditor.IsElementRemoving)
-        {
-            MapEditor.Instance.AllElements.Remove(gameObject);
-            Destroy(gameObject);
-
-            Collider2D collider = Physics2D.OverlapPoint(transform.position);
-
-            if (collider != null && collider.gameObject.CompareTag("Tile"))
+            if (MapEditor.IsElementRemoving)
             {
-                collider.GetComponent<Tile>().IsOccupied = false;
+                MapEditor.Instance.RemoveElement(gameObject);
+            }
+            else if(MapElementUI.SelectedElement != null)
+            {
+                MapEditor.Instance.PlaceElementOnSelectedTile(transform.position);
             }
         }
     }

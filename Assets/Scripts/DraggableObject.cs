@@ -61,7 +61,7 @@ public class DraggableObject : MonoBehaviour
 
     public void BeginDrag()
     {
-        if(GameManager.IsMapHidingMode || MapEditor.IsElementRemoving || UnitsManager.IsMultipleUnitsSelecting || MovementManager.Instance.IsMoving)
+        if(GameManager.IsMapHidingMode || MapEditor.IsElementRemoving || MapEditor.IsElementPlacing || UnitsManager.IsMultipleUnitsSelecting || (MovementManager.Instance != null && MovementManager.Instance.IsMoving))
             return;
 
         IsDragging = true;
@@ -74,13 +74,22 @@ public class DraggableObject : MonoBehaviour
         if (!IsDragging) return;
 
         Vector3 newPosition = GetMouseWorldPosition() + _offset;
-        newPosition.z = 0;
+
+        if(GetComponent<MapElement>() != null && !GetComponent<MapElement>().IsCollider)
+        {
+            newPosition.z = 2.5f;
+        }
+        else
+        {
+            newPosition.z = 0;
+        }
+
         transform.position = newPosition;
     }
 
     public void EndDrag()
     {
-        if(GameManager.IsMapHidingMode || MapEditor.IsElementRemoving || UnitsManager.IsMultipleUnitsSelecting || MovementManager.Instance.IsMoving)
+        if(GameManager.IsMapHidingMode || MapEditor.IsElementRemoving || MapEditor.IsElementPlacing || UnitsManager.IsMultipleUnitsSelecting || (MovementManager.Instance != null && MovementManager.Instance.IsMoving))
             return;
 
         if(transform.position != _startPosition)
@@ -131,7 +140,7 @@ public class DraggableObject : MonoBehaviour
 
         Vector2 offset = Vector2.zero;
 
-        if (this.gameObject.GetComponent<MapElement>() != null)
+        if (GetComponent<MapElement>() != null)
         {
             BoxCollider2D boxCollider = GetComponent<BoxCollider2D>();
 
@@ -179,6 +188,12 @@ public class DraggableObject : MonoBehaviour
             {
                 // Przesuwa obiekt do pozycji środka pola z ewentualnym offsetem
                 transform.position = (Vector2)collider.transform.position + offset;
+
+                // Jeśli jest to element, po którym można chodzić to umiejscawiamy go pod siatką
+                if (!GetComponent<MapElement>().IsCollider)
+                {
+                    transform.position = new Vector3(transform.position.x, transform.position.y, 2.5f);
+                }
 
                 Physics2D.SyncTransforms();
                 

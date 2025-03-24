@@ -40,8 +40,8 @@ public class GridManager : MonoBehaviour
     public static int Height = 16;
     public static string GridColor = "white";
 
-    [SerializeField] private TMP_Text _widthDisplay;
-    [SerializeField] private TMP_Text _heightDisplay;
+    [SerializeField] private TMP_InputField _inputX;
+    [SerializeField] private TMP_InputField _inputY;
     [SerializeField] private Slider _sliderX;
     [SerializeField] private Slider _sliderY;
     [SerializeField] private Button _gridColorbutton;
@@ -112,30 +112,50 @@ public class GridManager : MonoBehaviour
             transform.position = new Vector3(-(Width / 2), -(Height / 2), 1);
         }
 
-        if (_widthDisplay != null && _heightDisplay != null)
+        if (_inputY != null && _inputX != null)
         {
-            _widthDisplay.text = Width.ToString();
-            _heightDisplay.text = Height.ToString();
-
             int width = Width;
             int height = Height;
             _sliderX.value = width;
             _sliderY.value = height;
+            _inputX.text = Width.ToString();
+            _inputY.text = Height.ToString();
         }
     }
 
-    public void ChangeGridSize()
+    public void ChangeGridSize(bool isInputField)
     {
-        Width = (int)_sliderX.value;
-        Height = (int)_sliderY.value;
+        if (isInputField)
+        {
+            // Parsowanie wartości z InputField i obsługa błędów
+            if (int.TryParse(_inputX.text, out int parsedWidth))
+                Width = Mathf.Clamp(parsedWidth, 1, 70); // Ograniczenie do 1-70
+            else
+                Width = (int)_sliderX.value;
 
-        // Generuje nową siatkę ze zmienionymi wartościami
+            if (int.TryParse(_inputY.text, out int parsedHeight))
+                Height = Mathf.Clamp(parsedHeight, 1, 70);
+            else
+                Height = (int)_sliderY.value;
+
+            _sliderX.value = Width;
+            _sliderY.value = Height;
+        }
+        else
+        {
+            Width = (int)_sliderX.value;
+            Height = (int)_sliderY.value;
+
+            _inputX.text = Mathf.Clamp(Width, 1, 70).ToString();
+            _inputY.text = Mathf.Clamp(Height, 1, 70).ToString();
+        }
+
+        // Generowanie nowej siatki i aktualizacja kamery
         GenerateGrid();
-
         StartCoroutine(RemoveElementsOutsideTheGrid());
-
         CameraManager.ChangeCameraRange(Width, Height);
     }
+
 
     public void ChangeGridColor()
     {

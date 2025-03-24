@@ -115,16 +115,22 @@ public class Tile : MonoBehaviour
         {
             MagicManager.Instance.CastSpell(this.gameObject);
         }
-        
-        // Jeżeli nie jesteśmy w kreatorze pola bitwy to funkcja stawiania przeszkód jest wyłączona. Tak samo nie wywołujemy jej, gdy lewy przycisk myszy nie jest wciśnięty
-        if (SceneManager.GetActiveScene().buildIndex != 0 ||  GameManager.IsMousePressed == false) return;
 
-        //Sprawdzamy, czy jest aktywny tryb usuwania elementów 
-        if (MapEditor.IsElementRemoving || GameManager.Instance.IsPointerOverUI() || DraggableObject.IsDragging) return;
-   
-        Vector3 position = new Vector3(transform.position.x, transform.position.y, 1);
+        // Sprawdzamy, czy można umieszczać elementy na mapie
+        if (SceneManager.GetActiveScene().buildIndex != 0 ||
+            !GameManager.IsMousePressed ||
+            GameManager.Instance.IsPointerOverUI() ||
+            DraggableObject.IsDragging) return;
 
-        MapEditor.Instance.PlaceElementOnSelectedTile(position);
+        if (MapEditor.IsElementRemoving)
+        {
+            MapEditor.Instance.RemoveElement(gameObject);
+        }
+        else if(MapEditor.IsElementPlacing)
+        {
+            Vector3 position = new Vector3(transform.position.x, transform.position.y, 1);
+            MapEditor.Instance.PlaceElementOnSelectedTile(position);
+        }
     }
 
     public void HighlightTile()

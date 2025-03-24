@@ -34,8 +34,13 @@ public class MapEditor : MonoBehaviour
 
     [SerializeField] private Transform _allElementsGrid;
     public List<GameObject> AllElements;
+
     [SerializeField] private UnityEngine.UI.Button _removeElementButton;
+
     public static bool IsElementRemoving = false;
+    public HashSet<Vector2> RemovedPositions = new HashSet<Vector2>(); // Przechowuje unikalne pozycje usuniętych elementów
+    public static bool IsElementPlacing = false;
+
     [SerializeField] private UnityEngine.UI.Toggle _highObstacleToggle;
     [SerializeField] private UnityEngine.UI.Toggle _lowObstacleToggle;
     [SerializeField] private UnityEngine.UI.Toggle _isColliderToggle;
@@ -48,7 +53,7 @@ public class MapEditor : MonoBehaviour
     [Header("Ukrywanie mapy")]
     [SerializeField] private GameObject _tileCover; //Czarny sprite zasłaniający pole
     private List<Vector2> _lastTilesPositions;
-    public List<GameObject> AllTileCovers; 
+    public List<GameObject> AllTileCovers;
 
     [Header("Tło")]
     [SerializeField] private GameObject _background;
@@ -82,7 +87,7 @@ public class MapEditor : MonoBehaviour
         _originalBackgroundSize = _backgroundCanvas.GetComponent<RectTransform>().sizeDelta;
 
         //Uwzględnienie zmian rozmiaru i pozycji
-        if(BackgroundImagePath != null)
+        if (BackgroundImagePath != null)
         {
             StartCoroutine(LoadBackgroundImage(BackgroundImagePath, false));
         }
@@ -94,8 +99,9 @@ public class MapEditor : MonoBehaviour
 
     void Update()
     {
-        if(MapElementUI.SelectedElement != null)
+        if (MapElementUI.SelectedElement != null)
         {
+            IsElementPlacing = true;
             ReplaceCursorWithMapElement();
 
             if (Input.GetMouseButtonDown(1)) // Sprawdza, czy prawy przycisk myszy jest wciśnięty
@@ -106,10 +112,16 @@ public class MapEditor : MonoBehaviour
             }
 
             //Jeśli jest aktywny tryb ukrywania obszarów to po wyborze elementu mapy wyłączamy go
-            if(GameManager.IsMapHidingMode)
+            if (GameManager.IsMapHidingMode)
             {
                 GameManager.Instance.SetMapHidingMode();
             }
+        }
+
+        if (Input.GetMouseButtonUp(2) && (IsElementPlacing || IsElementRemoving))
+        {
+            RemoveElementsMode(false);
+            ResetAllSelectedElements();
         }
     }
 
@@ -128,7 +140,7 @@ public class MapEditor : MonoBehaviour
             }
         }
     }
-    
+
     private void ReplaceCursorWithMapElement()
     {
         // Zaktualizuj pozycję kursora
@@ -148,7 +160,7 @@ public class MapEditor : MonoBehaviour
         // Sprawdź, czy kursor jest nowym obiektem
         if (_cursorObject == null || _cursorObject.name != MapElementUI.SelectedElement.name + "Cursor")
         {
-            if(_cursorObject != null)
+            if (_cursorObject != null)
             {
                 Destroy(_cursorObject);
             }
@@ -205,16 +217,43 @@ public class MapEditor : MonoBehaviour
 
         // Aktualizowanie zajętości pól
         GridManager.Instance.CheckTileOccupancy();
-        
-        Collider2D collider = Physics2D.OverlapPoint(position);
 
-        if (collider != null && collider.gameObject.CompareTag("Tile"))
+        Debug.Log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+        Collider2D[] colliders = Physics2D.OverlapPointAll(position);
+
+        // Sprawdź, czy na danym miejscu znajduje się już inny element mapy
+        foreach (Collider2D col in colliders)
         {
-            if (collider.GetComponent<Tile>().IsOccupied) return;
-        
+            Debug.Log(col.gameObject.name);
+            if (col.gameObject.CompareTag("MapElement"))
+            {
+                //Jeśli są to dwa elementy po których można chodzić to nie możemy ich na sobie postawić
+                if (!_isColliderToggle.isOn && !col.GetComponent<MapElement>().IsCollider) return;
+
+                //Jeśli są to dwa elementy po których nie można chodzić to nie możemy ich na sobie postawić
+                if (_isColliderToggle.isOn && col.GetComponent<MapElement>().IsCollider) return;
+            }
+        }
+
+        Debug.Log("dupa4");
+
+        // Sprawdzenie, czy wśród obiektów jest Tile
+        Collider2D tileCollider = colliders.FirstOrDefault(col => col.gameObject.CompareTag("Tile"));
+
+        if (tileCollider != null)
+        {     
             if(_randomRotationToggle.isOn)
             {
                 SetRandomElementRotation();
+            }
+
+            Debug.Log("dupa5");
+
+            // Elementy bez collidera, czyli takie po których można chodzić umieszczamy pod siatką (np. tekstura ulicy)
+            if (_isColliderToggle.isOn == false)
+            {
+                position.z = 2.5f;
             }
 
             Quaternion rotation = Quaternion.Euler(0, 0, _rotationSlider.value);
@@ -294,11 +333,12 @@ public class MapEditor : MonoBehaviour
             MapElementUI childElement = _allElementsGrid.GetChild(i).GetComponent<MapElementUI>();
 
             childElement.ResetColor(childElement.GetComponent<UnityEngine.UI.Image>());
-
-            MapElementUI.SelectedElement = null;
-            MapElementUI.SelectedElementImage = null;
         }
 
+        MapElementUI.SelectedElement = null;
+        MapElementUI.SelectedElementImage = null;
+
+        IsElementPlacing = false;
         Destroy(_cursorObject);
     }
 
@@ -352,12 +392,37 @@ public class MapEditor : MonoBehaviour
         }
     }
 
-    public void RemoveElement(Vector3 position)
+    public void RemoveElement(GameObject gameObject)
     {
-        Collider2D collider = Physics2D.OverlapPoint(position);
+        if (!IsElementRemoving) return;
 
-        // Usuwa przeszkodę z klikniętego miejsca
-        Destroy(collider.gameObject);
+        Vector2 position = gameObject.transform.position;
+
+        // Sprawdzamy, czy już usuwaliśmy element z tej pozycji
+        if (RemovedPositions.Contains(position)) return;
+
+        Collider2D[] colliders = Physics2D.OverlapPointAll(position);
+
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i].gameObject.CompareTag("Tile"))
+            {
+                colliders[i].GetComponent<Tile>().IsOccupied = false;
+            }
+            else if (colliders[i].gameObject.CompareTag("MapElement"))
+            {
+                if (!colliders[i].GetComponent<MapElement>().IsCollider && RemovedPositions.Count > 0) return;
+
+                AllElements.Remove(gameObject);
+                Destroy(colliders[i].gameObject);
+
+                if (colliders[i].GetComponent<MapElement>().IsCollider)
+                {
+                    // Dodajemy pozycję do listy usuniętych elementów
+                    RemovedPositions.Add(position);
+                }
+            }
+        }
     }
 
     public void RemoveElementsOutsideTheGrid()

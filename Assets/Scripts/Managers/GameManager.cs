@@ -66,7 +66,6 @@ public class GameManager : MonoBehaviour
     public static bool IsGamePaused;
 
     [Header("Edytor map")]
-    public static bool IsMapElementPlacing;
     public static bool IsMousePressed;
     public string TileCoveringState; //Zmienna przekazująca informacja o tym, czy aktualnie zasłaniamy pola, czy odsłaniamy
 
@@ -144,6 +143,11 @@ public class GameManager : MonoBehaviour
         else if (Input.GetMouseButtonUp(0))
         {
             IsMousePressed = false;
+
+            if(MapEditor.Instance.RemovedPositions.Count > 0)
+            {
+                MapEditor.Instance.RemovedPositions.Clear();
+            }
         }
 
         //Przełączenie na tryb pełnoekranowy lub okno
