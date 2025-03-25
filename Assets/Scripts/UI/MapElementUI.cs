@@ -20,7 +20,7 @@ public class MapElementUI : MonoBehaviour, IPointerClickHandler
         }
 
         //Jeżeli ponownie klikniemy na ten sam element to wychodzimy z trybu dodawania elementów
-        if(SelectedElement == Resources.Load<GameObject>(this.gameObject.name))
+        if(SelectedElement == Resources.Load<GameObject>($"map_assets/{this.gameObject.name}"))
         {
             MapEditor.Instance.ResetAllSelectedElements();
             return;
@@ -30,7 +30,7 @@ public class MapElementUI : MonoBehaviour, IPointerClickHandler
         SelectedElementImage = this.GetComponent<Image>();
 
         // Odniesienie do prefabu wybranego elementu
-        SelectedElement = Resources.Load<GameObject>(this.gameObject.name);
+        SelectedElement = Resources.Load<GameObject>($"map_assets/{this.gameObject.name}");
 
         //Zmień kolor nowo wybranego elementu
         HighlightElement(SelectedElementImage);

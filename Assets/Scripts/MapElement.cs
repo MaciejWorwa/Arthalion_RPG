@@ -37,13 +37,27 @@ public class MapElement : MonoBehaviour
 
     private void OnMouseOver()
     {
+        if (GameManager.IsMousePressed)
+        {
+            if(Input.GetMouseButtonDown(1))
+            {
+                // Obrót o 90 stopni
+                transform.rotation *= Quaternion.Euler(0, 0, 90);
+            }
+
+            if (Input.GetKeyDown(KeyCode.Delete))
+            {
+                MapEditor.Instance.RemoveElement(gameObject);
+            }
+        }
+
         // Jeżeli nie jesteśmy w kreatorze pola bitwy to funkcja usuwania i dodawania przeszkód jest wyłączona. 
         // Tak samo nie wywołujemy jej, gdy lewy przycisk myszy nie jest wciśnięty
         if (SceneManager.GetActiveScene().buildIndex != 0) return;
 
         if (GameManager.IsMousePressed)
         {
-            if (MapEditor.IsElementRemoving)
+            if (MapEditor.IsElementRemoving || Input.GetKeyDown(KeyCode.Delete))
             {
                 MapEditor.Instance.RemoveElement(gameObject);
             }

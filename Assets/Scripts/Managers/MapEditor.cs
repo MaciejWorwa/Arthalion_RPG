@@ -94,6 +94,8 @@ public class MapEditor : MonoBehaviour
 
         _lastTilesPositions = new List<Vector2>();
 
+        AllElements = new List<GameObject>();
+
         //ResetBackgroundProperties();
     }
 
@@ -218,14 +220,11 @@ public class MapEditor : MonoBehaviour
         // Aktualizowanie zajętości pól
         GridManager.Instance.CheckTileOccupancy();
 
-        Debug.Log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
         Collider2D[] colliders = Physics2D.OverlapPointAll(position);
 
         // Sprawdź, czy na danym miejscu znajduje się już inny element mapy
         foreach (Collider2D col in colliders)
         {
-            Debug.Log(col.gameObject.name);
             if (col.gameObject.CompareTag("MapElement"))
             {
                 //Jeśli są to dwa elementy po których można chodzić to nie możemy ich na sobie postawić
@@ -235,8 +234,6 @@ public class MapEditor : MonoBehaviour
                 if (_isColliderToggle.isOn && col.GetComponent<MapElement>().IsCollider) return;
             }
         }
-
-        Debug.Log("dupa4");
 
         // Sprawdzenie, czy wśród obiektów jest Tile
         Collider2D tileCollider = colliders.FirstOrDefault(col => col.gameObject.CompareTag("Tile"));
@@ -248,8 +245,6 @@ public class MapEditor : MonoBehaviour
                 SetRandomElementRotation();
             }
 
-            Debug.Log("dupa5");
-
             // Elementy bez collidera, czyli takie po których można chodzić umieszczamy pod siatką (np. tekstura ulicy)
             if (_isColliderToggle.isOn == false)
             {
@@ -258,25 +253,39 @@ public class MapEditor : MonoBehaviour
 
             Quaternion rotation = Quaternion.Euler(0, 0, _rotationSlider.value);
 
-            if (boxCollider.size.y > boxCollider.size.x) //Elementy zajmujące dwa pola
+            if (boxCollider.size.y > boxCollider.size.x) //Elementy zajmujące dwa pola pionowe
             {
                 float rotationZ = _rotationSlider.value;
                 if (rotationZ < 45 || (rotationZ >= 135 && rotationZ < 225) || rotationZ > 315)
                 {
                     position = new Vector3(position.x, position.y + 0.5f, position.z);
-                                        
                     Collider2D pointCollider = Physics2D.OverlapPoint(new Vector3(position.x, position.y + 0.5f, position.z));
                     if (pointCollider != null && !pointCollider.gameObject.CompareTag("Tile")) return;  
                 }
                 else
                 {
                     position = new Vector3(position.x - 0.5f, position.y, position.z);
-
                     Collider2D pointCollider = Physics2D.OverlapPoint(new Vector3(position.x - 0.5f, position.y, position.z));
                     if (pointCollider != null && !pointCollider.gameObject.CompareTag("Tile")) return;  
                 }
             }
-            else if(MapElementUI.SelectedElement.transform.localScale.x > 1.5f) //Elementy zajmujące 4 pola
+            else if (boxCollider.size.y < boxCollider.size.x) //Elementy zajmujące dwa pola poziome
+            {
+                float rotationZ = _rotationSlider.value;
+                if ((rotationZ >= 45 && rotationZ < 135) || (rotationZ >= 225) && rotationZ < 315)
+                {
+                    position = new Vector3(position.x, position.y + 0.5f, position.z);
+                    Collider2D pointCollider = Physics2D.OverlapPoint(new Vector3(position.x, position.y + 0.5f, position.z));
+                    if (pointCollider != null && !pointCollider.gameObject.CompareTag("Tile")) return;
+                }
+                else
+                {
+                    position = new Vector3(position.x - 0.5f, position.y, position.z);
+                    Collider2D pointCollider = Physics2D.OverlapPoint(new Vector3(position.x - 0.5f, position.y, position.z));
+                    if (pointCollider != null && !pointCollider.gameObject.CompareTag("Tile")) return;
+                }
+            }
+            else if(MapElementUI.SelectedElement.transform.localScale.x > 1.5f || (boxCollider.size.y > 1.7f && boxCollider.size.x > 1.7f)) //Elementy zajmujące 4 pola
             {
                 position = new Vector3(position.x - 0.5f, position.y + 0.5f, position.z);
 
@@ -347,6 +356,8 @@ public class MapEditor : MonoBehaviour
     {
         foreach (var element in AllElements)
         {
+            if(element == null) continue;
+
             if(allElementShouldHaveColliders == true)
             {
                 element.GetComponent<MapElement>().SetColliderState(true);
@@ -363,7 +374,9 @@ public class MapEditor : MonoBehaviour
     {
         foreach (var element in AllElements)
         {
-            if(element.name.Contains("tileBlocker"))
+            if (element == null) continue;
+
+            if (element.name.Contains("tileBlocker"))
             {
                 element.GetComponent<SpriteRenderer>().enabled = !value;
             }
@@ -394,8 +407,6 @@ public class MapEditor : MonoBehaviour
 
     public void RemoveElement(GameObject gameObject)
     {
-        if (!IsElementRemoving) return;
-
         Vector2 position = gameObject.transform.position;
 
         // Sprawdzamy, czy już usuwaliśmy element z tej pozycji
@@ -413,8 +424,12 @@ public class MapEditor : MonoBehaviour
             {
                 if (!colliders[i].GetComponent<MapElement>().IsCollider && RemovedPositions.Count > 0) return;
 
+                Debug.Log("All elements count : " + AllElements.Count);
+                Debug.Log(gameObject.name);
                 AllElements.Remove(gameObject);
                 Destroy(colliders[i].gameObject);
+
+                Debug.Log("All elements count: " + AllElements.Count);
 
                 if (colliders[i].GetComponent<MapElement>().IsCollider)
                 {
@@ -478,7 +493,7 @@ public class MapEditor : MonoBehaviour
 
                 Quaternion rotation = Quaternion.Euler(0, 0, mapElement.rotationZ);
 
-                GameObject prefab = Resources.Load<GameObject>(mapElement.Name);
+                GameObject prefab = Resources.Load<GameObject>($"map_assets/{mapElement.Name}");
 
                 GameObject newObject = Instantiate(prefab, position, rotation);
                 AllElements.Add(newObject);

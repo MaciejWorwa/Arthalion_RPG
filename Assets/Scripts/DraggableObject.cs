@@ -144,7 +144,7 @@ public class DraggableObject : MonoBehaviour
         {
             BoxCollider2D boxCollider = GetComponent<BoxCollider2D>();
 
-            if (boxCollider.size.y > boxCollider.size.x) // Elementy zajmujące dwa pola
+            if (boxCollider.size.y > boxCollider.size.x) // Elementy zajmujące dwa pola (pionowe)
             {
                 float rotationZ = transform.eulerAngles.z; // Pobiera wartość kąta w stopniach
 
@@ -169,7 +169,32 @@ public class DraggableObject : MonoBehaviour
                     }  
                 }
             }
-            else if (transform.localScale.x > 1.5f) // Elementy zajmujące 4 pola
+            else if (boxCollider.size.y < boxCollider.size.x) // Elementy zajmujące dwa pola (poziome)
+            {
+                float rotationZ = transform.eulerAngles.z; // Pobiera wartość kąta w stopniach
+
+                if ((rotationZ >= 45 && rotationZ < 135) || (rotationZ >= 225) && rotationZ < 315)
+                {
+                    offset = new Vector2(0, 0.5f);
+                    Collider2D pointCollider = Physics2D.OverlapPoint(transform.position + (Vector3)offset);
+                    if (pointCollider != null && pointCollider.gameObject != this.gameObject && (!pointCollider.CompareTag("Tile") || pointCollider.GetComponent<Tile>().IsOccupied))
+                    {
+                        transform.position = _startPosition;
+                        return false;
+                    }
+                }
+                else
+                {
+                    offset = new Vector2(-0.5f, 0);
+                    Collider2D pointCollider = Physics2D.OverlapPoint(transform.position + (Vector3)offset);
+                    if (pointCollider != null && pointCollider.gameObject != this.gameObject && (!pointCollider.CompareTag("Tile") || pointCollider.GetComponent<Tile>().IsOccupied))
+                    {
+                        transform.position = _startPosition;
+                        return false;
+                    }
+                }
+            }
+            else if (transform.localScale.x > 1.5f || (boxCollider.size.y > 1.7f && boxCollider.size.x > 1.7f)) // Elementy zajmujące 4 pola
             {
                 offset = new Vector2(-0.5f, 0.5f);
                 Collider2D circleCollider = Physics2D.OverlapCircle(transform.position + (Vector3)offset, 0.8f);
@@ -190,7 +215,7 @@ public class DraggableObject : MonoBehaviour
                 transform.position = (Vector2)collider.transform.position + offset;
 
                 // Jeśli jest to element, po którym można chodzić to umiejscawiamy go pod siatką
-                if (!GetComponent<MapElement>().IsCollider)
+                if (GetComponent<MapElement>() != null &&!GetComponent<MapElement>().IsCollider)
                 {
                     transform.position = new Vector3(transform.position.x, transform.position.y, 2.5f);
                 }

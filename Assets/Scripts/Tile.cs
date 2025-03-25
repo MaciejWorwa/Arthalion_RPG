@@ -122,6 +122,9 @@ public class Tile : MonoBehaviour
             GameManager.Instance.IsPointerOverUI() ||
             DraggableObject.IsDragging) return;
 
+        Debug.Log("MapEditor.IsElementRemoving " + MapEditor.IsElementRemoving);
+        Debug.Log("MapEditor.IsElementPlacing " + MapEditor.IsElementPlacing);
+
         if (MapEditor.IsElementRemoving)
         {
             MapEditor.Instance.RemoveElement(gameObject);

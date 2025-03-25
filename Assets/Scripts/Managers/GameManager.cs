@@ -143,6 +143,7 @@ public class GameManager : MonoBehaviour
         else if (Input.GetMouseButtonUp(0))
         {
             IsMousePressed = false;
+            DraggableObject.IsDragging = false;
 
             if(MapEditor.Instance.RemovedPositions.Count > 0)
             {
