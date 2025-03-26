@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class DraggableObject : MonoBehaviour
@@ -75,14 +76,7 @@ public class DraggableObject : MonoBehaviour
 
         Vector3 newPosition = GetMouseWorldPosition() + _offset;
 
-        if(GetComponent<MapElement>() != null && !GetComponent<MapElement>().IsCollider)
-        {
-            newPosition.z = 2.5f;
-        }
-        else
-        {
-            newPosition.z = 0;
-        }
+        newPosition.z = 0;
 
         transform.position = newPosition;
     }
@@ -92,7 +86,7 @@ public class DraggableObject : MonoBehaviour
         if(GameManager.IsMapHidingMode || MapEditor.IsElementRemoving || MapEditor.IsElementPlacing || UnitsManager.IsMultipleUnitsSelecting || (MovementManager.Instance != null && MovementManager.Instance.IsMoving))
             return;
 
-        if(transform.position != _startPosition)
+        if (transform.position != _startPosition)
         {
             SnapToGrid();
         }
@@ -113,71 +107,60 @@ public class DraggableObject : MonoBehaviour
     }
 
     private bool SnapToGrid()
-    { 
-        //Sprawdzamy, czy przesuwany obiekt jest jednostką
+    {
+        // Sprawdzamy, czy przesuwany obiekt jest jednostką
         Unit unit = GetComponent<Unit>();
 
-        // Jeżeli przesuwamy obiekt będący jednostką to odznaczamy ją
-        if (unit != null)
+        // Odznaczamy jednostkę, którą przesuwamy
+        if (unit != null && Unit.SelectedUnit == this.gameObject)
         {
-            //Odznaczamy jednostkę, którą przesuwamy
-            if(Unit.SelectedUnit == this.gameObject)
-            {
-                unit.SelectUnit();
-            }
-
-            // Sprawdza, czy jednostka jest już w kolejce inicjatywy. Jeśli nie to dodaje ją.
-            if (!InitiativeQueueManager.Instance.InitiativeQueue.ContainsKey(unit))
-            {
-                InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit);
-                InitiativeQueueManager.Instance.UpdateInitiativeQueue();
-                if(InitiativeQueueManager.Instance.InitiativeQueue.Count > 0)
-                {
-                    InitiativeQueueManager.Instance.SelectUnitByQueue();
-                }
-            }
+            unit.SelectUnit();
         }
 
-        Vector2 offset = Vector2.zero;
+        Vector2 offset = Vector2.zero; // Zmienna do przechowywania przesunięcia obiektu
 
-        if (GetComponent<MapElement>() != null)
+        if (GetComponent<MapElement>() != null) // Sprawdzamy, czy obiekt ma komponent MapElement
         {
-            BoxCollider2D boxCollider = GetComponent<BoxCollider2D>();
+            BoxCollider2D boxCollider = GetComponent<BoxCollider2D>(); // Pobieramy BoxCollider2D, aby poznać wymiary obiektu
 
-            if (boxCollider.size.y > boxCollider.size.x) // Elementy zajmujące dwa pola (pionowe)
+            // Sprawdzamy, czy obiekt zajmuje dwa pola w pionie (wyższy niż szerszy)
+            if (boxCollider.size.y > boxCollider.size.x)
             {
-                float rotationZ = transform.eulerAngles.z; // Pobiera wartość kąta w stopniach
+                float rotationZ = transform.eulerAngles.z; // Pobieramy wartość kąta obrotu obiektu w stopniach
 
+                // Sprawdzamy, w jakim zakresie znajduje się kąt obrotu, aby odpowiednio ustawić offset
                 if (rotationZ < 45 || (rotationZ >= 135 && rotationZ < 225) || rotationZ > 315)
                 {
-                    offset = new Vector2(0, 0.5f);
+                    offset = new Vector2(0, 0.5f); // Przesunięcie w górę
                     Collider2D pointCollider = Physics2D.OverlapPoint(transform.position + (Vector3)offset);
-                    if (pointCollider != null && pointCollider.gameObject != this.gameObject && (!pointCollider.CompareTag("Tile") || pointCollider.GetComponent<Tile>().IsOccupied))
+                    if (pointCollider != null && !pointCollider.CompareTag("Tile") && CountOccupyingObjects(pointCollider) >= 3)
                     {
-                        transform.position = _startPosition;
-                        return false; 
-                    }  
+                        transform.position = _startPosition; // Jeśli miejsce jest zajęte, wracamy na początkową pozycję
+                        return false; // Nie możemy umieścić obiektu w tym miejscu
+                    }
                 }
                 else
                 {
-                    offset = new Vector2(-0.5f, 0);
+                    offset = new Vector2(-0.5f, 0); // Przesunięcie w lewo
                     Collider2D pointCollider = Physics2D.OverlapPoint(transform.position + (Vector3)offset);
-                    if (pointCollider != null && pointCollider.gameObject != this.gameObject && (!pointCollider.CompareTag("Tile") || pointCollider.GetComponent<Tile>().IsOccupied))
+                    if (pointCollider != null && !pointCollider.CompareTag("Tile") && CountOccupyingObjects(pointCollider) >= 3)
                     {
                         transform.position = _startPosition;
-                        return false; 
-                    }  
+                        return false;
+                    }
                 }
             }
-            else if (boxCollider.size.y < boxCollider.size.x) // Elementy zajmujące dwa pola (poziome)
+            // Sprawdzamy, czy obiekt zajmuje dwa pola w poziomie (szerszy niż wyższy)
+            else if (boxCollider.size.y < boxCollider.size.x)
             {
-                float rotationZ = transform.eulerAngles.z; // Pobiera wartość kąta w stopniach
+                float rotationZ = transform.eulerAngles.z;
 
+                // Sprawdzamy kąt obrotu i odpowiednio zmieniamy offset
                 if ((rotationZ >= 45 && rotationZ < 135) || (rotationZ >= 225) && rotationZ < 315)
                 {
-                    offset = new Vector2(0, 0.5f);
+                    offset = new Vector2(0, 0.5f); // Przesunięcie w górę
                     Collider2D pointCollider = Physics2D.OverlapPoint(transform.position + (Vector3)offset);
-                    if (pointCollider != null && pointCollider.gameObject != this.gameObject && (!pointCollider.CompareTag("Tile") || pointCollider.GetComponent<Tile>().IsOccupied))
+                    if (pointCollider != null && !pointCollider.CompareTag("Tile") && CountOccupyingObjects(pointCollider) >= 3)
                     {
                         transform.position = _startPosition;
                         return false;
@@ -185,78 +168,140 @@ public class DraggableObject : MonoBehaviour
                 }
                 else
                 {
-                    offset = new Vector2(-0.5f, 0);
+                    offset = new Vector2(-0.5f, 0); // Przesunięcie w lewo
                     Collider2D pointCollider = Physics2D.OverlapPoint(transform.position + (Vector3)offset);
-                    if (pointCollider != null && pointCollider.gameObject != this.gameObject && (!pointCollider.CompareTag("Tile") || pointCollider.GetComponent<Tile>().IsOccupied))
+                    if (pointCollider != null && !pointCollider.CompareTag("Tile") && CountOccupyingObjects(pointCollider) >= 3)
                     {
                         transform.position = _startPosition;
                         return false;
                     }
                 }
             }
-            else if (transform.localScale.x > 1.5f || (boxCollider.size.y > 1.7f && boxCollider.size.x > 1.7f)) // Elementy zajmujące 4 pola
+            // Sprawdzamy, czy obiekt zajmuje cztery pola
+            else if (transform.localScale.x > 1.5f || (boxCollider.size.y > 1.7f && boxCollider.size.x > 1.7f))
             {
-                offset = new Vector2(-0.5f, 0.5f);
-                Collider2D circleCollider = Physics2D.OverlapCircle(transform.position + (Vector3)offset, 0.8f);
-                if (circleCollider != null && circleCollider.gameObject != this.gameObject && (!circleCollider.CompareTag("Tile") || circleCollider.GetComponent<Tile>().IsOccupied))
-                {
-                    transform.position = _startPosition;
-                    return false; 
-                }  
-            }
-        }
+                offset = new Vector2(-0.5f, 0.5f); // Przesunięcie o połowę w lewo i w górę
 
-        Collider2D[] colliders = Physics2D.OverlapPointAll(transform.position);
-        foreach (var collider in colliders)
-        {
-            if (collider != null && collider.CompareTag("Tile") && collider.GetComponent<Tile>().IsOccupied == false)
-            {
-                // Przesuwa obiekt do pozycji środka pola z ewentualnym offsetem
-                transform.position = (Vector2)collider.transform.position + offset;
-
-                // Jeśli jest to element, po którym można chodzić to umiejscawiamy go pod siatką
-                if (GetComponent<MapElement>() != null &&!GetComponent<MapElement>().IsCollider)
+                // Sprawdzamy wszystkie pola zajmowane przez obiekt
+                Vector2[] positionsToCheck = new Vector2[]
                 {
-                    transform.position = new Vector3(transform.position.x, transform.position.y, 2.5f);
-                }
+                    transform.position + (Vector3)offset, // Pole 1
+                    transform.position - (Vector3)offset, // Pole 2
+                    transform.position + new Vector3(offset.x, -offset.y), // Pole 3
+                    transform.position + new Vector3(-offset.x, offset.y) // Pole 4
+                };
 
-                Physics2D.SyncTransforms();
-                
-                // Aktualizowanie zajętości pól
-                GridManager.Instance.CheckTileOccupancy();
-                if(Unit.SelectedUnit != null)
+                foreach (var pos in positionsToCheck)
                 {
-                    GridManager.Instance.HighlightTilesInMovementRange(Unit.SelectedUnit.GetComponent<Stats>());  
-                }
+                    Collider2D pointCollider = Physics2D.OverlapPoint(pos);
 
-                //Jeżeli przesuwamy jednostkę na zakryte pole, usuwamy ją z kolejki inicjatywy
-                if (unit != null)
-                {
-                    // Dodatkowe sprawdzenie obecności obiektu z tagiem "TileCover" w tym miejscu
-                    Collider2D[] cellColliders = Physics2D.OverlapPointAll(transform.position);
-                    foreach (var cellCollider in cellColliders)
+                    // Jeśli pole jest zajęte przez więcej niż 3 obiekty, wracamy na początkową pozycję
+                    if (pointCollider != null && !pointCollider.CompareTag("Tile") && CountOccupyingObjects(pointCollider) >= 3)
                     {
-                        if (cellCollider != null && cellCollider.CompareTag("TileCover"))
-                        {
-                            // Jeśli znaleziono obiekt TileCover, usuń jednostkę z kolejki inicjatywy
-                            InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(unit);
-                            InitiativeQueueManager.Instance.UpdateInitiativeQueue();
-                            if(InitiativeQueueManager.Instance.InitiativeQueue.Count > 0)
-                            {
-                                InitiativeQueueManager.Instance.SelectUnitByQueue();
-                            }
-
-                            break;
-                        }
+                        transform.position = _startPosition;
+                        return false;
                     }
                 }
-
-                return true;
             }
         }
 
-        // Jeśli pole jest zajęte to wracamy na wcześniejszą pozycję
+        // Sprawdzamy, które pola w pobliżu są zajęte
+        Collider2D[] colliders = Physics2D.OverlapPointAll(transform.position);
+        bool hasTileCover = false;
+
+        foreach (var collider in colliders)
+        {
+            if (collider != null)
+            {
+                // Sprawdzamy, czy którykolwiek z colliderów ma tag TileCover
+                if (collider.CompareTag("TileCover"))
+                {
+                    hasTileCover = true;
+                    continue;
+                }
+
+                // Jeśli collider ma tag Tile, kontynuujemy sprawdzanie
+                if (collider.CompareTag("Tile"))
+                {
+                    Tile tile = collider.GetComponent<Tile>();
+
+                    // Zliczamy liczbę obiektów na tym samym polu
+                    int occupyingCount = CountOccupyingObjects(collider);
+
+                    if (tile != null && occupyingCount < 3) // Sprawdzamy, czy pole nie jest zajęte przez więcej niż 2 obiekty
+                    {
+                        // Przesuwamy obiekt na środek pustego pola
+                        transform.position = (Vector2)collider.transform.position + offset;
+
+                        // Jeśli element ma komponent MapElement
+                        MapElement mapElement = GetComponent<MapElement>();
+
+                        // Sprawdzamy, czy MapElement ma IsCollider = true
+                        if (mapElement != null)
+                        {
+                            // Ustawiamy z na 1, jeśli IsCollider == true, w przeciwnym razie na 2.7f
+                            float zPosition = mapElement.IsCollider ? 1f : 2.7f;
+
+                            // Ustawiamy pozycję "z" uwzględniając liczbę obiektów
+                            transform.position = new Vector3(transform.position.x, transform.position.y, zPosition - (occupyingCount * 0.05f));
+                        }
+                        else
+                        {
+                            // Jeśli nie ma komponentu MapElement, domyślnie ustawiamy "z" na 0f
+                            transform.position = new Vector3(transform.position.x, transform.position.y, 0f);
+                        }
+
+                        Physics2D.SyncTransforms(); // Synchronizujemy transformacje obiektu
+
+                        // Aktualizowanie zajętości pól
+                        GridManager.Instance.CheckTileOccupancy();
+
+                        // Jeśli jednostka jest zaznaczona, aktualizujemy dostępne pola w zasięgu ruchu
+                        if (Unit.SelectedUnit != null)
+                        {
+                            GridManager.Instance.HighlightTilesInMovementRange(Unit.SelectedUnit.GetComponent<Stats>());
+                        }
+
+                        // Jeżeli jednostka jest na polu z TileCover, usuwamy ją z kolejki inicjatywy
+                        if (GetComponent<Unit>() != null && hasTileCover)
+                        {
+                            InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(GetComponent<Unit>());
+                            InitiativeQueueManager.Instance.UpdateInitiativeQueue();
+                        }
+                        // Jeżeli jednostka jest na polu odsłoniętym, dodajemy ją do kolejki inicjatywy (jeśli jeszcze w niej nie jest)
+                        else if (GetComponent<Unit>() != null && !InitiativeQueueManager.Instance.InitiativeQueue.ContainsKey(GetComponent<Unit>()))
+                        {
+                            InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(GetComponent<Unit>());
+                            InitiativeQueueManager.Instance.UpdateInitiativeQueue();
+                            InitiativeQueueManager.Instance.SelectUnitByQueue();
+                        }
+
+                        return true; // Sukces, udało się umieścić obiekt
+                    }
+                }
+            }
+        }
+
+        // Jeśli pole jest zajęte, wracamy na początkową pozycję
         transform.position = _startPosition;
-        return false;
+        return false; // Nie udało się umieścić obiektu
+    }
+
+    // Funkcja zliczająca liczbę obiektów na danym polu
+    private int CountOccupyingObjects(Collider2D pointCollider)
+    {
+        Collider2D[] collidersAtPoint = Physics2D.OverlapPointAll(pointCollider.transform.position);
+        int occupiedCount = 0;
+
+        foreach (var collider in collidersAtPoint)
+        {
+            if (collider != null && collider.CompareTag("MapElement"))
+            {
+                occupiedCount++;
+                continue;
+            }
+        }
+
+        return occupiedCount - 1;
     }
 }

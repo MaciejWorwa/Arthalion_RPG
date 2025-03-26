@@ -138,6 +138,12 @@ public class RoundsManager : MonoBehaviour
                 unit.GetComponent<Stats>().RiposteAttacksLeft = unit.GetComponent<Stats>().Riposte;
             }
 
+            // Dla jednostek w Szale Bojowym resetujemy pulę ataków
+            if (unit.IsFrenzy)
+            {
+                unit.GetComponent<Stats>().FrenzyAttacksLeft = 2;
+            }
+
             //Aktualizuje osiągnięcia
             unit.GetComponent<Stats>().RoundsPlayed++;
         }

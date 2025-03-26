@@ -11,7 +11,6 @@ public class MapElementUI : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        Debug.Log("DDDDDDDD");
         MapEditor.Instance.RemoveElementsMode(false);
 
         //Zresetuj kolor poprzednio wybranego elementu

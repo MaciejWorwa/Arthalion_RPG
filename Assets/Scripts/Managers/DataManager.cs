@@ -543,6 +543,8 @@ public class UnitData
     public bool IsTurnFinished;
     public bool IsRunning; // Biegnie
     public bool IsCharging; // Szarżuje
+    public bool IsRetreating; // Wycofuje się
+    public bool IsFrenzy; // Jest w trakcie szału bojowego
 
     public int Ablaze; // Podpalenie
     public int Bleeding; // Krwawienie
@@ -557,17 +559,21 @@ public class UnitData
     public bool Surprised; // Zaskoczenie
     public bool Unconscious; // Utrata Przytomności
 
+    public int EntangledUnitId; // Cel unieruchomienia
+    public int FeintedUnitId; // Cel finty
+
+    //STARE
     public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
     public bool IsScared; // Jest przestraszony
     public bool IsFearTestPassed; // Zdał test strachu
     public int SpellDuration; // Czas trwania zaklęcia mającego wpływ na tą jednostkę
     public int StunDuration; // Czas ogłuszenia (podany w rundach). Wartość 0 oznacza, że postać nie jest ogłuszona
     public bool Trapped; // Unieruchomiony
-    public int TrappedUnitId; // Cel unieruchomienia
 
     public int AimingBonus;
     public int CastingNumberBonus;
     public int DefensiveBonus;
+    public int FeintModifier; // Modyfikator za fintę
 
     public bool CanMove;
     public bool CanAttack;
@@ -651,8 +657,10 @@ public class StatsData
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
-    public int DualWielder; // Dwie bronie ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int DualWielder; // Dwie bronie
     public int Feint; // Finta
+    public bool Frenzy; // Szał bojowy
+    public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
     public int Frightening; // Straszny
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta

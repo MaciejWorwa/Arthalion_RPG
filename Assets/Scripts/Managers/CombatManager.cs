@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEditor;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class CombatManager : MonoBehaviour
@@ -32,17 +34,19 @@ public class CombatManager : MonoBehaviour
     }
 
     [Header("Przyciski wszystkich typów ataku")]
-    [SerializeField] private UnityEngine.UI.Button _aimButton;
-    [SerializeField] private UnityEngine.UI.Button _defensiveStanceButton;
     [SerializeField] private UnityEngine.UI.Button _standardAttackButton;
     [SerializeField] private UnityEngine.UI.Button _chargeButton;
-    [SerializeField] private UnityEngine.UI.Button _allOutAttackButton;
+    [SerializeField] private UnityEngine.UI.Button _frenzyButton;
     [SerializeField] private UnityEngine.UI.Button _guardedAttackButton;
     [SerializeField] private UnityEngine.UI.Button _grapplingButton;
     [SerializeField] private UnityEngine.UI.Button _feintButton;
     [SerializeField] private UnityEngine.UI.Button _stunButton;
     [SerializeField] private UnityEngine.UI.Button _disarmButton;
     public Dictionary<string, bool> AttackTypes = new Dictionary<string, bool>();
+
+    [SerializeField] private UnityEngine.UI.Button _aimButton;
+    [SerializeField] private UnityEngine.UI.Button _defensiveStanceButton;
+    [SerializeField] private UnityEngine.UI.Button _reloadButton;
 
     [Header("Panel do manualnego zarządzania sposobem obrony")]
     [SerializeField] private GameObject _parryAndDodgePanel;
@@ -92,7 +96,7 @@ public class CombatManager : MonoBehaviour
         // Dodajemy typy ataków do słownika
         AttackTypes.Add("StandardAttack", true);
         AttackTypes.Add("Charge", false);
-        AttackTypes.Add("AllOutAttack", false);  // Szaleńczy atak
+        //AttackTypes.Add("Frenzy", false);  // Szał bojowy
         AttackTypes.Add("GuardedAttack", false);  // Ostrożny atak
         AttackTypes.Add("Grappling", false);  // Zapasy
         AttackTypes.Add("Feint", false);  // Finta
@@ -240,12 +244,23 @@ public class CombatManager : MonoBehaviour
     {
         _standardAttackButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["StandardAttack"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _chargeButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Charge"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
-        //_allOutAttackButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["AllOutAttack"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
+        //_frenzyButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Frenzy"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         //_guardedAttackButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["GuardedAttack"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _grapplingButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Grappling"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _feintButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Feint"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         //_stunButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Stun"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _disarmButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Disarm"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
+        
+        SetActionsButtonsInteractable();
+    }
+
+    public void SetActionsButtonsInteractable()
+    {
+        if (Unit.SelectedUnit == null) return;
+        _disarmButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Disarm > 0;
+        _feintButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Feint > 0;
+        _frenzyButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Frenzy;
+        _reloadButton.interactable = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.ReloadLeft > 0);
     }
 
     #endregion
@@ -260,10 +275,11 @@ public class CombatManager : MonoBehaviour
             return;
         }
 
-        bool furiousAssault = attacker.GetComponent<Stats>().FuriousAssault > 0 && target.LastAttackerStats == attacker.GetComponent<Stats>() && attacker.CanMove && !attacker.CanDoAction;
+        bool furiousAssault = (attacker.GetComponent<Stats>().FuriousAssault > 0 && target.LastAttackerStats == attacker.GetComponent<Stats>() && attacker.CanMove && !attacker.CanDoAction);
+        bool frenzyAttack = attacker.GetComponent<Stats>().FrenzyAttacksLeft > 0;
 
         // Sprawdź, czy jednostka może wykonać atak
-        if (!attacker.CanDoAction && !opportunityAttack && !furiousAssault)
+        if (!attacker.CanDoAction && !opportunityAttack && !furiousAssault && !frenzyAttack)
         {
             Debug.Log("Wybrana jednostka nie może wykonać ataku w tej rundzie.");
             return;
@@ -343,6 +359,12 @@ public class CombatManager : MonoBehaviour
             yield break;
         }
 
+        if(isRangedAttack && attacker.IsFrenzy)
+        {
+            Debug.Log("W trakcie szału bojowego można walczyć jedynie w zwarciu.");
+            yield break;
+        }
+
         // Finta
         if (AttackTypes["Feint"])
         {
@@ -408,7 +430,7 @@ public class CombatManager : MonoBehaviour
             {
                 RoundsManager.Instance.DoAction(attacker);
             }
-            else
+            else if(!attacker.IsFrenzy || attackerStats.FrenzyAttacksLeft == 0)
             {
                 Debug.Log("Wybrana jednostka nie może wykonać kolejnego ataku w tej rundzie.");
                 yield break;
@@ -570,6 +592,12 @@ public class CombatManager : MonoBehaviour
             ResetWeaponLoad(attackerWeapon, attackerStats);
         }
 
+        if(attacker.IsFrenzy)
+        {
+            attackerStats.FrenzyAttacksLeft--;
+            if (attackerStats.FrenzyAttacksLeft < 0) attackerStats.FrenzyAttacksLeft = 0;
+        }
+
         // ==================================================================
         // 9) *** OBRONA *** (tylko jeśli to atak w zwarciu lub mamy tarcze i możemy bronić się przed strzałem)
         // ==================================================================
@@ -630,7 +658,7 @@ public class CombatManager : MonoBehaviour
         }
 
         //W przypadku manualnego ataku sprawdzamy, czy postać powinna zakończyć turę
-        if (IsManualPlayerAttack && !attacker.CanMove && !attacker.CanDoAction)
+        if (IsManualPlayerAttack && !attacker.CanMove && !attacker.CanDoAction && (!attacker.IsFrenzy || attackerStats.FrenzyAttacksLeft == 0))
         {
             RoundsManager.Instance.FinishTurn();
         }
@@ -1612,6 +1640,12 @@ public class CombatManager : MonoBehaviour
             Debug.Log($"Dodatkowe obrażenia za talent Silny Cios: {attackerStats.StrikeMightyBlow}");
         }
 
+        if (attackerStats.GetComponent<Unit>().IsFrenzy)
+        {
+            damage++;
+            Debug.Log($"Dodatkowe obrażenia za Szał Bojowy: 1");
+        }
+
         if (damage < 0) damage = 0;
 
         return damage;
@@ -2574,6 +2608,8 @@ public class CombatManager : MonoBehaviour
         {
             Debug.Log($"Broń {stats.Name} załadowana.");
 
+            SetActionsButtonsInteractable();
+
             // Zaktualizowanie przewagi (ładowanie jest uznawane jako akcja Oceny Sytuacji)
             InitiativeQueueManager.Instance.CalculateAdvantage(stats.gameObject.tag, 2);
         }
@@ -2857,6 +2893,8 @@ public class CombatManager : MonoBehaviour
         {
             Debug.Log($"<color=#FF7F50>Atak {attackerStats.Name} oszołomił {targetStats.Name}.</color>");
             targetUnit.Stunned++;
+
+            StartCoroutine(FrenzyCoroutine(false, targetUnit)); //Zresetowanie szału bojowego
         }
         else
         {
@@ -2942,6 +2980,82 @@ public class CombatManager : MonoBehaviour
 
         // Zresetowanie typu ataku
         ChangeAttackType();
+    }
+    #endregion
+
+    #region Frenzy
+    public void Frenzy(bool value)
+    {
+        StartCoroutine(FrenzyCoroutine(value));
+    }
+    public IEnumerator FrenzyCoroutine(bool value, Unit unit = null)
+    {
+        if (Unit.SelectedUnit == null && unit == null) yield break;
+
+        if(unit == null)
+        {
+            unit = Unit.SelectedUnit.GetComponent<Unit>();
+        }
+
+        Stats stats = unit.GetComponent<Stats>();
+
+        if (!unit.CanDoAction)
+        {
+            Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
+            yield break;
+        }
+
+        if (unit.IsFrenzy || value == false)
+        {
+            unit.IsFrenzy = false;
+            unit.Fatiqued++;
+            stats.FrenzyAttacksLeft = 0;
+            Debug.Log($"<color=#FF7F50>Szał bojowy u {stats.Name} zostaje zakończony. Poziom wyczerpania wzrasta o 1.</color>");
+            UpdateFrenzyButtonColor();
+            yield break;
+        }
+
+        //Wykonuje akcję
+        RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
+
+        int rollResult = 0;
+        // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
+        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli"));
+            rollResult = DiceRollManager.Instance.ManualRollResult;
+            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+        }
+        else
+        {
+            rollResult = UnityEngine.Random.Range(1, 101);
+        }
+
+        //Test SW
+        int successValue = DiceRollManager.Instance.TestSkill("SW", stats, null, 0, rollResult)[0];
+        if (successValue >= 0)
+        {
+            Debug.Log($"{stats.Name} wprowadza się w szał bojowy.");
+            unit.IsFrenzy = true;
+        }
+        else
+        {
+            Debug.Log($"{stats.Name} nie udało się wprowadzić w szał bojowy.");
+        }
+
+        UpdateFrenzyButtonColor();
+    }
+
+    public void UpdateFrenzyButtonColor()
+    {
+        if (Unit.SelectedUnit.GetComponent<Unit>().IsFrenzy)
+        {
+            _frenzyButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.green;
+        }
+        else
+        {
+            _frenzyButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.white;
+        }
     }
     #endregion
 }

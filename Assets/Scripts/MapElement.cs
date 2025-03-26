@@ -61,9 +61,63 @@ public class MapElement : MonoBehaviour
             {
                 MapEditor.Instance.RemoveElement(gameObject);
             }
-            else if(MapElementUI.SelectedElement != null)
+            else if (MapElementUI.SelectedElement != null)
             {
-                MapEditor.Instance.PlaceElementOnSelectedTile(transform.position);
+                Vector3 originalPosition = transform.position;
+                BoxCollider2D boxCollider = GetComponent<BoxCollider2D>();
+                float rotationZ = transform.eulerAngles.z; // Pobranie aktualnej rotacji obiektu
+
+                // Pobranie pozycji kursora myszy w przestrzeni świata
+                Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+                if (boxCollider != null)
+                {
+                    if (boxCollider.size.y > boxCollider.size.x) // Obiekty pionowe (2x1)
+                    {
+                        if (rotationZ < 45 || (rotationZ >= 135 && rotationZ < 225) || rotationZ > 315)
+                        {
+                            originalPosition.y -= 0.5f;
+                            if (mouseWorldPos.y > originalPosition.y) originalPosition.y += 1.0f;
+                        }
+                        else
+                        {
+                            originalPosition.x += 0.5f;
+                            if (mouseWorldPos.x < originalPosition.x) originalPosition.x -= 1.0f;
+                        }
+                    }
+                    else if (boxCollider.size.y < boxCollider.size.x) // Obiekty poziome (1x2)
+                    {
+                        if ((rotationZ >= 45 && rotationZ < 135) || (rotationZ >= 225 && rotationZ < 315))
+                        {
+                            originalPosition.y -= 0.5f;
+                            if (mouseWorldPos.y > originalPosition.y) originalPosition.y += 1.0f;
+                        }
+                        else
+                        {
+                            originalPosition.x += 0.5f;
+                            if (mouseWorldPos.x < originalPosition.x) originalPosition.x -= 1.0f;
+                        }
+                    }
+                    else if (transform.localScale.x > 1.5f || (boxCollider.size.x > 1.7f && boxCollider.size.y > 1.7f)) // Obiekty 2x2
+                    {
+                        if ((rotationZ >= 45 && rotationZ < 135) || (rotationZ >= 225 && rotationZ < 315))
+                        {
+                            originalPosition.x += 0.5f;
+                            originalPosition.y -= 0.5f;
+                            if (mouseWorldPos.x < originalPosition.x) originalPosition.x -= 1.0f;
+                            if (mouseWorldPos.y > originalPosition.y) originalPosition.y += 1.0f;
+                        }
+                        else
+                        {
+                            originalPosition.x -= 0.5f;
+                            originalPosition.y += 0.5f;
+                            if (mouseWorldPos.x > originalPosition.x) originalPosition.x += 1.0f;
+                            if (mouseWorldPos.y < originalPosition.y) originalPosition.y -= 1.0f;
+                        }
+                    }
+                }
+
+                MapEditor.Instance.PlaceElementOnSelectedTile(originalPosition);
             }
         }
     }

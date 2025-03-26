@@ -16,6 +16,7 @@ public class Unit : MonoBehaviour
     public bool IsRunning; // Biegnie
     public bool IsCharging; // Szarżuje
     public bool IsRetreating; // Wycofuje się
+    public bool IsFrenzy; // Jest w trakcie szału bojowego
 
     [Header("Stany")]
     public int Ablaze; // Podpalenie
@@ -142,6 +143,8 @@ public class Unit : MonoBehaviour
             InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().SelectedIndex = 0;
             InventoryManager.Instance.UpdateInventoryDropdown(SelectedUnit.GetComponent<Inventory>().AllWeapons, true);
             InventoryManager.Instance.DisplayEncumbrance(Stats);
+
+            CombatManager.Instance.SetActionsButtonsInteractable();
         }
         else if (SelectedUnit == this.gameObject)
         {
@@ -169,6 +172,7 @@ public class Unit : MonoBehaviour
 
             CombatManager.Instance.UpdateAimButtonColor();
             CombatManager.Instance.UpdateDefensiveStanceButtonColor();
+            CombatManager.Instance.UpdateFrenzyButtonColor();
 
             //Odświeża listę ekwipunku
             InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().SelectedIndex = 0;

@@ -74,6 +74,7 @@ public class StatesManager : MonoBehaviour
         else if (!unit.Unconscious)
         {
             unit.Unconscious = true; // Utrata Przytomności
+            StartCoroutine(CombatManager.Instance.FrenzyCoroutine(false, unit)); //Zresetowanie szału bojowego
             Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność w wyniku krwawienia.</color>");
         }
         else
@@ -193,6 +194,7 @@ public class StatesManager : MonoBehaviour
         else
         {
             unit.Unconscious = true; // Utrata Przytomności
+            StartCoroutine(CombatManager.Instance.FrenzyCoroutine(false, unit)); //Zresetowanie szału bojowego
             Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność w wyniku zatrucia.</color>");
         }
     }
@@ -265,6 +267,7 @@ public class StatesManager : MonoBehaviour
         if (unit.Unconscious)
         {
             Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność.</color>");
+            StartCoroutine(CombatManager.Instance.FrenzyCoroutine(false, unit)); //Zresetowanie szału bojowego
         }
         else
         {

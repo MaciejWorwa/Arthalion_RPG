@@ -94,7 +94,14 @@ public class MapEditor : MonoBehaviour
 
         _lastTilesPositions = new List<Vector2>();
 
-        AllElements = new List<GameObject>();
+        if(AllElements.Count == 0)
+        {
+            AllElements = new List<GameObject>();
+        }
+        else
+        {
+            //SetAllElementsColliders(true);
+        }
 
         //ResetBackgroundProperties();
     }
@@ -217,23 +224,45 @@ public class MapEditor : MonoBehaviour
 
         BoxCollider2D boxCollider = MapElementUI.SelectedElement.GetComponent<BoxCollider2D>();
 
+        //Debug.Log(" MapElementUI.SelectedElement.name " + MapElementUI.SelectedElement.name);
+        //Debug.Log("wymiary box collider: " + boxCollider.size.x + " , " + boxCollider.size.y);
+
         // Aktualizowanie zajętości pól
         GridManager.Instance.CheckTileOccupancy();
 
         Collider2D[] colliders = Physics2D.OverlapPointAll(position);
 
-        // Sprawdź, czy na danym miejscu znajduje się już inny element mapy
+        // Sprawdź, jakie elementy są już na tym polu
+        HashSet<string> existingElements = new HashSet<string>();
+        string selectedElementName = MapElementUI.SelectedElement.name.Replace("(Clone)", "").Trim();
+
         foreach (Collider2D col in colliders)
         {
             if (col.gameObject.CompareTag("MapElement"))
             {
-                //Jeśli są to dwa elementy po których można chodzić to nie możemy ich na sobie postawić
-                if (!_isColliderToggle.isOn && !col.GetComponent<MapElement>().IsCollider) return;
+                string elementName = col.gameObject.name.Replace("(Clone)", "").Trim();
+                existingElements.Add(elementName);
 
-                //Jeśli są to dwa elementy po których nie można chodzić to nie możemy ich na sobie postawić
-                if (_isColliderToggle.isOn && col.GetComponent<MapElement>().IsCollider) return;
+                // Jeśli już taki element jest na polu, nie pozwalamy na dodanie kolejnego
+                if (elementName == selectedElementName) return;
             }
         }
+
+        // Jeśli na polu są już trzy różne elementy, nie pozwalamy na dodanie nowego
+        if (existingElements.Count >= 3) return;
+
+        //// Sprawdź, czy na danym miejscu znajduje się już inny element mapy
+        //foreach (Collider2D col in colliders)
+        //{
+        //    if (col.gameObject.CompareTag("MapElement"))
+        //    {
+        //        //Jeśli są to dwa elementy po których można chodzić to nie możemy ich na sobie postawić
+        //        if (!_isColliderToggle.isOn && !col.GetComponent<MapElement>().IsCollider) return;
+
+        //        //Jeśli są to dwa elementy po których nie można chodzić to nie możemy ich na sobie postawić
+        //        if (_isColliderToggle.isOn && col.GetComponent<MapElement>().IsCollider) return;
+        //    }
+        //}
 
         // Sprawdzenie, czy wśród obiektów jest Tile
         Collider2D tileCollider = colliders.FirstOrDefault(col => col.gameObject.CompareTag("Tile"));
@@ -248,7 +277,12 @@ public class MapEditor : MonoBehaviour
             // Elementy bez collidera, czyli takie po których można chodzić umieszczamy pod siatką (np. tekstura ulicy)
             if (_isColliderToggle.isOn == false)
             {
-                position.z = 2.5f;
+                position.z = 2.7f;
+            }
+
+            if(existingElements.Count > 0)
+            {
+                position.z -= 0.05f;
             }
 
             Quaternion rotation = Quaternion.Euler(0, 0, _rotationSlider.value);
@@ -354,11 +388,15 @@ public class MapEditor : MonoBehaviour
     //Przed rozpoczęciem bitwy ustala collidery elementów mapy
     public void SetAllElementsColliders(bool allElementShouldHaveColliders)
     {
+        Debug.Log("ustawuiamy collidery na " + allElementShouldHaveColliders);
+        Debug.Log(AllElements.Count);
+
         foreach (var element in AllElements)
         {
+            Debug.Log("AAAAA");
             if(element == null) continue;
-
-            if(allElementShouldHaveColliders == true)
+            Debug.Log("BBBBB");
+            if (allElementShouldHaveColliders == true)
             {
                 element.GetComponent<MapElement>().SetColliderState(true);
             }
@@ -493,7 +531,7 @@ public class MapEditor : MonoBehaviour
 
                 Quaternion rotation = Quaternion.Euler(0, 0, mapElement.rotationZ);
 
-                GameObject prefab = Resources.Load<GameObject>($"map_assets/{mapElement.Name}");
+                GameObject prefab = Resources.Load<GameObject>($"map_elements_prefabs/{mapElement.Name}");
 
                 GameObject newObject = Instantiate(prefab, position, rotation);
                 AllElements.Add(newObject);

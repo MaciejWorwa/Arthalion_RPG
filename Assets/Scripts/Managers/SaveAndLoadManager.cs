@@ -262,6 +262,8 @@ public class SaveAndLoadManager : MonoBehaviour
         // Zbieranie danych z każdego elementu
         foreach (var element in MapEditor.Instance.AllElements)
         {
+            if(element == null) continue;
+
             MapElement mapElement = element.GetComponent<MapElement>();
             if (mapElement != null)
             {

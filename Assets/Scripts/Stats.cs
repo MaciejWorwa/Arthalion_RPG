@@ -85,8 +85,10 @@ public class Stats : MonoBehaviour
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
-    public int DualWielder; // Dwie bronie ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int DualWielder; // Dwie bronie
     public int Feint; // Finta
+    public bool Frenzy; // Szał bojowy  ------------------------------------ UWZGLĘDNIĆ JESZCZE JEGO DZIAŁANIE GDY WPROWADZE MECHANIKĘ STRACHU
+    public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
     public int Frightening; // Straszny
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta

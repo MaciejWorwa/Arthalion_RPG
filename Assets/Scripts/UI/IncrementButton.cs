@@ -58,6 +58,7 @@ public class IncrementButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
                 Weapon weapon = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons[0];
                 weapon.ReloadLeft = Mathf.Clamp(weapon.ReloadLeft - _incrementValue, 0, weapon.ReloadTime);
                 InventoryManager.Instance.DisplayReloadTime();
+                CombatManager.Instance.SetActionsButtonsInteractable();
             }
 
             yield return new WaitForSeconds(0.3f); // Czeka przed kolejnym wywołaniem

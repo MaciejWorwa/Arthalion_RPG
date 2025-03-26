@@ -145,7 +145,7 @@ public class GameManager : MonoBehaviour
             IsMousePressed = false;
             DraggableObject.IsDragging = false;
 
-            if(MapEditor.Instance.RemovedPositions.Count > 0)
+            if(MapEditor.Instance != null && MapEditor.Instance.RemovedPositions.Count > 0)
             {
                 MapEditor.Instance.RemovedPositions.Clear();
             }
