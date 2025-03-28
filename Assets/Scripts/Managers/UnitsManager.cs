@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -282,6 +283,10 @@ public class UnitsManager : MonoBehaviour
                     {
                         inventory.EquippedWeapons[1] = weapon;
                     }
+                    if (inventoryData.EquippedArmorsId.Contains(weapon.Id))
+                    {
+                        inventory.EquippedArmors.Add(weapon);
+                    }
                 }
                 InventoryManager.Instance.CheckForEquippedWeapons();
             }
@@ -346,7 +351,7 @@ public class UnitsManager : MonoBehaviour
             }
 
             // Dodaje do ekwipunku początkową broń adekwatną dla danej jednostki i wyposaża w nią
-            if (stats.PrimaryWeaponIds != null && stats.PrimaryWeaponIds.Count > 0 && !IsSavedUnitsManaging)
+            if (stats.PrimaryWeaponNames != null && stats.PrimaryWeaponNames.Count > 0 && !IsSavedUnitsManaging)
             {
                 Unit.LastSelectedUnit = Unit.SelectedUnit != null ? Unit.SelectedUnit : null;
                 Unit.SelectedUnit = newUnitObject;
@@ -656,7 +661,7 @@ public class UnitsManager : MonoBehaviour
             InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
             //Dodaje do ekwipunku początkową broń adekwatną dla danej jednostki i wyposaża w nią
-            if (unit.GetComponent<Stats>().PrimaryWeaponIds != null && unit.GetComponent<Stats>().PrimaryWeaponIds.Count > 0 && changeName)
+            if (unit.GetComponent<Stats>().PrimaryWeaponNames != null && unit.GetComponent<Stats>().PrimaryWeaponNames.Count > 0 && changeName)
             {
                 //Usuwa posiadane bronie
                 InventoryManager.Instance.RemoveAllWeaponsFromInventory();
@@ -802,7 +807,7 @@ public class UnitsManager : MonoBehaviour
                 Debug.Log($"Nie udało się zmienić wartości cechy '{attributeName}'.");
             }
 
-            if (attributeName == "S" || attributeName == "Wt" || attributeName == "StrongBack")
+            if (attributeName == "S" || attributeName == "Wt" || attributeName == "StrongBack" || attributeName == "Sturdy")
             {
                 stats.CalculateMaxHealth();
                 unit.DisplayUnitHealthPoints();
@@ -1075,24 +1080,44 @@ public class UnitsManager : MonoBehaviour
     #endregion
 
     #region Fear and terror mechanics
-    public void LookForScaryUnits()
+    public void LookForScaryUnits(string unitTag = null)
     {
         bool frighteningEnemyExist = false;
         bool terryfyingEnemyExist = false;
         bool frighteningPlayerExist = false;
         bool terryfyingPlayerExist = false;
 
+        // Zmienna do przechowywania maksymalnych wartości Fear i Terror
+        int maxFear = 0;
+        int maxTerror = 0;
+        string maxFearUnitName = null;
+        string maxTerrorUnitName = null;
+
         foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
         {
             Stats unitStats = pair.Key.GetComponent<Stats>();
 
-            if (unitStats.Terryfying)
+            // Sprawdzenie i aktualizacja maksymalnej wartości Terror
+            if (unitStats.Terror > 0)
             {
+                if (unitStats.Terror > maxTerror)
+                {
+                    maxTerror = unitStats.Terror;
+                    maxTerrorUnitName = unitStats.Name;
+                }
+
                 if (pair.Key.CompareTag("EnemyUnit")) terryfyingEnemyExist = true;
                 else if (pair.Key.CompareTag("PlayerUnit")) terryfyingPlayerExist = true;
             }
-            else if (unitStats.Frightening > 0)
+            // Sprawdzenie i aktualizacja maksymalnej wartości Fear
+            else if (unitStats.Fear > 0)
             {
+                if (unitStats.Fear > maxFear)
+                {
+                    maxFear = unitStats.Fear;
+                    maxFearUnitName = unitStats.Name;
+                }
+
                 if (pair.Key.CompareTag("EnemyUnit")) frighteningEnemyExist = true;
                 else if (pair.Key.CompareTag("PlayerUnit")) frighteningPlayerExist = true;
             }
@@ -1104,120 +1129,225 @@ public class UnitsManager : MonoBehaviour
             // Jeśli istnieje tylko jeden typ jednostek, wszystkie jednostki przestają się bać
             foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
             {
-                pair.Key.IsScared = false;
+                pair.Key.FearLevel = 0;
             }
 
             return;
         }
 
-        if (terryfyingEnemyExist)
+        // Jeśli istnieje jednostka przerażająca z maksymalną wartością Terror
+        if (terryfyingEnemyExist && unitTag != "EnemyUnit")
         {
-            AllUnitsTerrorRoll("PlayerUnit");
+            AllUnitsTerrorRoll("PlayerUnit", maxTerror, maxTerrorUnitName);
         }
-        else if (frighteningEnemyExist)
+        else if (frighteningEnemyExist && unitTag != "EnemyUnit")
         {
-            AllUnitsFearRoll("PlayerUnit");
+            AllUnitsFearRoll("PlayerUnit", maxFear, maxFearUnitName);
         }
 
-        if (terryfyingPlayerExist)
+        // Jeśli istnieje jednostka przerażająca z maksymalną wartością Terror
+        if (terryfyingPlayerExist && unitTag != "PlayerUnit")
         {
-            AllUnitsTerrorRoll("EnemyUnit");
+            AllUnitsTerrorRoll("EnemyUnit", maxTerror, maxTerrorUnitName);
         }
-        else if (frighteningPlayerExist)
+        else if (frighteningPlayerExist && unitTag != "PlayerUnit")
         {
-            AllUnitsFearRoll("EnemyUnit");
+            AllUnitsFearRoll("EnemyUnit", maxFear, maxFearUnitName);
         }
     }
 
-    private void AllUnitsFearRoll(string unitTag)
+    public void CheckFearFromSizeDifference()
+    {
+        List<Unit> allEnemies = new List<Unit>();
+        List<Unit> allPlayers = new List<Unit>();
+
+        foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
+        {
+            if (pair.Key.CompareTag("EnemyUnit"))
+            {
+                allEnemies.Add(pair.Key);
+            }
+            else if (pair.Key.CompareTag("PlayerUnit"))
+            {
+                allPlayers.Add(pair.Key);
+            }
+        }
+
+        // Sprawdzamy strach graczy od wrogów i wrogów od graczy
+        ProcessFearFromSizeDifference(allPlayers, allEnemies); // Gracze boją się wrogów
+        ProcessFearFromSizeDifference(allEnemies, allPlayers); // Wrogowie boją się graczy
+    }
+
+    private void ProcessFearFromSizeDifference(List<Unit> checkingUnits, List<Unit> opposingUnits)
+    {
+        foreach (Unit unit in checkingUnits)
+        {
+            if (unit.IsFearTestPassed || unit.Broken > 0) continue;
+
+            int highestTerrorValue = 0;
+            Unit highestTerrorUnit = null;
+
+            int highestFearValue = 0;
+            Unit highestFearUnit = null;
+
+            foreach (Unit opponent in opposingUnits)
+            {
+                int sizeDifference = opponent.GetComponent<Stats>().Size - unit.GetComponent<Stats>().Size;
+
+                if (sizeDifference > 1 || opponent.GetComponent<Stats>().Terror > 0)
+                {
+                    int value = sizeDifference > opponent.GetComponent<Stats>().Terror ? sizeDifference : opponent.GetComponent<Stats>().Terror;
+
+                    if (value > highestTerrorValue)
+                    {
+                        highestTerrorValue = value;
+                        highestTerrorUnit = opponent;
+                    }
+                }
+                else if (sizeDifference == 1 || opponent.GetComponent<Stats>().Fear > 0)
+                {
+
+                    int value = sizeDifference > opponent.GetComponent<Stats>().Fear ? sizeDifference : opponent.GetComponent<Stats>().Fear;
+
+                    if (value > highestTerrorValue)
+                    {
+                        highestFearValue = value;
+                        highestFearUnit = opponent;
+                    }
+                }
+            }
+
+            if (highestTerrorUnit != null)
+            {
+                unit.FearedUnits.Add(highestTerrorUnit);
+                StartCoroutine(TerrorRoll(unit, highestTerrorUnit.GetComponent<Stats>().Name, highestTerrorValue));
+            }
+            else if (highestFearUnit != null)
+            {
+                unit.FearedUnits.Add(highestFearUnit);
+                StartCoroutine(FearRoll(unit, highestFearUnit.GetComponent<Stats>().Name, 1));
+            }
+        }
+    }
+
+    private void AllUnitsFearRoll(string unitTag, int value, string opponentName)
     {
         foreach (var unit in AllUnits)
         {
-            //Pomija jednostki, których nie dotyczy ten rzut (czyli sojusznicy strasznej jednostki, postacie ze zdolnością nieustraszony lub jednostki, które wcześniej zdały test)
-            if (unit.CompareTag(unitTag) == false || unit.GetComponent<Stats>().Fearless == true || unit.IsFearTestPassed || unit.GetComponent<Stats>().WillOfIron == true) continue;
+            //Pomija jednostki, których nie dotyczy ten rzut (czyli sojusznicy strasznej jednostki lub jednostki, które wcześniej zdały test)
+            if (unit.CompareTag(unitTag) == false || unit.GetComponent<Stats>().ImmunityToPsychology || unit.IsFearTestPassed) continue;
 
-            FearRoll(unit);
+            if(unit.FearLevel == 0)
+            {
+                unit.FearLevel = value;
+            }
+
+            StartCoroutine(FearRoll(unit, opponentName));
         }
     }
 
-    private void FearRoll(Unit unit)
+    public IEnumerator FearRoll(Unit unit, string opponentName, int value = 0)
     {
-        Stats unitStats = unit.GetComponent<Stats>();
+        int rollResult = 0;
+        Stats stats = unit.GetComponent<Stats>();
 
-        //Jednostki z SW równym 0, np. Zombie są istotami bez własnej woli, których nie dotyczą testy tej cechy
-        if (unitStats.SW == 0) return;
-
-        //Uwzględnia zdolność Odwaga
-        int rollModifier = unitStats.StoutHearted * 10;
-
-        int rollResult = UnityEngine.Random.Range(1, 101);
-
-        string stringResult = "";
-
-        if (rollResult <= (unitStats.SW + rollModifier))
+        if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
         {
-            unit.CanDoAction = true;
-            unit.IsScared = false;
-            unit.IsFearTestPassed = true;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie (strach)", result => rollResult = result));
+            if (rollResult == 0) yield break;
 
-            stringResult = $"<color=green>{unitStats.Name} zdał test strachu. Wynik rzutu: {rollResult}. Wartość cechy: {unitStats.SW}.";
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie"));
+            //rollResult = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
-            unit.CanDoAction = false;
-            unit.IsScared = true;
-
-            stringResult = $"<color=red>{unitStats.Name} nie zdał testu strachu. Wynik rzutu: {rollResult}. Wartość cechy: {unitStats.SW}.";
+            rollResult = UnityEngine.Random.Range(1, 101);
         }
 
-        if (rollModifier != 0)
+        int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
+        int successLevel = test[1];
+
+        // Zaktualizowanie listy wszystkich jednostek, których się boi
+        foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
         {
-            stringResult += $" Modyfikator: {rollModifier}";
+            if (!pair.Key.CompareTag(unit.tag))
+            {
+                if ((pair.Key.GetComponent<Stats>().Fear != 0 && pair.Key.GetComponent<Stats>().Fear > successLevel) || pair.Key.GetComponent<Stats>().Size - stats.Size > successLevel)
+                {
+                    unit.FearedUnits.Add(pair.Key);
+                    Debug.Log($"{pair.Key.GetComponent<Stats>().Name} został dodany do listy jednostek, których boi się {stats.Name}");
+                }
+                else if (unit.FearedUnits.Contains(pair.Key))
+                {
+                    unit.FearedUnits.Remove(pair.Key);
+                    Debug.Log($"{pair.Key.GetComponent<Stats>().Name} został usunięty z listy jednostek, których boi się {stats.Name}");
+                }
+            }
         }
 
-        Debug.Log($"{stringResult}</color>");
+        if (value != 0) unit.FearLevel = value;
+
+        unit.FearLevel = Math.Max(0, unit.FearLevel - successLevel);
+
+        // Upewnia się, że FearLevel nie przekroczy wartości value
+        unit.FearLevel = Math.Min(unit.FearLevel, value);
+
+        if (unit.FearLevel == 0)
+        {
+            Debug.Log($"<color=#FF7F50>{stats.Name} zdał/a test strachu przed {opponentName}.</color>");
+            unit.IsFearTestPassed = true;
+        }
+        else
+        {
+            Debug.Log($"<color=#FF7F50>{stats.Name} nie zdał/a testu strachu przed {opponentName}. Pozostałe poziomy strachu: {unit.FearLevel}</color>");
+            Debug.Log($"<color=#FF7F50>Zbliżenie się źródła strachu lub próba zbliżenia się do niego wymaga wykonania Testu Opanowania +0. Wykonaj go samodzielnie. Niezdany test zwiększa poziom paniki o 1.</color>");
+        }
     }
 
-    private void AllUnitsTerrorRoll(string unitTag)
+    private void AllUnitsTerrorRoll(string unitTag, int value, string opponentName)
     {
         foreach (var unit in AllUnits)
         {
             //Pomija jednostki, których nie dotyczy ten rzut (czyli sojusznicy strasznej jednostki, postacie ze zdolnością Żelazna Wola lub jednostki, które wcześniej zdały test)
-            if (unit.CompareTag(unitTag) == false || unit.IsFearTestPassed || unit.GetComponent<Stats>().WillOfIron == true) continue;
+            if (unit.CompareTag(unitTag) == false || unit.IsFearTestPassed || unit.GetComponent<Stats>().ImmunityToPsychology) continue;
 
-            if (unit.GetComponent<Stats>().Fearless == true)
-            {
-                FearRoll(unit);
-                continue;
-            }
-
-            TerrorRoll(unit);
+            StartCoroutine(TerrorRoll(unit, opponentName, value));
         }
     }
 
-    private void TerrorRoll(Unit unit)
+    public IEnumerator TerrorRoll(Unit unit, string opponentName, int value)
     {
-        Stats unitStats = unit.GetComponent<Stats>();
+        int rollResult = 0;
+        Stats stats = unit.GetComponent<Stats>();
 
-        //Jednostki z SW równym 0, np. Zombie są istotami bez własnej woli, których nie dotyczą testy tej cechy
-        if (unitStats.SW == 0) return;
-
-        int rollResult = UnityEngine.Random.Range(1, 101);
-
-        if (rollResult <= unitStats.SW)
+        if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
         {
-            unit.CanDoAction = true;
-            unit.IsScared = false;
-            unit.IsFearTestPassed = true;
-            Debug.Log($"<color=green> {unitStats.Name} zdał test grozy. Wynik rzutu: {rollResult} </color>");
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie (groza)", result => rollResult = result));
+            if (rollResult == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie"));
+            //rollResult = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
-            unit.CanDoAction = false;
-            unit.IsScared = true;
-            unitStats.CorruptionPoints++;
+            rollResult = UnityEngine.Random.Range(1, 101);
+        }
 
-            Debug.Log($"<color=red> {unitStats.Name} nie zdał testu grozy. Wynik rzutu: {rollResult} </color>");
+        int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
+        int successValue = test[0];
+        int successLevel = test[1];
+
+        if(successValue > 0)
+        {
+            Debug.Log($"<color=#FF7F50>{stats.Name} zdał/a test grozy przed {opponentName}. Następuje test strachu.</color>");
+            StartCoroutine(FearRoll(unit, opponentName, value));
+        }
+        else
+        {
+            unit.Broken += value - successLevel;
+            Debug.Log($"<color=#FF7F50>{stats.Name} nie zdał/a test grozy przed {opponentName}. Poziom paniki wzrasta o {value - successLevel}</color>");
         }
     }
     #endregion
@@ -1238,5 +1368,4 @@ public class UnitsManager : MonoBehaviour
         if (enemyUnitExists && playerUnitExists) return true;
         else return false;
     }
-
 }

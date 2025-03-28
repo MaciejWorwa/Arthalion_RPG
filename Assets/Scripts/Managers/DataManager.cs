@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -101,7 +102,6 @@ public class DataManager : MonoBehaviour
         }
     }
 
-
     public void LoadAndUpdateStats(GameObject unitObject = null)
     {
         Stats statsToUpdate = null;
@@ -154,6 +154,12 @@ public class DataManager : MonoBehaviour
                 return;
             }
 
+            // Posortowanie ID zgodnie z kolejnością jednostek w pliku json (czyli alfabetycznie)
+            for (int i = 0; i < statsArray.Length; i++)
+            {
+                statsArray[i].Id = i + 1;
+            }
+
             foreach (var stats in statsArray)
             {
                 UpdateUnitStatsAndButtons(stats, statsToUpdate, unit);
@@ -172,6 +178,10 @@ public class DataManager : MonoBehaviour
                 var targetField = typeof(Stats).GetField(field.Name, BindingFlags.Instance | BindingFlags.Public);
                 targetField?.SetValue(statsToUpdate, field.GetValue(statsData));
             }
+
+            // Wczytanie umiejętności w walce każdą kategorią broni
+            statsToUpdate.Melee = statsData.MeleeSerialized.ToDictionary(x => Enum.Parse<MeleeCategory>(x.Key), x => x.Value);
+            statsToUpdate.Ranged = statsData.RangedSerialized.ToDictionary(x => Enum.Parse<RangedCategory>(x.Key), x => x.Value);
         }
 
         _searchInputFieldForUnits.text = "";
@@ -315,6 +325,13 @@ public class DataManager : MonoBehaviour
             return;
         }
 
+        // Posortowanie ID zgodnie z kolejnością broni w pliku json (czyli alfabetycznie)
+        for (int i = 0; i < weaponsArray.Length; i++)
+        {
+            if (weaponsArray[i].Id != 0) break;
+            weaponsArray[i].Id = i + 1;
+        }
+
         _searchInputFieldForWeapons.text = "";
 
         //Odniesienie do broni postaci
@@ -323,6 +340,7 @@ public class DataManager : MonoBehaviour
         {
             weaponToUpdate = Unit.SelectedUnit.GetComponent<Weapon>();
         }
+
 
         foreach (var weapon in weaponsArray)
         {
@@ -617,7 +635,7 @@ public class StatsData
 
     public SizeCategory Size; // Rozmiar
 
-    public List<int> PrimaryWeaponIds = new List<int>();
+    public List<string> PrimaryWeaponNames = new List<string>();
     public int WW;
     public int US;
     public int S;
@@ -658,18 +676,20 @@ public class StatsData
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
     public int DualWielder; // Dwie bronie
+    public int Fear; // Strach
     public int Feint; // Finta
     public bool Frenzy; // Szał bojowy
     public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
-    public int Frightening; // Straszny
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
     public int Hardy; // Twardziel
+    public bool ImmunityToPsychology; // Niewrażliwość na psychologię ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Implacable; // Nieubłagany
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający
     public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
+    public bool Relentless; // Nieustępliwy
     public int Resolute; // Nieugięty
     public int Riposte; // Riposta
     public int RiposteAttacksLeft; // Pozostałe riposty w obecnej rundzie
@@ -685,6 +705,7 @@ public class StatsData
     public int StrongBack; // Mocne plecy
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
+    public int Terror; // Groza
     public int Unshakable; // Niewzruszony
 
     //STARE
@@ -692,10 +713,9 @@ public class StatsData
     public bool DaemonicAura; // Demoniczna aura (Wt +2 na niemagiczną broń, odporność na truciznę, ataki demona to broń magiczna)
     public bool Ethereal; // Eteryczny
     public bool FastHands; //Dotyk mocy
-    public bool Fearless; // Nieustraszony
+    //public bool Fearless; // Nieustraszony
     public bool MagicSense; //Zmysł magii
     public bool MightyMissile; // Morderczy pocisk
-    public bool Terryfying; // Przerażający (test Terror)
     public bool WillOfIron; // Żelazna wola
 
     public int Athletics; // Atletyka
@@ -729,11 +749,11 @@ public class StatsData
 
             if (field != null && field.GetValue(stats) != null)
             {
-                if (thisField.FieldType == typeof(List<int>) && field.FieldType == typeof(List<int>))
+                if (thisField.FieldType == typeof(List<string>) && field.FieldType == typeof(List<string>))
                 {
                     // Specjalne przypisanie dla listy
-                    var listValue = (List<int>)field.GetValue(stats);
-                    thisField.SetValue(this, new List<int>(listValue));
+                    var listValue = (List<string>)field.GetValue(stats);
+                    thisField.SetValue(this, new List<string>(listValue));
                 }
                 else
                 {
@@ -793,7 +813,7 @@ public class WeaponData
     public bool Dangerous; // Niebezpieczna
     public bool Defensive; // Parujący
     public bool Distract; // Dekoncentrujący (Powoduje cofanie się) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Entangle; // Unieruchamiający
+    public bool Entangle; // Unieruchamiający  ---------------------- DZIAŁA JAKO TAKO, MOŻLIWE ŻE TRZEBA BĘDZIE POPRAWIĆ
     public bool Fast; // Szybka
     public bool Hack; // Rąbiąca
     public bool Impact; // Druzgoczący

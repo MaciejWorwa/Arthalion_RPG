@@ -30,8 +30,8 @@ public class Stats : MonoBehaviour
     [Header("Rozmiar")]
     public SizeCategory Size; // Rozmiar
 
-    [Header("Id początkowej broni")]
-    public List<int> PrimaryWeaponIds = new List<int>();
+    [Header("Nazwy początkowych broni")]
+    public List<string> PrimaryWeaponNames = new List<string>();
 
     [Header("Atrybuty")]
     public int WW;
@@ -86,18 +86,20 @@ public class Stats : MonoBehaviour
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
     public int DualWielder; // Dwie bronie
+    public int Fear; // Strach ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Feint; // Finta
     public bool Frenzy; // Szał bojowy  ------------------------------------ UWZGLĘDNIĆ JESZCZE JEGO DZIAŁANIE GDY WPROWADZE MECHANIKĘ STRACHU
     public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
-    public int Frightening; // Straszny
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
     public int Hardy; // Twardziel
+    public bool ImmunityToPsychology; // Niewrażliwość na psychologię ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Implacable; // Nieubłagany
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający
     public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
+    public bool Relentless; // Nieustępliwy
     public int Resolute; // Nieugięty
     public int Riposte; // Riposta
     public int RiposteAttacksLeft; // Pozostałe riposty w obecnej rundzie
@@ -113,6 +115,7 @@ public class Stats : MonoBehaviour
     public int StrongBack; // Mocne plecy
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
+    public int Terror; // Groza ---------------------- (MECHANIKA DO WPROWADZENIA)
     public int Unshakable; // Niewzruszony
 
     //STARE
@@ -120,10 +123,8 @@ public class Stats : MonoBehaviour
     public bool DaemonicAura; // Demoniczna aura (Wt +2 na niemagiczną broń, odporność na truciznę, ataki demona to broń magiczna)
     public bool Ethereal; // Eteryczny
     public bool FastHands; //Dotyk mocy
-    public bool Fearless; // Nieustraszony
     public bool MagicSense; //Zmysł magii
     public bool MightyMissile; // Morderczy pocisk
-    public bool Terryfying; // Przerażający (test Terror)
     public bool WillOfIron; // Żelazna wola
 
     [Header("Statystyki")]
@@ -140,22 +141,15 @@ public class Stats : MonoBehaviour
 
     private void Awake()
     {
-        // Inicjalizacja domyślnych wartości TYLKO DO TESTÓW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        Melee = new Dictionary<MeleeCategory, int>
+        if (Melee == null)
         {
-            { MeleeCategory.Basic, 10 },
-            { MeleeCategory.Cavalry, 5 },
-            { MeleeCategory.Fencing, 15 },
-            { MeleeCategory.Brawling, 8 },
-            { MeleeCategory.Flail, 12 }
-        };
+            Melee = new Dictionary<MeleeCategory, int>();
+        }
 
-        // Inicjalizacja domyślnych wartości TYLKO DO TESTÓW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        Ranged = new Dictionary<RangedCategory, int>
+        if (Ranged == null)
         {
-            { RangedCategory.Bow, 13 },
-            { RangedCategory.Crossbow, 21 }
-        };
+            Ranged = new Dictionary<RangedCategory, int>();
+        }
 
         Overall = CalculateOverall();
     }
@@ -206,25 +200,28 @@ public class Stats : MonoBehaviour
     {
         int previousMaxHealth = MaxHealth;
 
+        // Sprawdzamy, czy SW wynosi 0, w takim przypadku używamy S zamiast SW
+        int effectiveSW = (SW == 0) ? S : SW;
+
         if (Size == SizeCategory.Tiny)
             MaxHealth = 1;
         else if (Size == SizeCategory.Little)
             MaxHealth = Wt / 10;
         else if (Size == SizeCategory.Small)
-            MaxHealth = 2 * (Wt / 10) + SW / 10;
+            MaxHealth = 2 * (Wt / 10) + effectiveSW / 10;
         else if (Size == SizeCategory.Average)
-            MaxHealth = S / 10 + 2 * (Wt / 10) + SW / 10;
+            MaxHealth = S / 10 + 2 * (Wt / 10) + effectiveSW / 10;
         else if (Size == SizeCategory.Large)
-            MaxHealth = (S / 10 + 2 * (Wt / 10) + SW / 10) * 2;
+            MaxHealth = (S / 10 + 2 * (Wt / 10) + effectiveSW / 10) * 2;
         else if (Size == SizeCategory.Enormous)
-            MaxHealth = (S / 10 + 2 * (Wt / 10) + SW / 10) * 4;
+            MaxHealth = (S / 10 + 2 * (Wt / 10) + effectiveSW / 10) * 4;
         else if (Size == SizeCategory.Monstrous)
-            MaxHealth = (S / 10 + 2 * (Wt / 10) + SW / 10) * 8;
+            MaxHealth = (S / 10 + 2 * (Wt / 10) + effectiveSW / 10) * 8;
 
-        //Uwzględnienie talentu Twardziel
+        // Uwzględnienie talentu Twardziel
         MaxHealth += Hardy * (Wt / 10);
 
-        if(isSizeChange)
+        if (isSizeChange)
         {
             TempHealth = MaxHealth;
         }
@@ -233,11 +230,12 @@ public class Stats : MonoBehaviour
             TempHealth += MaxHealth - previousMaxHealth;
         }
 
-        if(GetComponent<Unit>().Stats != null)
+        if (GetComponent<Unit>().Stats != null)
         {
             GetComponent<Unit>().DisplayUnitHealthPoints();
         }
     }
+
 
     public void ChangeUnitSize(int newSize)
     {

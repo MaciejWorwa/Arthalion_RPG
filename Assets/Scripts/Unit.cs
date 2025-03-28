@@ -1,3 +1,5 @@
+using NUnit.Framework;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -35,10 +37,12 @@ public class Unit : MonoBehaviour
     public int EntangledUnitId; // Cel unieruchomienia
     public int FeintedUnitId; // Cel finty
 
+    public bool IsFearTestPassed; // Zdał test strachu
+    public int FearLevel; // Poziom strachu
+    public List<Unit> FearedUnits; // Lista jednostek, których się boi
+
     //STARE
     public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
-    public bool IsScared; // Jest przestraszony
-    public bool IsFearTestPassed; // Zdał test strachu
     public int SpellDuration; // Czas trwania zaklęcia mającego wpływ na tą jednostkę
     public int StunDuration; // Czas ogłuszenia (podany w rundach). Wartość 0 oznacza, że postać nie jest ogłuszona
     public bool Trapped; // Unieruchomiony

@@ -106,7 +106,6 @@ public class Tile : MonoBehaviour
                 Debug.Log("Aby poruszać się jednostkami, musisz wyłączyć tryb automatycznej walki.");
             }
         }
-
     }
 
     private void OnMouseOver()
@@ -121,9 +120,6 @@ public class Tile : MonoBehaviour
             !GameManager.IsMousePressed ||
             GameManager.Instance.IsPointerOverUI() ||
             DraggableObject.IsDragging) return;
-
-        Debug.Log("MapEditor.IsElementRemoving " + MapEditor.IsElementRemoving);
-        Debug.Log("MapEditor.IsElementPlacing " + MapEditor.IsElementPlacing);
 
         if (MapEditor.IsElementRemoving)
         {

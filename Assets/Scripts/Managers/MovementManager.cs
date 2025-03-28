@@ -402,8 +402,11 @@ public class MovementManager : MonoBehaviour
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "atletykę"));
-                rollResult = DiceRollManager.Instance.ManualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "atletykę", result => rollResult = result));
+                if (rollResult == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "atletykę"));
+                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
             stats.TempSz += DiceRollManager.Instance.TestSkill("Zw", stats, "Athletics", 20, rollResult)[1] / 2;
@@ -441,6 +444,7 @@ public class MovementManager : MonoBehaviour
         Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
 
         int advantage = 0;
+        int cost = stats.Relentless ? 1 : 2;
         if (unit.tag == "PlayerUnit")
         {
             advantage = InitiativeQueueManager.Instance.PlayersAdvantage;
@@ -452,7 +456,7 @@ public class MovementManager : MonoBehaviour
 
         if (value == true)
         {
-            if (!unit.CanMove || (!unit.CanDoAction && advantage < 2)) //Sprawdza, czy jednostka może wykonać ruch
+            if (!unit.CanMove || (!unit.CanDoAction && advantage < cost)) //Sprawdza, czy jednostka może wykonać ruch
             {
                 Debug.Log("Ta jednostka nie może w obecnej rundzie wykonać odwrotu.");
                 yield break;
@@ -469,8 +473,11 @@ public class MovementManager : MonoBehaviour
                 int rollResult = 0;
                 if (_retreatWay == "dodge" && !GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
                 {
-                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(unit.GetComponent<Stats>(), "unik"));
-                    rollResult = DiceRollManager.Instance.ManualRollResult;
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(unit.GetComponent<Stats>(), "unik", result => rollResult = result));
+                    if (rollResult == 0) yield break;
+
+                    //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(unit.GetComponent<Stats>(), "unik"));
+                    //rollResult = DiceRollManager.Instance.ManualRollResult;
                 }
                 else if (_retreatWay == "dodge")
                 {
@@ -542,8 +549,11 @@ public class MovementManager : MonoBehaviour
                     int rollOnAttack = 0;
                     if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
                     {
-                        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie"));
-                        rollOnAttack = DiceRollManager.Instance.ManualRollResult;
+                        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie", result => rollOnAttack = result));
+                        if (rollOnAttack == 0) yield break;
+
+                        //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie"));
+                        //rollOnAttack = DiceRollManager.Instance.ManualRollResult;
                     }
                     else
                     {
@@ -587,9 +597,9 @@ public class MovementManager : MonoBehaviour
             else if (_retreatWay == "advantage")
             {
                 //Zaktualizowanie przewagi
-                InitiativeQueueManager.Instance.CalculateAdvantage(unit.tag, -2);
+                InitiativeQueueManager.Instance.CalculateAdvantage(unit.tag, -cost);
                 string group = unit.tag == "PlayerUnit" ? "sojuszników" : "przeciwników";
-                Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonuje odwrót korzystając z punktów przewagi. Przewaga {group} została zmniejszona o 2.</color>");
+                Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} wykonuje odwrót korzystając z punktów przewagi. Przewaga {group} została zmniejszona o {cost}.</color>");
             }
         }
 

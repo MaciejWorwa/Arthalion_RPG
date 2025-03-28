@@ -388,14 +388,9 @@ public class MapEditor : MonoBehaviour
     //Przed rozpoczęciem bitwy ustala collidery elementów mapy
     public void SetAllElementsColliders(bool allElementShouldHaveColliders)
     {
-        Debug.Log("ustawuiamy collidery na " + allElementShouldHaveColliders);
-        Debug.Log(AllElements.Count);
-
         foreach (var element in AllElements)
         {
-            Debug.Log("AAAAA");
             if(element == null) continue;
-            Debug.Log("BBBBB");
             if (allElementShouldHaveColliders == true)
             {
                 element.GetComponent<MapElement>().SetColliderState(true);

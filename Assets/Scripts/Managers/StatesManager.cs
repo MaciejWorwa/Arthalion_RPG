@@ -82,8 +82,11 @@ public class StatesManager : MonoBehaviour
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "śmierć w wyniku krwawienia"));
-                rollResult = DiceRollManager.Instance.ManualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "śmierć w wyniku krwawienia", result => rollResult = result));
+                if (rollResult == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "śmierć w wyniku krwawienia"));
+                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
             int rollDifficulty = unit.Bleeding * 10;
@@ -126,8 +129,11 @@ public class StatesManager : MonoBehaviour
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie"));
-                rollResult = DiceRollManager.Instance.ManualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie", result => rollResult = result));
+                if (rollResult == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie"));
+                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
             int successLevel = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", stats.StoutHearted * 10, rollResult)[1];
@@ -163,8 +169,11 @@ public class StatesManager : MonoBehaviour
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność"));
-                rollResult = DiceRollManager.Instance.ManualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność", result => rollResult = result));
+                if (rollResult == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność"));
+                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
             int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
@@ -237,8 +246,11 @@ public class StatesManager : MonoBehaviour
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność"));
-                rollResult = DiceRollManager.Instance.ManualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność", result => rollResult = result));
+                if (rollResult == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność"));
+                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
             int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];

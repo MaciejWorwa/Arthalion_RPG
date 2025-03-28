@@ -80,7 +80,7 @@ public class Weapon : MonoBehaviour
     public bool Dangerous; // Niebezpieczna
     public bool Defensive; // Parujący
     public bool Distract; // Dekoncentrujący (Powoduje cofanie się) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Entangle; // Unieruchamiający
+    public bool Entangle; // Unieruchamiający ---------------------- DZIAŁA JAKO TAKO, MOŻLIWE ŻE TRZEBA BĘDZIE POPRAWIĆ
     public bool Fast; // Szybka
     public bool Hack; // Rąbiąca
     public bool Impact; // Druzgoczący

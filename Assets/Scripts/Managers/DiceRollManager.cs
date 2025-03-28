@@ -31,6 +31,7 @@ public class DiceRollManager : MonoBehaviour
     // Zmienne do przechowywania wyniku
     public int ManualRollResult;
     public bool IsWaitingForRoll;
+    private static bool IsRollingInProgress = false;
 
     public int RollModifier = 0;
     [SerializeField] private UnityEngine.UI.Slider _modifierSlider;
@@ -47,35 +48,43 @@ public class DiceRollManager : MonoBehaviour
         }
     }
 
-    public IEnumerator WaitForRollValue(Stats stats, string rollContext)
+    public IEnumerator WaitForRollValue(Stats stats, string rollContext, Action<int> callback)
     {
-        IsWaitingForRoll = true;
+        // Czekaj, a¿ inne rzuty siê zakoñcz¹
+        while (IsRollingInProgress)
+        {
+            yield return null;
+        }
+
+        // Teraz ten rzut jest aktywny
+        IsRollingInProgress = true;
         ManualRollResult = 0;
 
-        // Wyœwietl panel do wpisania wyniku
         if (_applyRollResultPanel != null)
         {
             _applyRollResultPanel.SetActive(true);
             _applyRollResultPanel.GetComponentInChildren<TMP_Text>().text = $"Wpisz wynik rzutu {stats.Name} na {rollContext}.";
         }
 
-        // Wyzeruj pole tekstowe
         if (_rollInputField != null)
         {
             _rollInputField.text = "";
         }
 
-        // Czekaj a¿ u¿ytkownik wpisze wartoœæ i kliknie Submit
-        while (IsWaitingForRoll)
+        while (ManualRollResult == 0)
         {
-            yield return null; // Czekaj na nastêpn¹ ramkê
+            yield return null;
         }
 
-        // Ukryj panel po wpisaniu
         if (_applyRollResultPanel != null)
         {
             _applyRollResultPanel.SetActive(false);
         }
+
+        // Zwalniamy flagê, bo rzut siê zakoñczy³
+        IsRollingInProgress = false;
+
+        callback?.Invoke(ManualRollResult);
     }
 
     public void OnSubmitRoll()

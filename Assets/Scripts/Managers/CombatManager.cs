@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
@@ -477,10 +476,13 @@ public class CombatManager : MonoBehaviour
         {
             if (IsManualPlayerAttack)
             {
-                // Wywołujemy panel do wpisania wyniku (korutyna czeka, żeby reszta kodu nie poszła od razu dalej)
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie"));
-                rollOnAttack = DiceRollManager.Instance.ManualRollResult;
-                if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie", result => rollOnAttack = result));
+                if (rollOnAttack == 0) yield break;
+
+                //// Wywołujemy panel do wpisania wyniku (korutyna czeka, żeby reszta kodu nie poszła od razu dalej)
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie"));
+                //rollOnAttack = DiceRollManager.Instance.ManualRollResult;
+                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -615,9 +617,12 @@ public class CombatManager : MonoBehaviour
             // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
             if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę"));
-                defenceRollResult = DiceRollManager.Instance.ManualRollResult;
-                if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę", result => defenceRollResult = result));
+                if (defenceRollResult == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę"));
+                //defenceRollResult = DiceRollManager.Instance.ManualRollResult;
+                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -640,6 +645,19 @@ public class CombatManager : MonoBehaviour
                 Weapon weaponUsedForParry = GetBestParryWeapon(targetStats, targetWeapon);
                 int parryModifier = CalculateParryModifier(target, targetStats, attackerStats, weaponUsedForParry, attackerWeapon);
                 int dodgeModifier = CalculateDodgeModifier(target, targetStats, attackerWeapon);
+
+                //Modyfikator za strach
+                if (target.FearedUnits.Contains(attacker))
+                {
+                    parryModifier -= 10;
+                    dodgeModifier -= 10;
+                    Debug.Log($"Uwzględniono modyfikatory za strach przed atakującym.");
+                }
+
+                // Ograniczenie modyfikatorów do zakresu od -30 do +60
+                parryModifier = Mathf.Clamp(parryModifier, -30, 60);
+                dodgeModifier = Mathf.Clamp(dodgeModifier, -30, 60);
+
 
                 string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
                 string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
@@ -686,9 +704,12 @@ public class CombatManager : MonoBehaviour
             // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
             if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "opanowanie"));
-                rollResult = DiceRollManager.Instance.ManualRollResult;
-                if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "opanowanie", result => rollResult = result));
+                if (rollResult == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "opanowanie"));
+                //rollResult = DiceRollManager.Instance.ManualRollResult;
+                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -757,9 +778,12 @@ public class CombatManager : MonoBehaviour
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "opanowanie"));
-                rollResult = DiceRollManager.Instance.ManualRollResult;
-                if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "opanowanie", result => rollResult = result));
+                if (rollResult == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "opanowanie"));
+                //rollResult = DiceRollManager.Instance.ManualRollResult;
+                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
 
             int[] rollResults = DiceRollManager.Instance.TestSkill("SW", targetStats, "Cool", 0, rollResult);
@@ -770,10 +794,8 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        if (attackerWeapon.Type.Contains("no-damage")) yield break; //Jeśli broń nie powoduje obrażeń, np. arkan, to pomijamy dalszą część kodu
-
         // Udana próba pochwycenia przeciwnika
-        if (AttackTypes["Grappling"] == true && attacker.EntangledUnitId != target.UnitId)
+        if ((AttackTypes["Grappling"] == true || attackerWeapon.Entangle) && attacker.EntangledUnitId != target.UnitId)
         {
             attacker.EntangledUnitId = target.UnitId;
             target.Entangled++;
@@ -782,10 +804,18 @@ public class CombatManager : MonoBehaviour
             MovementManager.Instance.SetCanMoveToggle(false);
             RoundsManager.Instance.FinishTurn();
 
-            Debug.Log($"{attackerStats.Name} pochwycił {targetStats.Name}");
-
-            yield break;
+            if(AttackTypes["Grappling"] == true)
+            {
+                Debug.Log($"{attackerStats.Name} pochwycił {targetStats.Name}.");
+                yield break;
+            }
+            else if (attackerWeapon.Entangle)
+            {
+                Debug.Log($"{attackerStats.Name} pochwycił {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
+            }
         }
+
+        if (attackerWeapon.Type.Contains("no-damage")) yield break; //Jeśli broń nie powoduje obrażeń, np. arkan, to pomijamy dalszą część kodu
 
         // 11) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
@@ -1045,7 +1075,7 @@ public class CombatManager : MonoBehaviour
         if (targetStats.Shieldsman > 0 && target.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Shield > 0)) modifier += targetStats.Shieldsman * 10; // Modyfikator za talent Tarczownik
         if (targetStats.Riposte > 0) modifier += targetStats.Riposte * 10; // Modyfikator za talent Riposta
 
-        return Mathf.Clamp(modifier, -30, 60); // Ograniczenie modyfikatorów do zakresu od -30 do +60
+        return modifier;
     }
 
     public int CalculateDodgeModifier(Unit target, Stats targetStats, Weapon attackerWeapon = null)
@@ -1076,7 +1106,7 @@ public class CombatManager : MonoBehaviour
 
         modifier -= encumbrancePenalty;
 
-        return Mathf.Clamp(modifier, -30, 60); // Ograniczenie modyfikatorów do zakresu od -30 do +60
+        return modifier;
     }
 
     private IEnumerator ManualDefense(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier, MeleeCategory targetMeleeSkill, bool canParry, bool canDodge)
@@ -1114,7 +1144,7 @@ public class CombatManager : MonoBehaviour
 
     private IEnumerator Parry(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int parryModifier, MeleeCategory targetMeleeSkill)
     {
-        int defenceRollResult;
+        int defenceRollResult = 0;
         string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
 
         // Jeżeli jest ustawiony modyfikator w panelu jednostki
@@ -1128,9 +1158,12 @@ public class CombatManager : MonoBehaviour
         // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi i wybrana jednostka to sojusznik to czekamy na wynik rzutu
         if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "parowanie"));
-            defenceRollResult = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "parowanie", result => defenceRollResult = result));
+            if (defenceRollResult == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "parowanie"));
+            //defenceRollResult = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -1172,7 +1205,7 @@ public class CombatManager : MonoBehaviour
 
     public IEnumerator Dodge(Unit target, Stats targetStats, int dodgeValue, int dodgeModifier)
     {
-        int defenceRollResult;
+        int defenceRollResult = 0;
         string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
 
         // Jeżeli jest ustawiony modyfikator w panelu jednostki
@@ -1186,9 +1219,12 @@ public class CombatManager : MonoBehaviour
         // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi i wybrana jednostka to sojusznik to czekamy na wynik rzutu
         if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "unik"));
-            defenceRollResult = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "unik", result => defenceRollResult = result));
+            if (defenceRollResult == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "unik"));
+            //defenceRollResult = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -1325,7 +1361,6 @@ public class CombatManager : MonoBehaviour
     {
         int attackModifier = DiceRollManager.Instance.RollModifier;
         DiceRollManager.Instance.ResetRollModifier();
-        Debug.Log("attackerUnit " + attackerUnit);
         Stats attackerStats = attackerUnit.GetComponent<Stats>();
         Stats targetStats = targetUnit.GetComponent<Stats>();
 
@@ -1381,6 +1416,13 @@ public class CombatManager : MonoBehaviour
             // DODAĆ TUTAJ W PRZYSZŁOŚCI, ŻEBY UWZGLĘDNIAŁO, KTO Z WALCZĄCYCH W ZAPASACH MA ILE POZIOMÓW POCHWYCENIA. NA TEGO, KTO MA MNIEJ JEST MODYFIKATOR +10, A TEGO KTO WIĘCEJ +20
 
             attackModifier += targetUnit.Entangled == 0 ? 10 : 20;
+        }
+
+        //Modyfikator za strach
+        if(attackerUnit.FearedUnits.Contains(targetUnit))
+        {
+            attackModifier -= 10;
+            Debug.Log($"Uwzględniono modyfikatory za strach przed celem ataku. Łączny modyfikator: " + attackModifier);
         }
 
         Debug.Log($"Uwzględniono modyfikatory za stany celu. Łączny modyfikator: " + attackModifier);
@@ -1673,12 +1715,15 @@ public class CombatManager : MonoBehaviour
             yield break;
         }
 
-        int rollResult;
+        int rollResult = 0;
         if (!GameManager.IsAutoDiceRollingMode && attackerStats.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie krytyczne"));
-            rollResult = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie krytyczne", result => rollResult = result));
+            if (rollResult == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie krytyczne"));
+            //rollResult = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -2182,9 +2227,12 @@ public class CombatManager : MonoBehaviour
                     int initiativeRoll = 0;
                     if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
                     {
-                        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(target.GetComponent<Stats>(), "inicjatywę"));
-                        initiativeRoll = DiceRollManager.Instance.ManualRollResult;
-                        if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(target.GetComponent<Stats>(), "inicjatywę", result => initiativeRoll = result));
+                        if (initiativeRoll == 0) yield break;
+
+                        //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(target.GetComponent<Stats>(), "inicjatywę"));
+                        //initiativeRoll = DiceRollManager.Instance.ManualRollResult;
+                        //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
                     }
                     else
                     {
@@ -2367,9 +2415,12 @@ public class CombatManager : MonoBehaviour
                 int attackerRoll = 0;
                 if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
                 {
-                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę"));
-                    attackerRoll = DiceRollManager.Instance.ManualRollResult;
-                    if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę", result => attackerRoll = result));
+                    if (attackerRoll == 0) yield break;
+
+                    //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę"));
+                    //attackerRoll = DiceRollManager.Instance.ManualRollResult;
+                    //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
                 }
                 else
                 {
@@ -2379,9 +2430,12 @@ public class CombatManager : MonoBehaviour
                 int targetRoll = 0;
                 if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
                 {
-                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę"));
-                    targetRoll = DiceRollManager.Instance.ManualRollResult;
-                    if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę", result => targetRoll = result));
+                    if (targetRoll == 0) yield break;
+
+                    //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę"));
+                    //targetRoll = DiceRollManager.Instance.ManualRollResult;
+                    //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
                 }
                 else
                 {
@@ -2444,15 +2498,18 @@ public class CombatManager : MonoBehaviour
 
         if (entangledUnit.Entangled > 0)
         {
-            int targetRoll;
-            int attackerRoll;
+            int targetRoll = 0;
+            int attackerRoll = 0;
 
             // Dla pochwyconego: jeśli to gracz, pobieramy ręczny wynik, w przeciwnym razie losujemy
             if (!GameManager.IsAutoDiceRollingMode && entangledUnit.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entangledUnitStats, "siłę"));
-                targetRoll = DiceRollManager.Instance.ManualRollResult;
-                if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entangledUnitStats, "siłę", result => targetRoll = result));
+                if (targetRoll == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entangledUnitStats, "siłę"));
+                //targetRoll = DiceRollManager.Instance.ManualRollResult;
+                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -2462,9 +2519,12 @@ public class CombatManager : MonoBehaviour
             // Dla pochwytującego: sprawdzamy, czy ma tag "PlayerUnit"
             if (!GameManager.IsAutoDiceRollingMode && entanglingUnit.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entanglingUnitStats, "siłę"));
-                attackerRoll = DiceRollManager.Instance.ManualRollResult;
-                if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entanglingUnitStats, "siłę", result => attackerRoll = result));
+                if (attackerRoll == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entanglingUnitStats, "siłę"));
+                //attackerRoll = DiceRollManager.Instance.ManualRollResult;
+                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -2584,9 +2644,12 @@ public class CombatManager : MonoBehaviour
             // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "broń zasięgową"));
-                reloadRollResult = DiceRollManager.Instance.ManualRollResult;
-                if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "broń zasięgową", result => reloadRollResult = result));
+                if (reloadRollResult == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "broń zasięgową"));
+                //reloadRollResult = DiceRollManager.Instance.ManualRollResult;
+                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -2775,15 +2838,18 @@ public class CombatManager : MonoBehaviour
         //Wykonuje akcję
         RoundsManager.Instance.DoAction(attackerUnit);
 
-        int targetRoll;
-        int attackerRoll;
+        int targetRoll = 0;
+        int attackerRoll = 0;
 
         // Dla atakowanego
         if (!GameManager.IsAutoDiceRollingMode && targetUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "walkę bronią białą"));
-            targetRoll = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "walkę bronią białą", result => targetRoll = result));
+            if (targetRoll == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "walkę bronią białą"));
+            //targetRoll = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -2793,9 +2859,12 @@ public class CombatManager : MonoBehaviour
         // Dla atakującego
         if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "walkę bronią szermierczą"));
-            attackerRoll = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "walkę bronią szermierczą", result => attackerRoll = result));
+            if (attackerRoll == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "walkę bronią szermierczą"));
+            //attackerRoll = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -2833,15 +2902,18 @@ public class CombatManager : MonoBehaviour
         Unit attackerUnit = attackerStats.GetComponent<Unit>();
         Unit targetUnit = targetStats.GetComponent<Unit>();
 
-        int targetRoll;
-        int attackerRoll;
+        int targetRoll = 0;
+        int attackerRoll = 0;
 
         // Dla atakowanego
         if (!GameManager.IsAutoDiceRollingMode && targetUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność"));
-            targetRoll = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność", result => targetRoll = result));
+            if (targetRoll == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność"));
+            //targetRoll = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -2851,9 +2923,12 @@ public class CombatManager : MonoBehaviour
         // Dla atakującego
         if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę"));
-            attackerRoll = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę", result => attackerRoll = result));
+            if (attackerRoll == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę"));
+            //attackerRoll = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -2872,9 +2947,12 @@ public class CombatManager : MonoBehaviour
         {
             if (!GameManager.IsAutoDiceRollingMode && targetUnit.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność"));
-                targetRoll = DiceRollManager.Instance.ManualRollResult;
-                if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność", result => targetRoll = result));
+                if (targetRoll == 0) yield break;
+
+                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność"));
+                //targetRoll = DiceRollManager.Instance.ManualRollResult;
+                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -2918,15 +2996,18 @@ public class CombatManager : MonoBehaviour
         //Wykonuje akcję
         RoundsManager.Instance.DoAction(attackerUnit);
 
-        int targetRoll;
-        int attackerRoll;
+        int targetRoll = 0;
+        int attackerRoll = 0;
 
         // Dla atakowanego
         if (!GameManager.IsAutoDiceRollingMode && targetUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "walkę bronią białą"));
-            targetRoll = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "walkę bronią białą", result => targetRoll = result));
+            if (targetRoll == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "walkę bronią białą"));
+            //targetRoll = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -2936,9 +3017,12 @@ public class CombatManager : MonoBehaviour
         // Dla atakującego
         if (!GameManager.IsAutoDiceRollingMode && attackerUnit.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "walkę bronią białą"));
-            attackerRoll = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "walkę bronią białą", result => attackerRoll = result));
+            if (attackerRoll == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "walkę bronią białą"));
+            //attackerRoll = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -3022,9 +3106,12 @@ public class CombatManager : MonoBehaviour
         // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
         if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli"));
-            rollResult = DiceRollManager.Instance.ManualRollResult;
-            if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli", result => rollResult = result));
+            if (rollResult == 0) yield break;
+
+            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli"));
+            //rollResult = DiceRollManager.Instance.ManualRollResult;
+            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {

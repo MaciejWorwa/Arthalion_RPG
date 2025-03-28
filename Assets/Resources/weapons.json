@@ -1,7 +1,6 @@
 {
   "Weapons": [
     {
-      "Id": 1,
       "Name": "Arkan",
       "Category": "entangling",
       "Type": [ "ranged", "throwing", "no-damage" ],
@@ -9,7 +8,6 @@
       "Entangle": true
     },
     {
-      "Id": 2,
       "Name": "Bicz",
       "Category": "entangling",
       "Type": [ "ranged", "strength-based" ],
@@ -18,7 +16,6 @@
       "Entangle": true
     },
     {
-      "Id": 3,
       "Name": "Bolas",
       "Category": "throwing",
       "Type": [ "ranged", "throwing", "strength-based" ],
@@ -27,7 +24,6 @@
       "Entangle": true
     },
     {
-      "Id": 4,
       "Name": "Broń improwizowana",
       "Category": "basic",
       "Type": [ "melee" ],
@@ -38,7 +34,6 @@
       "Unbalanced": true
     },
     {
-      "Id": 5,
       "Name": "Buzdygan",
       "Category": "basic",
       "Type": [ "melee" ],
@@ -49,7 +44,6 @@
       "Pummell": true
     },
     {
-      "Id": 6,
       "Name": "Broń naturalna",
       "Type": [ "melee", "natural-weapon" ],
       "AttackRange": 1.5,
@@ -57,25 +51,6 @@
       "NaturalWeapon": true
     },
     {
-      "Id": 7,
-      "Name": "Broń naturalna - druzgocząca",
-      "Type": [ "melee", "natural-weapon" ],
-      "AttackRange": 1.5,
-      "S": 0,
-      "NaturalWeapon": true,
-      "Impact": true
-    },
-    {
-      "Id": 8,
-      "Name": "Broń naturalna - ignorująca zbroję",
-      "Type": [ "melee", "natural-weapon" ],
-      "AttackRange": 1.5,
-      "S": 0,
-      "NaturalWeapon": true,
-      "ArmourIgnoring": true
-    },
-    {
-      "Id": 9,
       "Name": "Długi łuk",
       "Category": "bow",
       "Type": [ "ranged", "strength-based" ],
@@ -86,7 +61,6 @@
       "Damaging": true
     },
     {
-      "Id": 10,
       "Name": "Elfi łuk",
       "Category": "bow",
       "Type": [ "ranged", "strength-based" ],
@@ -98,7 +72,6 @@
       "Precise": true
     },
     {
-      "Id": 11,
       "Name": "Floret",
       "Category": "fencing",
       "Type": [ "melee" ],
@@ -111,7 +84,13 @@
       "Undamaging": true
     },
     {
-      "Id": 12,
+      "Name": "Kastet",
+      "Category": "brawling",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 2
+    },
+    {
       "Name": "Kiścień",
       "Category": "flail",
       "Type": [ "melee" ],
@@ -125,7 +104,6 @@
       "Distract:": true
     },
     {
-      "Id": 13,
       "Name": "Kostur",
       "Category": "polearm",
       "Type": [ "melee" ],
@@ -137,7 +115,6 @@
       "Defensive": true
     },
     {
-      "Id": 14,
       "Name": "Krótki łuk",
       "Category": "bow",
       "Type": [ "ranged", "strength-based" ],
@@ -147,18 +124,16 @@
       "Encumbrance": 1
     },
     {
-      "Id": 15,
       "Name": "Kusza",
       "Category": "crossbow",
       "Type": [ "ranged" ],
       "TwoHanded": true,
       "AttackRange": 30,
       "S": 9,
-      "Encumbrance": 1,
+      "Encumbrance": 2,
       "ReloadTime": 1
     },
     {
-      "Id": 16,
       "Name": "Kusza pistoletowa",
       "Category": "crossbow",
       "Type": [ "ranged" ],
@@ -167,7 +142,6 @@
       "Pistol": true
     },
     {
-      "Id": 17,
       "Name": "Łamacz mieczy",
       "Category": "parry",
       "Type": [ "melee" ],
@@ -178,7 +152,6 @@
       "Defensive": true
     },
     {
-      "Id": 18,
       "Name": "Łuk",
       "Category": "bow",
       "Type": [ "ranged", "strength-based" ],
@@ -188,7 +161,14 @@
       "Encumbrance": 2
     },
     {
-      "Id": 19,
+      "Name": "Miecz",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 1
+    },
+    {
       "Name": "Młot bojowy",
       "Category": "twohanded",
       "Type": [ "melee" ],
@@ -201,7 +181,16 @@
       "Damaging": true
     },
     {
-      "Id": 20,
+      "Name": "Młot jednoręczny",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 1,
+      "Unbalanced": true,
+      "Pummel": true
+    },
+    {
       "Name": "Muszkiet hochlandzki",
       "Category": "blackpowder",
       "Type": [ "ranged" ],
@@ -217,7 +206,6 @@
       "Blackpowder": true
     },
     {
-      "Id": 21,
       "Name": "Nóż",
       "Category": "basic",
       "Type": [ "melee" ],
@@ -226,7 +214,13 @@
       "Undamaging": true
     },
     {
-      "Id": 22,
+      "Name": "Nóż do rzucania",
+      "Category": "throwing",
+      "Type": [ "melee" ],
+      "AttackRange": 2,
+      "S": 2
+    },
+    {
       "Name": "Oszczep",
       "Category": "throwing",
       "Type": [ "ranged", "throwing" ],
@@ -236,7 +230,6 @@
       "Impale": true
     },
     {
-      "Id": 23,
       "Name": "Pistolet",
       "Category": "blackpowder",
       "Type": [ "ranged" ],
@@ -248,7 +241,6 @@
       "Pistol": true
     },
     {
-      "Id": 24,
       "Name": "Pistolet samopowtarzalny",
       "Category": "engineering",
       "Type": [ "ranged" ],
@@ -263,7 +255,6 @@
       "Dangerous": true
     },
     {
-      "Id": 25,
       "Name": "Proca",
       "Category": "sling",
       "Type": [ "ranged" ],
@@ -271,7 +262,6 @@
       "S": 6
     },
     {
-      "Id": 26,
       "Name": "Proca drzewcowa",
       "Category": "sling",
       "Type": [ "ranged" ],
@@ -281,7 +271,6 @@
       "Encumbrance": 2
     },
     {
-      "Id": 27,
       "Name": "Puklerz",
       "Category": "basic",
       "Type": [ "melee", "shield" ],
@@ -292,7 +281,6 @@
       "Undamaging": true
     },
     {
-      "Id": 28,
       "Name": "Rapier",
       "Category": "fencing",
       "Type": [ "melee" ],
@@ -303,7 +291,6 @@
       "Impale": true
     },
     {
-      "Id": 29,
       "Name": "Rusznica",
       "Category": "blackpowder",
       "Type": [ "ranged" ],
@@ -316,7 +303,6 @@
       "Blackpowder": true
     },
     {
-      "Id": 30,
       "Name": "Rusznica dwulufowa",
       "Category": "blackpowder",
       "Type": [ "ranged" ],
@@ -330,7 +316,6 @@
       "Blackpowder": true
     },
     {
-      "Id": 31,
       "Name": "Szabla",
       "Category": "cavalry",
       "Type": [ "melee" ],
@@ -340,7 +325,6 @@
       "Slash": 1
     },
     {
-      "Id": 32,
       "Name": "Szpada",
       "Category": "fencing",
       "Type": [ "melee" ],
@@ -352,7 +336,6 @@
       "Precise": true
     },
     {
-      "Id": 33,
       "Name": "Sztylet",
       "Category": "basic",
       "Type": [ "melee" ],
@@ -360,7 +343,6 @@
       "S": 2
     },
     {
-      "Id": 34,
       "Name": "Tarcza",
       "Category": "basic",
       "Type": [ "melee", "shield" ],
@@ -372,7 +354,16 @@
       "Undamaging": true
     },
     {
-      "Id": 35,
+      "Name": "Topór",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 1,
+      "Unbalanced": true,
+      "Hack": true
+    },
+    {
       "Name": "Topór do rzucania",
       "Category": "throwing",
       "Type": [ "ranged", "throwing" ],
@@ -382,7 +373,6 @@
       "Hack": true
     },
     {
-      "Id": 36,
       "Name": "Włócznia",
       "Category": "polearm",
       "Type": [ "melee" ],
@@ -393,7 +383,6 @@
       "Impale": true
     },
     {
-      "Id": 37,
       "Name": "Czepiec kolczy",
       "Type": [ "head" ],
       "Category": "chain",
@@ -403,7 +392,6 @@
       "Partial": true
     },
     {
-      "Id": 38,
       "Name": "Hełm",
       "Type": [ "head" ],
       "Category": "plate",
@@ -413,7 +401,6 @@
       "WeakPoints": true
     },
     {
-      "Id": 39,
       "Name": "Hełm otwarty",
       "Type": [ "head" ],
       "Category": "plate",
@@ -422,7 +409,6 @@
       "Partial": true
     },
     {
-      "Id": 40,
       "Name": "Kaftan kolczy",
       "Type": [ "torso" ],
       "Category": "chain",
@@ -431,7 +417,6 @@
       "Flexible": true
     },
     {
-      "Id": 41,
       "Name": "Kolczuga",
       "Type": [ "arms", "torso" ],
       "Category": "chain",
@@ -440,7 +425,6 @@
       "Flexible": true
     },
     {
-      "Id": 42,
       "Name": "Kolet",
       "Type": [ "torso" ],
       "Category": "leather",
@@ -449,7 +433,6 @@
       "WeakPoints": true
     },
     {
-      "Id": 43,
       "Name": "Nagolenniki płytowe",
       "Type": [ "legs" ],
       "Category": "plate",
@@ -459,7 +442,6 @@
       "WeakPoints": true
     },
     {
-      "Id": 44,
       "Name": "Napierśnik",
       "Type": [ "torso" ],
       "Category": "plate",
@@ -468,7 +450,6 @@
       "WeakPoints": true
     },
     {
-      "Id": 45,
       "Name": "Naramienniki",
       "Type": [ "arms" ],
       "Category": "plate",
@@ -478,7 +459,6 @@
       "WeakPoints": true
     },
     {
-      "Id": 46,
       "Name": "Nogawice kolcze",
       "Type": [ "legs" ],
       "Category": "chain",
@@ -487,7 +467,6 @@
       "Flexible": true
     },
     {
-      "Id": 47,
       "Name": "Skórzany hełm",
       "Type": [ "head" ],
       "Category": "leather",
@@ -496,7 +475,6 @@
       "Flexible": true
     },
     {
-      "Id": 48,
       "Name": "Skórzany kaftan",
       "Type": [ "torso" ],
       "Category": "leather",
@@ -505,7 +483,6 @@
       "Flexible": true
     },
     {
-      "Id": 49,
       "Name": "Skórzana kurta",
       "Type": [ "arms", "torso" ],
       "Category": "leather",
@@ -514,7 +491,6 @@
       "Flexible": true
     },
     {
-      "Id": 50,
       "Name": "Skórzane nogawice",
       "Type": [ "legs" ],
       "Category": "leather",

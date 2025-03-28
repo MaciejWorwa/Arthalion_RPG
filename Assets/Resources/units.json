@@ -1,12 +1,10 @@
 {
   "Units": [
     {
-      "Id": 1,
       "Race": "Człowiek",
       "Size": 3,
-      "PrimaryWeaponIds": [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36
+      "PrimaryWeaponNames": [
+        "Buzdygan", "Miecz", "Topór", "Młot jednoręczny"
       ],
       "WW": 20,
       "US": 20,
@@ -24,10 +22,9 @@
       "ExtraPoints": 2
     },
     {
-      "Id": 2,
       "Race": "Elf",
       "Size": 3,
-      "PrimaryWeaponIds": [5, 18],
+      "PrimaryWeaponNames": [ "Miecz", "Łuk" ],
       "WW": 30,
       "US": 30,
       "S": 20,
@@ -44,10 +41,9 @@
       "ExtraPoints": 2
     },
     {
-      "Id": 3,
       "Race": "Krasnolud",
       "Size": 3,
-      "PrimaryWeaponIds": [5],
+      "PrimaryWeaponNames": [ "Buzdygan", "Miecz", "Topór", "Młot jednoręczny" ],
       "WW": 30,
       "US": 20,
       "S": 20,
@@ -67,10 +63,9 @@
       "GrudgeBornFury": true
     },
     {
-      "Id": 4,
       "Race": "Niziołek",
       "Size": 2,
-      "PrimaryWeaponIds": [5, 25],
+      "PrimaryWeaponNames": [ "Miecz", "Proca" ],
       "WW": 10,
       "US": 30,
       "S": 10,
@@ -87,27 +82,9 @@
       "ExtraPoints": 3
     },
     {
-      "Id": 5,
-      "Race": "Smok",
-      "Size": 5,
-      "PrimaryWeaponIds": [6],
-      "WW": 65,
-      "US": 60,
-      "S": 65,
-      "Wt": 65,
-      "I": 60,
-      "Zw": 25,
-      "Zr": 15,
-      "Int": 45,
-      "SW": 85,
-      "Ogd": 25,
-      "Sz": 6
-    },
-    {
-      "Id": 6,
       "Race": "Gołąb",
       "Size": 0,
-      "PrimaryWeaponIds": [6],
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
       "WW": 65,
       "US": 60,
       "S": 5,
@@ -117,6 +94,22 @@
       "Zr": 15,
       "Int": 45,
       "SW": 20,
+      "Ogd": 25,
+      "Sz": 6
+    },
+    {
+      "Race": "Smok",
+      "Size": 5,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 65,
+      "US": 60,
+      "S": 65,
+      "Wt": 65,
+      "I": 60,
+      "Zw": 25,
+      "Zr": 15,
+      "Int": 45,
+      "SW": 85,
       "Ogd": 25,
       "Sz": 6
     }
