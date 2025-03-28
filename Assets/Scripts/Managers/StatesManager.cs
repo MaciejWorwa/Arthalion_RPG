@@ -145,6 +145,8 @@ public class StatesManager : MonoBehaviour
             if (unit.Broken == 0)
             {
                 unit.Fatiqued++; // Zwiększenie Wyczerpania
+                unit.IsFearTestPassed = true;
+                unit.IsTerrorTestPassed = true;
                 Debug.Log($"<color=#FF7F50>{stats.Name} udało się opanować panikę. Poziom wyczerpania wzrasta o 1.</color>");
             }
             else

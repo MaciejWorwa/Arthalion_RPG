@@ -58,9 +58,7 @@
       "PP": 0,
       "Resilience": 2,
       "ExtraPoints": 2,
-      "StoutHearted": true,
-      "Sturdy": true,
-      "GrudgeBornFury": true
+      "Sturdy": 1
     },
     {
       "Race": "Niziołek",

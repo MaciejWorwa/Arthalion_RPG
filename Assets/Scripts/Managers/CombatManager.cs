@@ -6,6 +6,7 @@ using TMPro;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 public class CombatManager : MonoBehaviour
 {
@@ -64,6 +65,7 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private GameObject _selectHitLocationPanel;
 
     private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
+    private bool _opportunityAttack; // Zmienna potrzebna do tego, żeby test opanowania przy ataku okazyjnym był wywoływany raz, a nie za każdego przeciwnika
 
     public bool IsManualPlayerAttack;
 
@@ -619,10 +621,6 @@ public class CombatManager : MonoBehaviour
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę", result => defenceRollResult = result));
                 if (defenceRollResult == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę"));
-                //defenceRollResult = DiceRollManager.Instance.ManualRollResult;
-                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -634,7 +632,7 @@ public class CombatManager : MonoBehaviour
             defenceSuccessValue = defenceTest[0];
             defenceSuccessLevel = defenceTest[1];
         }
-        else // Zwykły atak bronią
+        else if(!opportunityAttack) // Zwykły atak bronią (w przypadku ataków okazyjnych nie można się bronić)
         {
             // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
             canParry = (isMeleeAttack && target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("melee"))) || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2 || (attackerWeapon.Id == 0 && targetWeapon.Id == 0));
@@ -773,17 +771,15 @@ public class CombatManager : MonoBehaviour
         }
 
         // W przypadku ataku okazyjnego, cel jest zmuszony do testu opanowania ------------------------------- DODAĆ TAKĄ MECHANIKĘ, ŻE JAK JEDNOSTKA WYBIERZE OPCJĘ UNIKU TO PRZY NIEZDANYM TEŚCIE PRZECIWSTAWNYM ZOSTAJE W MIEJSCU. WTEDY NIE MA RZUTU NA OPANOWANIE, ONO JEST JAK NIE UNIKA. USUNĄĆ OPCJĘ PAROWANIA ATAKÓW OKAZYJNYCH
-        if (opportunityAttack)
+        if (_opportunityAttack)
         {
+            _opportunityAttack = false;
+
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "opanowanie", result => rollResult = result));
                 if (rollResult == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "opanowanie"));
-                //rollResult = DiceRollManager.Instance.ManualRollResult;
-                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
 
             int[] rollResults = DiceRollManager.Instance.TestSkill("SW", targetStats, "Cool", 0, rollResult);
@@ -1747,7 +1743,7 @@ public class CombatManager : MonoBehaviour
         int modifier = targetStats.TempHealth < 0 ? Math.Abs(targetStats.TempHealth * 10) : 0;
         string modifierString = modifier != 0 ? $" Modyfikator: {modifier}." : "";
         int extraWounds = 0;
-        Debug.Log($"Wynik rzutu na trafienie krytyczne: {rollResult}.{modifierString} {targetStats.Name} otrzymuje trafienie krytyczne w {TranslateHitLocation(hitLocation)} o wartości {rollResult + modifier}");
+        Debug.Log($"Wynik rzutu na trafienie krytyczne: {rollResult}.{modifierString} {targetStats.Name} otrzymuje trafienie krytyczne w {TranslateHitLocation(hitLocation)} o wartości <color=red>{rollResult + modifier}</color>");
 
         switch (hitLocation)
         {
@@ -2368,6 +2364,12 @@ public class CombatManager : MonoBehaviour
         Stats attackerStats = attacker.Stats;
         Stats targetStats = target.Stats;
 
+        if (targetStats.Size - attackerStats.Size > 1)
+        {
+            Debug.Log($"<color=#FF7F50>{attackerStats.Name} nie jest w stanie pochwycić {targetStats.Name}. Cel jest zbyt duży.</color>");
+            yield break;
+        }
+
         // Ustawiamy widoczność przycisków w panelu wyboru akcji:
         // Załóżmy, że masz osobne przyciski: _attackGrappleButton, _improveGrappleButton, _escapeGrappleButton
         if (isGrappler)
@@ -2417,10 +2419,6 @@ public class CombatManager : MonoBehaviour
                 {
                     yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę", result => attackerRoll = result));
                     if (attackerRoll == 0) yield break;
-
-                    //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę"));
-                    //attackerRoll = DiceRollManager.Instance.ManualRollResult;
-                    //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
                 }
                 else
                 {
@@ -2432,10 +2430,6 @@ public class CombatManager : MonoBehaviour
                 {
                     yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę", result => targetRoll = result));
                     if (targetRoll == 0) yield break;
-
-                    //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "siłę"));
-                    //targetRoll = DiceRollManager.Instance.ManualRollResult;
-                    //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
                 }
                 else
                 {
@@ -2449,6 +2443,13 @@ public class CombatManager : MonoBehaviour
                 int targetSuccessValue = targetTest[0];
                 int attackerSuccessLevel = attackerTest[1];
                 int targetSuccessLevel = targetTest[1];
+
+
+                if (targetStats.Size - attackerStats.Size == 1 && !DiceRollManager.Instance.IsDoubleDigit(attackerRoll))
+                {
+                    Debug.Log($"<color=#FF7F50>{attackerStats.Name} nie jest w stanie poprawić chwytu na {targetStats.Name}. Aby wygrać przeciwstawny test siły z większym przeciwnikiem, należy wyrzucić fuksa.</color>");
+                    yield break;
+                }
 
                 if (attackerSuccessLevel > targetSuccessLevel)
                 {
@@ -2506,10 +2507,6 @@ public class CombatManager : MonoBehaviour
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entangledUnitStats, "siłę", result => targetRoll = result));
                 if (targetRoll == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entangledUnitStats, "siłę"));
-                //targetRoll = DiceRollManager.Instance.ManualRollResult;
-                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -2521,10 +2518,6 @@ public class CombatManager : MonoBehaviour
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entanglingUnitStats, "siłę", result => attackerRoll = result));
                 if (attackerRoll == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entanglingUnitStats, "siłę"));
-                //attackerRoll = DiceRollManager.Instance.ManualRollResult;
-                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {
@@ -2540,6 +2533,12 @@ public class CombatManager : MonoBehaviour
 
             int targetSuccessLevel = targetTest[1];
             int attackerSuccessLevel = attackerTest[1];
+
+            if (entanglingUnitStats.Size - entangledUnitStats.Size > 0 && !DiceRollManager.Instance.IsDoubleDigit(targetRoll))
+            {
+                Debug.Log($"<color=#FF7F50>{entangledUnitStats.Name} nie jest w stanie uwolnić się z pochwycenia przez {entanglingUnitStats.Name}. Aby wygrać przeciwstawny test siły z większym przeciwnikiem, należy wyrzucić fuksa.</color>");
+                yield break;
+            }
 
             if (targetSuccessValue > attackerSuccessValue)
             {
@@ -2776,6 +2775,8 @@ public class CombatManager : MonoBehaviour
 
         if (adjacentOpponents.Count == 0) return;
 
+        _opportunityAttack = true;
+
         // Atak okazyjny wywolywany dla kazdego wroga bedacego w zwarciu z bohaterem gracza
         foreach (Unit unit in adjacentOpponents)
         {
@@ -2910,10 +2911,6 @@ public class CombatManager : MonoBehaviour
         {
             yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność", result => targetRoll = result));
             if (targetRoll == 0) yield break;
-
-            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność"));
-            //targetRoll = DiceRollManager.Instance.ManualRollResult;
-            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -2925,10 +2922,6 @@ public class CombatManager : MonoBehaviour
         {
             yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę", result => attackerRoll = result));
             if (attackerRoll == 0) yield break;
-
-            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "siłę"));
-            //attackerRoll = DiceRollManager.Instance.ManualRollResult;
-            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -2949,10 +2942,6 @@ public class CombatManager : MonoBehaviour
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność", result => targetRoll = result));
                 if (targetRoll == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "odporność"));
-                //targetRoll = DiceRollManager.Instance.ManualRollResult;
-                //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
             }
             else
             {

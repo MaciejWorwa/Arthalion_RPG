@@ -38,8 +38,9 @@ public class Unit : MonoBehaviour
     public int FeintedUnitId; // Cel finty
 
     public bool IsFearTestPassed; // Zdał test strachu
+    public bool IsTerrorTestPassed; // Zdał test grozy
     public int FearLevel; // Poziom strachu
-    public List<Unit> FearedUnits; // Lista jednostek, których się boi
+    public HashSet<Unit> FearedUnits = new HashSet<Unit>(); // Lista jednostek, których się boi
 
     //STARE
     public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
