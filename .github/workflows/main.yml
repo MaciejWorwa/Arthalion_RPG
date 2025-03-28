@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Cache Library Folder
-        uses: actions/cache@v4.1.2
+        uses: actions/cache@v4.2.2
         with:
           path: Library
           key: ${{ runner.os }}-library-${{ hashFiles('**/ProjectSettings/ProjectVersion.txt') }}
@@ -42,7 +42,8 @@ jobs:
   build:
     strategy:
       matrix:
-        target_platform: ["StandaloneWindows64", "StandaloneLinux64", "StandaloneOSX"]
+        target_platform:
+          ["StandaloneWindows64", "StandaloneLinux64", "StandaloneOSX"]
     name: Build Unity Project for ${{ matrix.target_platform }}
     if: ${{ startsWith(github.event.head_commit.message, '[RELEASE]') }} # Warunek sprawdzający, czy wiadomość commita zawiera fragment: [RELEASE] na początku
     runs-on: ubuntu-latest
@@ -51,7 +52,7 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Cache Library
-        uses: actions/cache@v4.1.2
+        uses: actions/cache@v4.2.2
         with:
           path: Library
           key: ${{ runner.os }}-unity-${{ hashFiles('**/ProjectSettings/ProjectVersion.txt') }}
