@@ -523,9 +523,9 @@ public class SaveAndLoadManager : MonoBehaviour
             unitGameObject.GetComponent<Unit>().ChangeUnitColor(unitGameObject);
 
             //Ustawia rozmiar dużych jednostek
-            if (statsData.IsBig)
+            if ((int)statsData.Size > 3)
             {
-                unitGameObject.transform.localScale = new Vector3(1.4f, 1.4f, 1.4f);
+                unitGameObject.GetComponent<Stats>().ChangeTokenSize((int)statsData.Size);
             }
 
             yield return new WaitForSeconds(0.05f); // Oczekiwanie na zainicjowanie komponentów

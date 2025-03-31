@@ -68,6 +68,9 @@ public class GameManager : MonoBehaviour
     [Header("Edytor map")]
     public static bool IsMousePressed;
     public string TileCoveringState; //Zmienna przekazująca informacja o tym, czy aktualnie zasłaniamy pola, czy odsłaniamy
+    [SerializeField] private GameObject _mapElementsPanel;
+    [SerializeField] private GameObject _initiativePanel;
+    [SerializeField] private GameObject _unitsManagingPanel;
 
     [Header("Panele")]
     public GameObject[] activePanels;
@@ -196,7 +199,11 @@ public class GameManager : MonoBehaviour
             else if(Input.GetKeyDown(KeyCode.F))
             {
                 SetFriendlyFireMode();
-            }  
+            }
+            else if (Input.GetKeyDown(KeyCode.M))
+            {
+                OpenOrCloseMapElementsPanel();
+            }
             else if(Input.GetKeyDown(KeyCode.N))
             {
                 SetNamesHidingMode();
@@ -332,6 +339,21 @@ public class GameManager : MonoBehaviour
         }
 
         return false;
+    }
+
+    public void OpenOrCloseMapElementsPanel()
+    {
+        if (_mapElementsPanel == null || _unitsManagingPanel == null || _initiativePanel == null) return;
+
+        _mapElementsPanel.SetActive(!_mapElementsPanel.activeSelf);
+        _unitsManagingPanel.SetActive(!_unitsManagingPanel.activeSelf);
+        _initiativePanel.SetActive(!_initiativePanel.activeSelf);
+
+        //Wysuwa panel jeśli był schowany
+        if (_mapElementsPanel.activeSelf && (!AnimationManager.Instance.PanelStates.ContainsKey(_mapElementsPanel.GetComponent<Animator>()) || AnimationManager.Instance.PanelStates[_mapElementsPanel.GetComponent<Animator>()] == false))
+        {
+            AnimationManager.Instance.TogglePanel(_mapElementsPanel.GetComponent<Animator>());
+        }
     }
     #endregion
 

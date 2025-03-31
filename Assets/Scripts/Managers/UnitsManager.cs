@@ -44,7 +44,6 @@ public class UnitsManager : MonoBehaviour
     [SerializeField] private CustomDropdown _unitsDropdown;
     public Transform UnitsScrollViewContent;
     [SerializeField] private UnityEngine.UI.Toggle _unitTagToggle;
-    [SerializeField] private UnityEngine.UI.Toggle _unitSizeToggle;
     [SerializeField] private UnityEngine.UI.Button _createUnitButton; // Przycisk do tworzenia jednostek na losowych pozycjach
     [SerializeField] private UnityEngine.UI.Button _removeUnitButton;
     [SerializeField] private UnityEngine.UI.Button _selectUnitsButton; // Przycisk do zaznaczania wielu jednostek
@@ -333,17 +332,7 @@ public class UnitsManager : MonoBehaviour
             }
             unit.ChangeUnitColor(newUnitObject);
 
-            //Jednostki duże
-            if (_unitSizeToggle.isOn)
-            {
-                newUnitObject.transform.localScale = new Vector3(1.4f, 1.4f, 1.4f);
-                stats.IsBig = true;
-            }
-            else
-            {
-                newUnitObject.transform.localScale = new Vector3(1f, 1f, 1f);
-                stats.IsBig = false;
-            }
+            stats.ChangeTokenSize((int)stats.Size);
 
             //Losuje początkowe statystyki dla każdej jednostki
             if (!IsSavedUnitsManaging)
@@ -591,17 +580,8 @@ public class UnitsManager : MonoBehaviour
         }
         unit.GetComponent<Unit>().ChangeUnitColor(unit);
 
-        //Jednostki duże
-        if (_unitSizeToggle.isOn)
-        {
-            stats.IsBig = true;
-            unit.transform.localScale = new Vector3(1.4f, 1.4f, 1.4f);
-        }
-        else
-        {
-            stats.IsBig = false;
-            unit.transform.localScale = new Vector3(1f, 1f, 1f);
-        }
+        stats.ChangeTokenSize((int)stats.Size);
+
         //Sprawdza, czy rasa jest zmieniana
         if (stats.Id != _unitsDropdown.GetSelectedIndex())
         {
@@ -875,22 +855,22 @@ public class UnitsManager : MonoBehaviour
 
         Stats stats = unit.GetComponent<Stats>();
 
-        // if (stats.Mag > 0)
-        // {
-        //     _spellbookButton.SetActive(true);
-        //     DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć, które może rzucić jednostka
-        //     unit.GetComponent<Unit>().CanCastSpell = true;
+        if (stats.MagicLanguage > 0)
+        {
+            _spellbookButton.SetActive(true);
+            DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć, które może rzucić jednostka
+            unit.GetComponent<Unit>().CanCastSpell = true;
 
-        //     if(unit.GetComponent<Spell>() == null)
-        //     {
-        //         unit.AddComponent<Spell>();
-        //     }
-        // }
-        // else
-        // {
-        //     _spellbookButton.SetActive(false);
-        //     _spellListPanel.SetActive(false);
-        // }
+            if (unit.GetComponent<Spell>() == null)
+            {
+                unit.AddComponent<Spell>();
+            }
+        }
+        else
+        {
+            _spellbookButton.SetActive(false);
+            _spellListPanel.SetActive(false);
+        }
 
         //_nameDisplay.text = stats.Name;
         _raceDisplay.text = stats.Race;
@@ -1178,17 +1158,17 @@ public class UnitsManager : MonoBehaviour
         // Zaktualizowanie listy wszystkich jednostek, których się boi
         foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
         {
+            if(pair.Key == null) continue;
+
             if (!pair.Key.CompareTag(unit.tag))
             {
                 if ((pair.Key.GetComponent<Stats>().Fear != 0 && pair.Key.GetComponent<Stats>().Fear > successLevel) || pair.Key.GetComponent<Stats>().Size - stats.Size > successLevel)
                 {
                     unit.FearedUnits.Add(pair.Key);
-                    Debug.Log($"{pair.Key.GetComponent<Stats>().Name} został dodany do listy jednostek, których boi się {stats.Name}");
                 }
                 else if (unit.FearedUnits.Contains(pair.Key))
                 {
                     unit.FearedUnits.Remove(pair.Key);
-                    Debug.Log($"{pair.Key.GetComponent<Stats>().Name} został usunięty z listy jednostek, których boi się {stats.Name}");
                 }
             }
         }
@@ -1201,7 +1181,7 @@ public class UnitsManager : MonoBehaviour
         unit.FearLevel = Math.Min(unit.FearLevel, value);
 
         // Tworzenie stringa z nazwami przeciwników, których jednostka się boi
-        string opponentsNames = unit.FearedUnits.Count > 0 ? string.Join(", ", unit.FearedUnits.Select(u => u.GetComponent<Stats>().Name)) : "";
+        string opponentsNames = unit.FearedUnits.Count > 0 ? string.Join(", ", unit.FearedUnits.Where(u => u != null).Select(u => u.GetComponent<Stats>().Name)) : "";
 
         if (unit.FearLevel == 0)
         {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using UnityEngine;
 
@@ -17,7 +18,6 @@ public enum SizeCategory
 public class Stats : MonoBehaviour
 {
     public int Id;
-    public bool IsBig;
     public int Overall; // Łączna wartość bojowa jednostki
     public int Exp; // Punkty doświadczenia
 
@@ -74,6 +74,7 @@ public class Stats : MonoBehaviour
     public int Cool; // Opanowanie
     public int Dodge; // Unik
     public int Endurance; // Odporność
+    public int MagicLanguage; // Język magiczny
     public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
@@ -256,8 +257,27 @@ public class Stats : MonoBehaviour
         // Aktualizacja rozmiaru
         Size = newSizeCategory;
 
+        ChangeTokenSize((int)Size);
+
         // Przeliczenie zdrowia
         CalculateMaxHealth(true);
+    }
+
+    public void ChangeTokenSize(int size)
+    {
+        if (size > 3)
+        {
+            float tokenSizeModifier = 1f + (size - 3) * 0.25f;
+            transform.localScale = new Vector3(tokenSizeModifier, tokenSizeModifier, 1f);
+        }
+        else if (size < 2)
+        {
+            transform.localScale = new Vector3(0.8f, 0.8f, 1f);
+        }
+        else
+        {
+            transform.localScale = new Vector3(1f, 1f, 1f);
+        }
     }
 
 

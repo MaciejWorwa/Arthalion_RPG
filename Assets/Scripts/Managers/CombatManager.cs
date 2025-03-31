@@ -968,12 +968,13 @@ public class CombatManager : MonoBehaviour
                 {
                     Debug.Log($"Punkty żywotności {targetStats.Name}: <color=#4dd2ff>{targetStats.TempHealth}/{targetStats.MaxHealth}</color>");
                 }
-                target.DisplayUnitHealthPoints();
             }
             else if (targetStats.TempHealth >= 0)
             {
                 Debug.Log($"{targetStats.Name} został zraniony.");
             }
+
+            target.DisplayUnitHealthPoints();
 
             if ((targetStats.TempHealth < 0 && GameManager.IsHealthPointsHidingMode) || (targetStats.TempHealth < 0 && targetStats.gameObject.CompareTag("EnemyUnit") && GameManager.IsStatsHidingMode))
             {
@@ -1393,11 +1394,11 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        // Modyfikatory za jakość broni
-        if (attackerWeapon.Quality == "Kiepska") attackModifier -= 5;
-        else if (attackerWeapon.Quality == "Najlepsza" || attackerWeapon.Quality == "Magiczna") attackModifier += 5;
+        //// Modyfikatory za jakość broni
+        //if (attackerWeapon.Quality == "Kiepska") attackModifier -= 5;
+        //else if (attackerWeapon.Quality == "Najlepsza" || attackerWeapon.Quality == "Magiczna") attackModifier += 5;
 
-        Debug.Log($"Uwzględniono modyfikator za jakość broni. Łączny modyfikator: " + attackModifier);
+        //Debug.Log($"Uwzględniono modyfikator za jakość broni. Łączny modyfikator: " + attackModifier);
 
         // Modyfikator za stany celu
         if (targetUnit.Deafened > 0 || targetUnit.Stunned > 0 || targetUnit.Blinded > 0) attackModifier += 10;
@@ -1437,7 +1438,11 @@ public class CombatManager : MonoBehaviour
         {
             // Przewaga liczebna
             attackModifier += outNumber;
-            Debug.Log("Uwzględniono modyfikator za przewagę liczebną. Łączny modyfikator: " + attackModifier);
+
+            if(outNumber != 0)
+            {
+                Debug.Log("Uwzględniono modyfikator za przewagę liczebną. Łączny modyfikator: " + attackModifier);
+            }
 
             if (attackerUnit.FeintedUnitId == targetUnit.UnitId)
             {
@@ -1466,18 +1471,21 @@ public class CombatManager : MonoBehaviour
                 _ => 0 // Domyślny przypadek, jeśli żaden warunek nie zostanie spełniony
             };
 
-            Debug.Log($"Attack distance: {attackDistance}, Weapon range: {attackerWeapon.AttackRange}");
+            Debug.Log($"Dystans: {attackDistance}, zasięg broni: {attackerWeapon.AttackRange}");
             Debug.Log("Uwzględniono modyfikator za dystans. Łączny modyfikator: " + attackModifier);
 
             //Modyfikator za rozmiar celu
             if (targetStats.Size == SizeCategory.Monstrous) attackModifier += 60;
             else if (targetStats.Size == SizeCategory.Enormous) attackModifier += 40;
-            else if (targetStats.Size == SizeCategory.Large) attackModifier += 40;
+            else if (targetStats.Size == SizeCategory.Large) attackModifier += 20;
             else if (targetStats.Size == SizeCategory.Small && !attackerStats.Sharpshooter) attackModifier -= 10;
             else if (targetStats.Size == SizeCategory.Little && !attackerStats.Sharpshooter) attackModifier -= 20;
             else if (targetStats.Size == SizeCategory.Tiny && !attackerStats.Sharpshooter) attackModifier -= 30;
 
-            Debug.Log("Uwzględniono modyfikator za rozmiar celu. Łączny modyfikator: " + attackModifier);
+            if(targetStats.Size != SizeCategory.Average)
+            {
+                Debug.Log("Uwzględniono modyfikator za rozmiar celu. Łączny modyfikator: " + attackModifier);
+            }
 
             //Modyfikator za oślepienie
             if (attackerUnit.Blinded > 0 && attackerUnit.Fatiqued == 0 && attackerUnit.Poison == 0)
@@ -1952,17 +1960,14 @@ public class CombatManager : MonoBehaviour
             {
                 HandleDeath(targetStats, targetStats.gameObject, attackerStats);
             }
-            else
-            {
-                targetStats.GetComponent<Unit>().DisplayUnitHealthPoints();
-            }
         }
         else if (targetStats.gameObject != null && targetStats.TempHealth < 0)
         {
             // Jeśli jednostka nie umarła, ale jej żywotność spadła poniżej 0 – ustaw na 0.
             targetStats.TempHealth = 0;
-            targetStats.GetComponent<Unit>().DisplayUnitHealthPoints();
         }
+
+        targetStats.GetComponent<Unit>().DisplayUnitHealthPoints();
     }
     #endregion
 

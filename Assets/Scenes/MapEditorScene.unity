@@ -14125,7 +14125,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 5f16aa0415b72a248873e1b0a0b70ae9, type: 3}
+  m_Sprite: {fileID: 21300000, guid: ec2da3841c5f92c4aa4ef397a7f92de7, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -80110,7 +80110,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: b7760c8fbf54b624c9663c16d104d05b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: bdc493333e8b55340842b6bb747a5bf4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -90906,6 +90906,9 @@ MonoBehaviour:
   _autosaveButton: {fileID: 812957159}
   _showAnimationsButton: {fileID: 1015628914}
   TileCoveringState: 
+  _mapElementsPanel: {fileID: 0}
+  _initiativePanel: {fileID: 0}
+  _unitsManagingPanel: {fileID: 0}
   activePanels: []
   _mainMenuPanel: {fileID: 466833132}
   _tileCoveringPanel: {fileID: 0}

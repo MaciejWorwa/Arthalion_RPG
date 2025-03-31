@@ -31,7 +31,6 @@ public class DiceRollManager : MonoBehaviour
     // Zmienne do przechowywania wyniku
     public int ManualRollResult;
     public bool IsWaitingForRoll;
-    private static bool IsRollingInProgress = false;
 
     public int RollModifier = 0;
     [SerializeField] private UnityEngine.UI.Slider _modifierSlider;
@@ -51,13 +50,11 @@ public class DiceRollManager : MonoBehaviour
     public IEnumerator WaitForRollValue(Stats stats, string rollContext, Action<int> callback)
     {
         // Czekaj, a¿ inne rzuty siê zakoñcz¹
-        while (IsRollingInProgress)
+        while (_applyRollResultPanel.activeSelf)
         {
             yield return null;
         }
 
-        // Teraz ten rzut jest aktywny
-        IsRollingInProgress = true;
         ManualRollResult = 0;
 
         if (_applyRollResultPanel != null)
@@ -80,9 +77,6 @@ public class DiceRollManager : MonoBehaviour
         {
             _applyRollResultPanel.SetActive(false);
         }
-
-        // Zwalniamy flagê, bo rzut siê zakoñczy³
-        IsRollingInProgress = false;
 
         callback?.Invoke(ManualRollResult);
     }

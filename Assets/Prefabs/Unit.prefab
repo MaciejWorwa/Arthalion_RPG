@@ -624,7 +624,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1135006344981783300}
   - {fileID: 4431166025300685952}
@@ -744,6 +744,7 @@ MonoBehaviour:
   IsRunning: 0
   IsCharging: 0
   IsRetreating: 0
+  IsFrenzy: 0
   Ablaze: 0
   Bleeding: 0
   Blinded: 0
@@ -758,9 +759,10 @@ MonoBehaviour:
   Unconscious: 0
   EntangledUnitId: 0
   FeintedUnitId: 0
-  HelplessDuration: 0
-  IsScared: 0
   IsFearTestPassed: 0
+  IsTerrorTestPassed: 0
+  FearLevel: 0
+  HelplessDuration: 0
   SpellDuration: 0
   StunDuration: 0
   Trapped: 0
@@ -788,13 +790,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Id: 2
-  IsBig: 0
   Overall: 0
   Exp: 0
   Name: 
   Race: 
   Size: 0
-  PrimaryWeaponIds: 
+  PrimaryWeaponNames: []
   WW: 0
   US: 0
   S: 0
@@ -829,6 +830,7 @@ MonoBehaviour:
   Cool: 0
   Dodge: 0
   Endurance: 0
+  MagicLanguage: 0
   AccurateShot: 0
   Ambidextrous: 0
   Champion: 0
@@ -837,16 +839,20 @@ MonoBehaviour:
   DirtyFighting: 0
   Disarm: 0
   DualWielder: 0
+  Fear: 0
   Feint: 0
-  Frightening: 0
+  Frenzy: 0
+  FrenzyAttacksLeft: 0
   FuriousAssault: 0
   Gunner: 0
   Hardy: 0
+  ImmunityToPsychology: 0
   Implacable: 0
   IronJaw: 0
   RapidReload: 0
   ReactionStrike: 0
   ReactionStrikesLeft: 0
+  Relentless: 0
   Resolute: 0
   Riposte: 0
   RiposteAttacksLeft: 0
@@ -862,15 +868,14 @@ MonoBehaviour:
   StrongBack: 0
   Sturdy: 0
   SureShot: 0
+  Terror: 0
   Unshakable: 0
   ArmouredCasting: 0
   DaemonicAura: 0
   Ethereal: 0
   FastHands: 0
-  Fearless: 0
   MagicSense: 0
   MightyMissile: 0
-  Terryfying: 0
   WillOfIron: 0
   HighestDamageDealt: 0
   TotalDamageDealt: 0
@@ -951,6 +956,8 @@ MonoBehaviour:
   Practical: 0
   Shoddy: 0
   Unrielable: 0
+  Bulky: 0
+  Lightweight: 0
   Accurate: 0
   Blackpowder: 0
   Blast: 0
@@ -980,10 +987,8 @@ MonoBehaviour:
   Unbalanced: 0
   Wrap: 0
   Armor: 0
-  Bulky: 0
   Flexible: 0
   Impenetrable: 0
-  Lightweight: 0
   Partial: 0
   WeakPoints: 0
 --- !u!114 &-2613873717699355788
@@ -1552,6 +1557,81 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!1 &6594263883780136064
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8909326420627387961}
+  - component: {fileID: 5691349322658720333}
+  - component: {fileID: 6093203127764454880}
+  m_Layer: 6
+  m_Name: mount_image
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &8909326420627387961
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6594263883780136064}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 20}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1135006344981783300}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -21, y: -42}
+  m_SizeDelta: {x: 23, y: 23.7}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &5691349322658720333
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6594263883780136064}
+  m_CullTransparentMesh: 1
+--- !u!114 &6093203127764454880
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6594263883780136064}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: e7892b20f7d7b5046a6af5f32260ab4e, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &7022358155697320939
 GameObject:
   m_ObjectHideFlags: 0
@@ -1865,6 +1945,7 @@ RectTransform:
   - {fileID: 8414936834307488893}
   - {fileID: 3348826899208193843}
   - {fileID: 4333731761014040117}
+  - {fileID: 8909326420627387961}
   m_Father: {fileID: 2692510575956706586}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}

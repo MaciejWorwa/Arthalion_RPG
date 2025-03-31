@@ -116,8 +116,7 @@ public class Tile : MonoBehaviour
         }
 
         // Sprawdzamy, czy można umieszczać elementy na mapie
-        if (SceneManager.GetActiveScene().buildIndex != 0 ||
-            !GameManager.IsMousePressed ||
+        if (!GameManager.IsMousePressed ||
             GameManager.Instance.IsPointerOverUI() ||
             DraggableObject.IsDragging) return;
 

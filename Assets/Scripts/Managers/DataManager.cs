@@ -628,7 +628,6 @@ public class UnitData
 public class StatsData
 {
     public int Id;
-    public bool IsBig;
     public int Exp; // Punkty doświadczenia
     public string Name;
     public string Race;
@@ -723,6 +722,7 @@ public class StatsData
     public int Cool; // Opanowanie
     public int Dodge; // Unik
     public int Endurance; // Odporność
+    public int MagicLanguage; // Język magiczny
     public List<Pair> MeleeSerialized = new List<Pair>();
     public List<Pair> RangedSerialized = new List<Pair>();
 

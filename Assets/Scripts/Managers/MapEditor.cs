@@ -29,7 +29,7 @@ public class MapEditor : MonoBehaviour
         instance = this;
 
         // Ustawiamy obiekt, aby nie był niszczony przy ładowaniu nowej sceny
-        DontDestroyOnLoad(gameObject);
+       // DontDestroyOnLoad(gameObject);
     }
 
     [SerializeField] private Transform _allElementsGrid;
@@ -81,10 +81,13 @@ public class MapEditor : MonoBehaviour
 
         if (BackgroundScale == 0) BackgroundScale = 1;
 
-        // Ustawienie oryginalnego rozmiaru i pozycji
-        _backgroundCanvas = _background.GetComponentInParent<Canvas>();
-        _originalBackgroundPosition = Vector2.zero;
-        _originalBackgroundSize = _backgroundCanvas.GetComponent<RectTransform>().sizeDelta;
+        if(_background != null)
+        {
+            // Ustawienie oryginalnego rozmiaru i pozycji
+            _backgroundCanvas = _background.GetComponentInParent<Canvas>();
+            _originalBackgroundPosition = Vector2.zero;
+            _originalBackgroundSize = _backgroundCanvas.GetComponent<RectTransform>().sizeDelta;
+        }
 
         //Uwzględnienie zmian rozmiaru i pozycji
         if (BackgroundImagePath != null)
@@ -457,12 +460,9 @@ public class MapEditor : MonoBehaviour
             {
                 if (!colliders[i].GetComponent<MapElement>().IsCollider && RemovedPositions.Count > 0) return;
 
-                Debug.Log("All elements count : " + AllElements.Count);
                 Debug.Log(gameObject.name);
                 AllElements.Remove(gameObject);
                 Destroy(colliders[i].gameObject);
-
-                Debug.Log("All elements count: " + AllElements.Count);
 
                 if (colliders[i].GetComponent<MapElement>().IsCollider)
                 {
