@@ -350,7 +350,7 @@ public class CombatManager : MonoBehaviour
         MeleeCategory meleeSkill = EnumConverter.ParseEnum<MeleeCategory>(attackerWeapon.Category) ?? MeleeCategory.Basic;
         RangedCategory rangedSkill = EnumConverter.ParseEnum<RangedCategory>(attackerWeapon.Category) ?? RangedCategory.Bow;
         int skillModifier = isRangedAttack ? attackerStats.GetSkillModifier(attackerStats.Ranged, rangedSkill) : attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
-        _isTrainedWeaponCategory = skillModifier > 0 ? true : false;
+        _isTrainedWeaponCategory = meleeSkill == MeleeCategory.Basic || skillModifier > 0;
 
         if (isRangedAttack && !_isTrainedWeaponCategory && attackerWeapon.Category != "crossbow" && attackerWeapon.Category != "throwing")
         {
@@ -1747,7 +1747,7 @@ public class CombatManager : MonoBehaviour
 
         // Element pancerza, który został trafiony
         Weapon selectedArmor = armorByLocation
-             .FirstOrDefault(weapon => (weapon.Category == "plate" || weapon.Shield > 0) && weapon.Armor - weapon.Damage > 0) // Najpierw szuka zbroi płytowej lub tarczy, ale tylko jeśli Armor > 0 (inaczej oznacza, że pancerz jest już całkowicie zniszczony)
+             .FirstOrDefault(weapon => (weapon.Category == "plate") && weapon.Armor - weapon.Damage > 0) // Najpierw szuka zbroi płytowej lub tarczy, ale tylko jeśli Armor > 0 (inaczej oznacza, że pancerz jest już całkowicie zniszczony)
              ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "chain" && weapon.Armor - weapon.Damage > 0) // Potem zbroja kolcza, ale tylko jeśli Armor > 0
              ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "leather" && weapon.Armor - weapon.Damage > 0); // Na końcu zbroja skórzana, ale tylko jeśli Armor > 0
 
@@ -2089,12 +2089,20 @@ public class CombatManager : MonoBehaviour
 
     private int CalculateArmor(Stats attackerStats, Stats targetStats, Weapon attackerWeapon, string hitLocation, int attackRollResult)
     {
-        int armor = hitLocation switch
+        // Normalizujemy lokalizację trafienia
+        string normalizedHitLocation = hitLocation switch
+        {
+            "rightArm" or "leftArm" => "arms",
+            "rightLeg" or "leftLeg" => "legs",
+            _ => hitLocation
+        };
+
+        int armor = normalizedHitLocation switch
         {
             "head" => targetStats.Armor_head,
-            "rightArm" or "leftArm" => targetStats.Armor_arms,
+            "arms" => targetStats.Armor_arms,
             "torso" => targetStats.Armor_torso,
-            "rightLeg" or "leftLeg" => targetStats.Armor_legs,
+            "legs" => targetStats.Armor_legs,
             _ => 0
         };
 
@@ -2106,11 +2114,16 @@ public class CombatManager : MonoBehaviour
         //Zwiększenie pancerza, jeśli cel ataku posiada tarcze i użył parowania podczas obrony w tym ataku
         if (_parryOrDodge == "parry")
         {
-            armor += inventory.EquippedWeapons.Where(weapon => weapon != null && weapon.Shield > 0).Select(weapon => weapon.Shield).FirstOrDefault();
+            int shieldValue = inventory.EquippedWeapons
+                .Where(weapon => weapon != null && weapon.Shield > 0)
+                .Select(weapon => Mathf.Max(weapon.Shield - weapon.Damage, 0)) // Nie obniża cechy Shield poniżej 0
+                .FirstOrDefault();
+
+            armor += shieldValue; // Dodaje wartość tarczy do sumarycznej zbroi
         }
 
         // Pobranie pancerza dla trafionej lokalizacji
-        List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(hitLocation) ? inventory.ArmorByLocation[hitLocation] : new List<Weapon>();
+        List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(normalizedHitLocation) ? inventory.ArmorByLocation[normalizedHitLocation] : new List<Weapon>();
 
         // Sprawdza, czy trafienie jest trafieniem krytycznym
         bool isCriticalHit = DiceRollManager.Instance.IsDoubleDigit(attackRollResult);
@@ -2152,24 +2165,32 @@ public class CombatManager : MonoBehaviour
             armor--;
         }
 
+        Weapon shield = null;
+        //Sprawdza, czy jednostka broniąca się posiada tarcze i użyła parowania. Jeśli tak dodaje ją do listy broni dla danej lokacji
+        if (_parryOrDodge == "parry" && inventory.EquippedWeapons.Any(weapon => weapon != null && weapon.Shield > 0))
+        {
+            shield = inventory.EquippedWeapons.FirstOrDefault(weapon => weapon != null && weapon.Shield > 0 && weapon.Shield - weapon.Damage > 0);
+        }
+
         // Element pancerza, który został trafiony
-        Weapon selectedArmor = armorByLocation
-             .FirstOrDefault(weapon => (weapon.Category == "plate" || weapon.Shield > 0) && weapon.Armor - weapon.Damage > 0) // Najpierw szuka zbroi płytowej lub tarczy, ale tylko jeśli Armor > 0 (inaczej oznacza, że pancerz jest już całkowicie zniszczony)
+        Weapon primaryArmor = armorByLocation
+             .FirstOrDefault(weapon => (weapon.Category == "plate") && weapon.Armor - weapon.Damage > 0) // Najpierw szuka zbroi płytowej lub tarczy, ale tylko jeśli Armor > 0 (inaczej oznacza, że pancerz jest już całkowicie zniszczony)
              ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "chain" && weapon.Armor - weapon.Damage > 0) // Potem zbroja kolcza, ale tylko jeśli Armor > 0
              ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "leather" && weapon.Armor - weapon.Damage > 0); // Na końcu zbroja skórzana, ale tylko jeśli Armor > 0
+
+        // Tworzy tablicę potencjalnie trafionych elementów zbroi (jeden element + ewentualnie tarcza)
+        Weapon[] armorAndShield = new Weapon[] { primaryArmor, shield }.Where(w => w != null).ToArray();
+
+        // Losuje trafiony element, jeśli są dwa różne do wyboru
+        Weapon selectedArmor = (armorAndShield.Length == 2) ? armorAndShield[UnityEngine.Random.Range(0, 2)] : armorAndShield.FirstOrDefault();
 
         //Uwzględnienie broni Rąbiącej
         if (attackerWeapon.Hack && _isTrainedWeaponCategory)
         {
-            //Sprawdza, czy jednostka broniąca się posiada tarcze i użyła parowania. Jeśli tak dodaje ją do listy broni dla danej lokacji
-            if (_parryOrDodge == "parry" && inventory.EquippedWeapons.Any(weapon => weapon != null && weapon.Shield > 0))
-            {
-                Weapon shield = inventory.EquippedWeapons.FirstOrDefault(weapon => weapon != null && weapon.Shield > 0);
-                armorByLocation.Add(shield);
-            }
-
             if (selectedArmor != null)
             {
+                Debug.Log(selectedArmor.Name);
+
                 if (selectedArmor.Durable == 0) // Uwzględnienie cechy Wytrzymały
                 {
                     selectedArmor.Damage++;
@@ -2181,7 +2202,7 @@ public class CombatManager : MonoBehaviour
 
                 string message = $"Broń rąbiąca uszkadza {selectedArmor.Name}.";
 
-                if (selectedArmor.Damage >= selectedArmor.Armor)
+                if (selectedArmor.Damage >= selectedArmor.Armor && selectedArmor.Shield == 0 || selectedArmor.Damage >= selectedArmor.Shield && selectedArmor.Shield > 0)
                 {
                     message += " <color=red>Ten element pancerza jest już uszkodzony tak bardzo, że stał się bezużyteczny.</color>";
                 }
