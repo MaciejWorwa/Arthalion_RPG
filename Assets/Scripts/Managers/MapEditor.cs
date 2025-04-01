@@ -666,7 +666,7 @@ public class MapEditor : MonoBehaviour
                 _backgroundCanvas.GetComponent<RectTransform>().anchoredPosition = new Vector2(BackgroundPositionX, BackgroundPositionY);
 
                 //Zresetowanie skali i pozycji tła
-                if (resetProperties == false)
+                if (resetProperties == false && _backgroundScaleSlider != null)
                 {
                     _backgroundScaleSlider.value = BackgroundScale;
                     ResizeCanvas();
