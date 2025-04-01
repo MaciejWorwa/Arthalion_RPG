@@ -47,7 +47,7 @@
       "Name": "Broń naturalna",
       "Type": [ "melee", "natural-weapon" ],
       "AttackRange": 1.5,
-      "S": 0,
+      "S": 4,
       "NaturalWeapon": true
     },
     {
@@ -228,6 +228,16 @@
       "S": 3,
       "Encumbrance": 1,
       "Impale": true
+    },
+    {
+      "Name": "Pałka",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 1,
+      "Unbalanced": true,
+      "Undamaging": true
     },
     {
       "Name": "Pistolet",

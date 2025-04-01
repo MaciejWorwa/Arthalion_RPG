@@ -33,6 +33,8 @@ public class DiceRollManager : MonoBehaviour
     public bool IsWaitingForRoll;
 
     public int RollModifier = 0;
+    private bool _isRollModifierUpdating = false;
+
     [SerializeField] private UnityEngine.UI.Slider _modifierSlider;
     [SerializeField] private TMP_InputField _modifierInputField;
 
@@ -110,29 +112,33 @@ public class DiceRollManager : MonoBehaviour
 
     public void SetRollModifier(GameObject gameObject)
     {
+        if (_isRollModifierUpdating) return;
+        _isRollModifierUpdating = true;
+
         if (gameObject.GetComponent<UnityEngine.UI.Slider>() != null)
         {
-            int roundedValue = Mathf.RoundToInt(_modifierSlider.value / 10f) * 10; // Zaokr¹glenie do wielokrotnoœci 10
-            _modifierSlider.value = roundedValue;
+            int roundedValue = Mathf.RoundToInt(_modifierSlider.value) * 10; // Mno¿enie wartoœci slidera x10
             _modifierInputField.text = roundedValue.ToString();
+            RollModifier = roundedValue;
         }
         else
         {
             if (int.TryParse(_modifierInputField.text, out int value))
             {
                 value = Mathf.Clamp(value, -30, 60);
-                value = Mathf.RoundToInt(value / 10f) * 10; // Zaokr¹glenie do najbli¿szej wielokrotnoœci 10
-                _modifierSlider.value = value;
-                _modifierInputField.text = value.ToString();
+                _modifierSlider.SetValueWithoutNotify(Mathf.RoundToInt(value / 10f)); // Dopasowanie wartoœci slidera bez wywo³ania eventu
+                RollModifier = value;
             }
             else
             {
                 _modifierInputField.text = "0";
+                RollModifier = 0;
             }
         }
 
-        RollModifier = (int)_modifierSlider.value;
+        _isRollModifierUpdating = false;
     }
+
 
     public void ResetRollModifier()
     {

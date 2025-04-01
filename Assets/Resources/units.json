@@ -24,7 +24,7 @@
     {
       "Race": "Elf",
       "Size": 3,
-      "PrimaryWeaponNames": [ "Miecz", "Łuk" ],
+      "PrimaryWeaponNames": [ "Miecz", "Łuk", "Tarcza", "Skórzana kurta", "Skórzany hełm", "Napierśnik", "Młot bojowy"],
       "WW": 30,
       "US": 30,
       "S": 20,
@@ -80,22 +80,6 @@
       "ExtraPoints": 3
     },
     {
-      "Race": "Gołąb",
-      "Size": 0,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 65,
-      "US": 60,
-      "S": 5,
-      "Wt": 15,
-      "I": 60,
-      "Zw": 25,
-      "Zr": 15,
-      "Int": 45,
-      "SW": 20,
-      "Ogd": 25,
-      "Sz": 6
-    },
-    {
       "Race": "Smok",
       "Size": 5,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -109,7 +93,26 @@
       "Int": 45,
       "SW": 85,
       "Ogd": 25,
-      "Sz": 6
+      "Sz": 6,
+      "NaturalArmor": 5
+    },
+    {
+      "Race": "Troll",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 30,
+      "US": 15,
+      "S": 55,
+      "Wt": 45,
+      "I": 10,
+      "Zw": 15,
+      "Zr": 15,
+      "Int": 10,
+      "SW": 20,
+      "Ogd": 5,
+      "Sz": 6,
+      "Regeneration": true,
+      "NaturalArmor": 2
     }
   ]
 }

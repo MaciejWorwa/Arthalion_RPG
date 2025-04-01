@@ -377,6 +377,13 @@ public class CombatManager : MonoBehaviour
             yield break;
         }
 
+        // Uwzględnienie cechy Eteryczny
+        if (targetStats.Ethereal && attackerWeapon.Quality != "Magiczna" && attackerStats.Daemonic == 0)
+        {
+            Debug.Log($"{targetStats.Name} jest eteryczny/a i może zostać zraniony/a tylko magiczną bronią lub zaklęciem.");
+            yield break;
+        }
+
         // 3) Sprawdź zasięg i ewentualnie wykonaj szarżę
         float effectiveAttackRange = attackerWeapon.AttackRange;
 
@@ -745,7 +752,14 @@ public class CombatManager : MonoBehaviour
 
                 if (attackerStats.TempHealth < 0)
                 {
-                    StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, hitLocation, attackerWeapon, defenceRollResult));
+                    if (attackerStats.Daemonic > 0)
+                    {
+                        Debug.Log($"<color=red>{attackerStats.Name} zostaje odesłany do domeny Chaosu.</color>");
+                    }
+                    else
+                    {
+                        StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, hitLocation, attackerWeapon, defenceRollResult));
+                    }
 
                     if (GameManager.IsAutoKillMode)
                     {
@@ -903,7 +917,14 @@ public class CombatManager : MonoBehaviour
 
         if (targetStats.TempHealth < 0)
         {
-            StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon));
+            if(targetStats.Daemonic > 0)
+            {
+                Debug.Log($"<color=red>{targetStats.Name} zostaje odesłany do domeny Chaosu.</color>");
+            }
+            else
+            {
+                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon));
+            }
 
             if (GameManager.IsAutoKillMode)
             {
@@ -949,6 +970,20 @@ public class CombatManager : MonoBehaviour
                 finalDamage = 1;
                 reducedDamage = damage - 1;
             }
+        }
+
+        // Uwzględnienie cechy Demoniczny
+        if (targetStats.Daemonic > 0)
+        {
+            int rollResult = UnityEngine.Random.Range(1, 11);
+            bool ignoredDamage = rollResult >= targetStats.Daemonic;
+            string daemonicRollMessage = ignoredDamage
+                ? $"{targetStats.Name} ignoruje wszystkie obrażenia."
+                : $"{targetStats.Name} nie udało się uniknąć obrażeń.";
+
+            Debug.Log($"{targetStats.Name} wykonuje rzut obronny w związku z cechą \"Demoniczny\". Wynik rzutu: {rollResult}. {daemonicRollMessage}");
+
+            if (ignoredDamage) return;
         }
 
         if (finalDamage > 0)
@@ -1127,7 +1162,7 @@ public class CombatManager : MonoBehaviour
 
     private IEnumerator AutoDefense(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier, MeleeCategory targetMeleeSkill)
     {
-        if (parryModifier >= dodgeModifier)
+        if (parryValue >= dodgeValue)
         {
             yield return StartCoroutine(Parry(target, targetStats, attackerStats, targetWeapon, parryValue, parryModifier, targetMeleeSkill));
         }
@@ -1155,10 +1190,6 @@ public class CombatManager : MonoBehaviour
         {
             yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "parowanie", result => defenceRollResult = result));
             if (defenceRollResult == 0) yield break;
-
-            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "parowanie"));
-            //defenceRollResult = DiceRollManager.Instance.ManualRollResult;
-            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -1216,10 +1247,6 @@ public class CombatManager : MonoBehaviour
         {
             yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "unik", result => defenceRollResult = result));
             if (defenceRollResult == 0) yield break;
-
-            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "unik"));
-            //defenceRollResult = DiceRollManager.Instance.ManualRollResult;
-            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -1697,9 +1724,23 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Critical wounds
-    private IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, String hitLocation, Weapon attackerWeapon, int rollOnAttack = 0)
+    private IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, string hitLocation, Weapon attackerWeapon, int rollOnAttack = 0)
     {
         //TA METODA JEST DO ROZBUDOWANIA. Można dodać konkretne dodatkowe efekty np. ogłuszenie, krwawienie itp. w zależności również od lokacji
+
+        // Uwzględnienie cechy Demoniczny
+        if (targetStats.Daemonic > 0)
+        {
+            int daemonicRollResult = UnityEngine.Random.Range(1, 11);
+            bool ignoredDamage = daemonicRollResult >= targetStats.Daemonic;
+            string daemonicRollMessage = ignoredDamage
+                ? $"{targetStats.Name} ignoruje wszystkie obrażenia."
+                : $"{targetStats.Name} nie udało się uniknąć obrażeń.";
+
+            Debug.Log($"{targetStats.Name} wykonuje rzut obronny w związku z cechą \"Demoniczny\". Wynik rzutu: {daemonicRollResult}. {daemonicRollMessage}");
+
+            if (ignoredDamage) yield break;
+        }
 
         // Pobranie pancerza dla trafionej lokalizacji
         List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(hitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[hitLocation] : new List<Weapon>();
@@ -1722,10 +1763,6 @@ public class CombatManager : MonoBehaviour
         {
             yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie krytyczne", result => rollResult = result));
             if (rollResult == 0) yield break;
-
-            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie krytyczne"));
-            //rollResult = DiceRollManager.Instance.ManualRollResult;
-            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -3100,10 +3137,6 @@ public class CombatManager : MonoBehaviour
         {
             yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli", result => rollResult = result));
             if (rollResult == 0) yield break;
-
-            //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli"));
-            //rollResult = DiceRollManager.Instance.ManualRollResult;
-            //if (DiceRollManager.Instance.ManualRollResult == 0) yield break;
         }
         else
         {
@@ -3114,8 +3147,13 @@ public class CombatManager : MonoBehaviour
         int successValue = DiceRollManager.Instance.TestSkill("SW", stats, null, 0, rollResult)[0];
         if (successValue >= 0)
         {
-            Debug.Log($"{stats.Name} wprowadza się w szał bojowy.");
+            Debug.Log($"<color=#FF7F50>{stats.Name} wprowadza się w szał bojowy. Staje się niewrażliwa na strach i grozę.</color>");
             unit.IsFrenzy = true;
+
+            // Jednostka w szale bojowym nie odczuwa strachu
+            unit.IsFearTestPassed = true;
+            unit.FearedUnits.Clear();
+            unit.Broken = 0;
         }
         else
         {

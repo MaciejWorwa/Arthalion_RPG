@@ -67,6 +67,7 @@ public class Stats : MonoBehaviour
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
+    public int NaturalArmor;
 
     [Header("Umiejętności")]
     public int Athletics;
@@ -84,22 +85,25 @@ public class Stats : MonoBehaviour
     public bool Champion; // Czempion
     public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
+    public int Daemonic; // Demoniczny
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
     public int DualWielder; // Dwie bronie
-    public int Fear; // Strach ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Ethereal; // Eteryczny
+    public int Fear; // Strach
     public int Feint; // Finta
     public bool Frenzy; // Szał bojowy  ------------------------------------ UWZGLĘDNIĆ JESZCZE JEGO DZIAŁANIE GDY WPROWADZE MECHANIKĘ STRACHU
     public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
     public int Hardy; // Twardziel
-    public bool ImmunityToPsychology; // Niewrażliwość na psychologię ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int Implacable; // Nieubłagany
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający
     public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
+    public bool Regeneration; // Regeneracja
     public bool Relentless; // Nieustępliwy
     public int Resolute; // Nieugięty
     public int Riposte; // Riposta
@@ -116,13 +120,11 @@ public class Stats : MonoBehaviour
     public int StrongBack; // Mocne plecy
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
-    public int Terror; // Groza ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public int Terror; // Groza
     public int Unshakable; // Niewzruszony
 
     //STARE
     public bool ArmouredCasting; // Pancerz Wiary
-    public bool DaemonicAura; // Demoniczna aura (Wt +2 na niemagiczną broń, odporność na truciznę, ataki demona to broń magiczna)
-    public bool Ethereal; // Eteryczny
     public bool FastHands; //Dotyk mocy
     public bool MagicSense; //Zmysł magii
     public bool MightyMissile; // Morderczy pocisk
@@ -295,10 +297,10 @@ public class Stats : MonoBehaviour
 
     public void CheckForSpecialRaceAbilities()
     {
-        //Zdolność regeneracji
-        if (Race == "Troll" || Race == "Troll Chaosu")
+        // Zdolność regeneracji
+        if (Regeneration)
         {
-            int regeneration = UnityEngine.Random.Range(0, 11);
+            int rollResult = UnityEngine.Random.Range(1, 11);
             int currentWounds;
 
             if (TempHealth < MaxHealth)
@@ -307,11 +309,31 @@ public class Stats : MonoBehaviour
             }
             else return;
 
-            int woundsToHeal = regeneration < currentWounds ? regeneration : currentWounds;
-            TempHealth += woundsToHeal;
-            this.GetComponent<Unit>().DisplayUnitHealthPoints();
+            int woundsToHeal = 0;
 
-            Debug.Log($"{Name} zregenerował {woundsToHeal} żywotności.");
+            if (TempHealth == 0)
+            {
+                if (rollResult >= 8)
+                {
+                    woundsToHeal = 1;
+                }
+                else return;
+            }
+            else
+            {
+                woundsToHeal = rollResult < currentWounds ? rollResult : currentWounds;
+            }
+
+            TempHealth += woundsToHeal;
+                
+            if (rollResult == 10 && CriticalWounds > 0)
+            {
+                CriticalWounds--;
+                Debug.Log($"{Name} zregenerował/a 1 ranę krytyczną.");
+            }
+
+            this.GetComponent<Unit>().DisplayUnitHealthPoints();
+            Debug.Log($"{Name} zregenerował/a {woundsToHeal} żywotności.");
         }
     }
 

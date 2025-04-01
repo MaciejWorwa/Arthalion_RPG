@@ -666,15 +666,18 @@ public class StatsData
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
+    public int NaturalArmor;
 
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
     public bool Champion; // Czempion
     public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
+    public int Daemonic; // Demoniczny
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
     public int DualWielder; // Dwie bronie
+    public bool Ethereal; // Eteryczny
     public int Fear; // Strach
     public int Feint; // Finta
     public bool Frenzy; // Szał bojowy
@@ -688,6 +691,7 @@ public class StatsData
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający
     public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
+    public bool Regeneration; // Regeneracja
     public bool Relentless; // Nieustępliwy
     public int Resolute; // Nieugięty
     public int Riposte; // Riposta
@@ -710,7 +714,6 @@ public class StatsData
     //STARE
     public bool ArmouredCasting; // Pancerz Wiary
     public bool DaemonicAura; // Demoniczna aura (Wt +2 na niemagiczną broń, odporność na truciznę, ataki demona to broń magiczna)
-    public bool Ethereal; // Eteryczny
     public bool FastHands; //Dotyk mocy
     //public bool Fearless; // Nieustraszony
     public bool MagicSense; //Zmysł magii

@@ -289,19 +289,29 @@ public class InventoryManager : MonoBehaviour
 
             if (hasAnotherArmor)
             {
-                // Sprawdzamy, czy każdy z pancerzy na tej samej części ciała ma cechę Flexible lub obecnie wybrana broń ma tą cechę
-                isArmorFlexible = equippedArmors.All(armor => armor.Flexible) || selectedWeapon.Flexible;
+                // Sprawdzamy tylko pancerze dla tej samej lokalizacji (np. "head", "torso", "arms", "legs")
+                isArmorFlexible = equippedArmors
+                    .Where(armor => armor.Type.Intersect(selectedWeapon.Type).Any())  // Filtrujemy pancerze tylko dla tej lokalizacji
+                    .All(armor => armor.Flexible) || selectedWeapon.Flexible;
             }
 
             if (equippedArmors.Contains(selectedWeapon))
             {
                 equippedArmors.Remove(selectedWeapon);
-                Debug.Log($"{unit.GetComponent<Stats>().Name} zdjął {selectedWeapon.Name}.");
+
+                if (!SaveAndLoadManager.Instance.IsLoading)
+                {
+                    Debug.Log($"{unit.GetComponent<Stats>().Name} zdjął {selectedWeapon.Name}.");
+                }
             }
             else if (!hasAnotherArmor || isArmorFlexible)
             {
                 equippedArmors.Add(selectedWeapon);
-                Debug.Log($"{unit.GetComponent<Stats>().Name} założył {selectedWeapon.Name}.");
+
+                if (!SaveAndLoadManager.Instance.IsLoading)
+                {
+                    Debug.Log($"{unit.GetComponent<Stats>().Name} założył {selectedWeapon.Name}.");
+                }
             }
             else
             {
@@ -322,14 +332,14 @@ public class InventoryManager : MonoBehaviour
         bool selectedWeaponIsNotInSelectedHand = !containsSelectedWeapon || (SelectedHand != Array.IndexOf(equippedWeapons, selectedWeapon));
         if (selectedWeaponIsNotInSelectedHand)
         {
-            //Nie dotyczy trybu automatycznego (akcja jest zużywana bezpośrednio w AutoCombatManager, bo jednostka automatycznie wielokrotnie zmienia bronie, dopóki nie trafi na odpowiednią)
-            if (!GameManager.IsAutoCombatMode && !SaveAndLoadManager.Instance.IsLoading)
-            {
-                if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction) return;
+            ////Nie dotyczy trybu automatycznego (akcja jest zużywana bezpośrednio w AutoCombatManager, bo jednostka automatycznie wielokrotnie zmienia bronie, dopóki nie trafi na odpowiednią)
+            //if (!GameManager.IsAutoCombatMode && !SaveAndLoadManager.Instance.IsLoading)
+            //{
+            //    if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction) return;
 
-                //Wykonuje akcję
-                RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
-            }
+            //    //Wykonuje akcję
+            //    RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
+            //}
 
             //W przypadku, gdy dana broń jest już trzymana, ale chcemy jedynie zmienić rękę to usuwa tą broń z poprzedniej ręki
             if (containsSelectedWeapon)
@@ -353,7 +363,11 @@ public class InventoryManager : MonoBehaviour
                 equippedWeapons[weaponHand] = null;
             }
 
-            Debug.Log($"{unit.GetComponent<Stats>().Name} odłożył {selectedWeapon.Name}.");
+            if(!SaveAndLoadManager.Instance.IsLoading)
+            {
+                Debug.Log($"{unit.GetComponent<Stats>().Name} odłożył {selectedWeapon.Name}.");
+            }
+
             CheckForEquippedWeapons();
             return;
         }
@@ -420,105 +434,151 @@ public class InventoryManager : MonoBehaviour
         Stats unitStats = Unit.SelectedUnit.GetComponent<Stats>();
         if (unitStats.PrimaryWeaponNames == null || unitStats.PrimaryWeaponNames.Count == 0) return;
 
-        // Kopia listy nazw broni
+        // Kopiujemy listę nazw z PrimaryWeaponNames
         List<string> weaponNames = new List<string>(unitStats.PrimaryWeaponNames);
 
-        // Losowo wybieramy jedną broń
-        int randomIndex = UnityEngine.Random.Range(0, weaponNames.Count);
-        string selectedWeaponName = weaponNames[randomIndex];
+        // Najpierw usuwamy wszystkie nazwy, które są pancerzem:
+        // (Zajmiemy się nimi później w kroku 2)
+        List<string> armorNames = weaponNames.Where(name => IsArmor(name)).ToList();
+        List<string> nonArmorNames = weaponNames.Where(name => !IsArmor(name)).ToList();
 
-        // Ustawiamy wybraną broń w dropdownie i dobywamy ją
-        EquipSelectedPrimaryWeapon(unitStats, selectedWeaponName);
+        if (nonArmorNames.Count == 0)
+        {
+            EquipAllArmors(unitStats, armorNames);
+            return;
+        }
+
+        // 1) Losowo wybieramy jedną broń z "nonArmorNames"
+        int randomIndex = UnityEngine.Random.Range(0, nonArmorNames.Count);
+        string selectedWeaponName = nonArmorNames[randomIndex];
 
         // Sprawdź, czy wybrana broń jest dwuręczna lub tarczą
         bool isTwoHanded = IsTwoHandedWeapon(selectedWeaponName);
         bool isShield = IsShield(selectedWeaponName);
 
-        if (!isTwoHanded && !isShield)
+        // 2) Wyposażamy pancerz (jeśli jest w liście)
+        if (armorNames.Count > 0)
         {
-            // Automatycznie wyposażamy tarczę, jeśli istnieje
-            foreach (string weaponName in weaponNames)
+            EquipAllArmors(unitStats, armorNames);
+        }
+
+        // 3) Jeżeli broń nie jest tarczą -> ubieramy ją
+        if (!isShield)
+        {
+            // Zakładamy broń
+            EquipSelectedPrimaryWeapon(unitStats, selectedWeaponName);
+
+            // Jeżeli broń nie jest dwuręczna, szukamy również tarczy i ubieramy ją
+            if(!isTwoHanded)
             {
-                if (IsShield(weaponName))
+                foreach (string wName in nonArmorNames)
                 {
-                    SelectHand(false);
-                    EquipSelectedPrimaryWeapon(unitStats, weaponName);
-                    SelectHand(true);
-                    break;
+                    if (IsShield(wName) && wName != selectedWeaponName)
+                    {
+                        // Wyposaż tarczę w lewą rękę
+                        SelectHand(false);
+                        EquipSelectedPrimaryWeapon(unitStats, wName);
+                        SelectHand(true);
+                        break;
+                    }
                 }
             }
         }
-
-        // Jeśli wybrana broń to tarcza, wybieramy dodatkową broń, upewniając się, że nie jest dwuręczna
-        if (isShield)
+        // 4) Jeśli wybrana broń to tarcza → dobieramy jeszcze jedną broń (niepancerz, nie dwuręczną)
+        else if (isShield)
         {
             SelectHand(false);
-            InventoryScrollViewContent.GetComponent<CustomDropdown>().SetSelectedIndex(1);
-            GrabWeapon();
+            EquipSelectedPrimaryWeapon(unitStats, selectedWeaponName); // Wywołanie dobycia tarczy
             SelectHand(true);
 
-            // Usuwamy tarczę z listy broni
-            weaponNames.RemoveAt(randomIndex);
+            nonArmorNames.Remove(selectedWeaponName); // usuwamy tarczę z listy
 
-            // Tworzymy listę broni wykluczającą broń dwuręczną
-            List<string> possibleWeapons = weaponNames.Where(name => !IsTwoHandedWeapon(name)).ToList();
+            // Szukamy broni jednoręcznej
+            List<string> possibleWeapons = nonArmorNames
+                .Where(name => !IsTwoHandedWeapon(name) && !IsShield(name))
+                .ToList();
 
             if (possibleWeapons.Count > 0)
             {
                 int newRandomIndex = UnityEngine.Random.Range(0, possibleWeapons.Count);
                 string newSelectedWeaponName = possibleWeapons[newRandomIndex];
-                // Ustawiamy wybraną broń w dropdownie i dobywamy ją
+                // Wyposaż nową broń w prawą rękę (SelectedHand = 0)
                 EquipSelectedPrimaryWeapon(unitStats, newSelectedWeaponName);
             }
+
         }
 
+        // Kończymy
         SaveAndLoadManager.Instance.IsLoading = false;
         Unit.SelectedUnit = Unit.LastSelectedUnit != null ? Unit.LastSelectedUnit : null;
     }
 
+    // Metoda do wyposażenia wszystkich pancerzy z listy
+    private void EquipAllArmors(Stats unitStats, List<string> armorNames)
+    {
+        if (armorNames == null || armorNames.Count == 0) return;
+
+        foreach (string armorName in armorNames)
+        {
+            EquipSelectedPrimaryWeapon(unitStats, armorName);
+        }
+    }
+
     private void EquipSelectedPrimaryWeapon(Stats unitStats, string weaponName)
     {
-        // Znajdź indeks broni na podstawie jej nazwy
+        // Znajdź indeks broni / pancerza po nazwie
         int weaponIndex = -1;
-
         for (int i = 0; i < WeaponsDropdown.Buttons.Count; i++)
         {
             TextMeshProUGUI buttonText = WeaponsDropdown.Buttons[i].GetComponentInChildren<TextMeshProUGUI>();
             if (buttonText != null && buttonText.text == weaponName)
             {
-                weaponIndex = i + 1; // Zakładam, że indeksy zaczynają się od 1 w SelectOption
+                weaponIndex = i + 1; // +1 bo w oryginalnym kodzie tak jest
+                break;
             }
         }
-
         if (weaponIndex == -1)
         {
-            Debug.LogError($"Nie znaleziono broni o nazwie: {weaponName}");
+            Debug.LogError($"Nie znaleziono przedmiotu o nazwie: {weaponName}");
             return;
         }
 
-        // Ustaw broń w dropdownie na znaleziony indeks
+        // Ustaw w dropdownie
         WeaponsDropdown.SetSelectedIndex(weaponIndex);
         LoadWeapons(false);
+
         int weaponsCount = unitStats.GetComponent<Inventory>().AllWeapons.Count;
-        // Wybieramy ostatnią broń na liście ekwipunku (musiałem wyłączyć alfabetyczne sortowanie)
+        // Wybieramy ostatnią broń w ekwipunku (tę właśnie dodaną)
         InventoryScrollViewContent.GetComponent<CustomDropdown>().SetSelectedIndex(weaponsCount);
+
         GrabWeapon();
     }
 
+    // Helpery:
     private bool IsTwoHandedWeapon(string weaponName)
     {
         WeaponData weaponData = AllWeaponData.FirstOrDefault(w => w.Name == weaponName);
         if (weaponData == null) return false;
-
         return weaponData.TwoHanded;
     }
+
     private bool IsShield(string weaponName)
     {
         WeaponData weaponData = AllWeaponData.FirstOrDefault(w => w.Name == weaponName);
         if (weaponData == null) return false;
-
         return weaponData.Type.Contains("shield");
     }
+
+    private bool IsArmor(string weaponName)
+    {
+        WeaponData weaponData = AllWeaponData.FirstOrDefault(w => w.Name == weaponName);
+        if (weaponData == null) return false;
+        return weaponData.Type.Contains("head")
+            || weaponData.Type.Contains("torso")
+            || weaponData.Type.Contains("arms")
+            || weaponData.Type.Contains("legs");
+    }
+
 
 
     public void SelectHand(bool rightHand)
@@ -840,8 +900,11 @@ public class InventoryManager : MonoBehaviour
     #region Inventory dropdown list managing
     public void UpdateInventoryDropdown(List<Weapon> weapons, bool reloadEditWeaponPanel)
     {
-        // Sortowanie listy broni alfabetycznie wg nazwy
-        weapons.Sort((w1, w2) => w1.Name.CompareTo(w2.Name));
+        if(!SaveAndLoadManager.Instance.IsLoading)
+        {
+            // Sortowanie listy broni alfabetycznie wg nazwy
+            weapons.Sort((w1, w2) => w1.Name.CompareTo(w2.Name));
+        }
 
         // Ustala wyświetlaną nazwę właściciela ekwipunku
         if (Unit.SelectedUnit != null)
@@ -916,7 +979,10 @@ public class InventoryManager : MonoBehaviour
             LoadWeaponAttributes();
         }
 
-        CheckForEquippedWeapons();
+        if(!SaveAndLoadManager.Instance.IsLoading)
+        {
+            CheckForEquippedWeapons();
+        }
     }
 
     private void ResetInventoryDropdown()
@@ -941,12 +1007,17 @@ public class InventoryManager : MonoBehaviour
         Stats unitStats = Unit.SelectedUnit.GetComponent<Stats>();
         Inventory inventory = Unit.SelectedUnit.GetComponent<Inventory>();
 
-        // Resetowanie wartości pancerza
-        unitStats.Armor_head = 0;
-        unitStats.Armor_arms = 0;
-        unitStats.Armor_torso = 0;
-        unitStats.Armor_legs = 0;
+        // Sprawdzamy, czy w ekwipunku znajduje się "Naturalny pancerz"
+        bool hasNaturalArmor = equippedArmors.Any(armor => armor.Name == "Naturalny pancerz");
+        int basicArmor = hasNaturalArmor ? unitStats.NaturalArmor : 0; // Jeśli jednostka ma naturalny pancerz, używamy jego wartości jako bazowego pancerza (przed uwzględnieniem przedmiotów), w przeciwnym razie ustawiamy 0
 
+        // Resetowanie wartości pancerza
+        unitStats.Armor_head = unitStats.NaturalArmor;
+        unitStats.Armor_arms = unitStats.NaturalArmor;
+        unitStats.Armor_torso = unitStats.NaturalArmor;
+        unitStats.Armor_legs = unitStats.NaturalArmor;
+
+        // Sumuje pancerz
         if (equippedArmors.Count > 0)
         {
             // Resetowanie list kategorii pancerza

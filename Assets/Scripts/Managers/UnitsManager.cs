@@ -799,6 +799,10 @@ public class UnitsManager : MonoBehaviour
                 stats.CalculateMaxHealth();
                 unit.DisplayUnitHealthPoints();
             }
+            else if(attributeName == "NaturalArmor")
+            {
+                InventoryManager.Instance.CheckForEquippedWeapons();
+            }
             else if (attributeName == "Name")
             {
                 unit.DisplayUnitName();
