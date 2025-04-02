@@ -389,7 +389,7 @@ public class CombatManager : MonoBehaviour
 
         if (attackerWeapon.Type.Contains("throwing")) // Oblicz właściwy zasięg ataku, uwzględniając broń miotaną
         {
-            effectiveAttackRange *= attackerStats.S / 10f;
+            effectiveAttackRange *= attackerStats.S / 10;
         }
 
         bool isOutOfRange = attackDistance > effectiveAttackRange;
@@ -542,7 +542,7 @@ public class CombatManager : MonoBehaviour
         // Obsługa fuksa / pecha
         bool isFortunateOrUnfortunateEvent = false; // Zmienna używana do tego, aby nie powielać dwa razy szczęścia lub pecha w przypadku specyficznych broni
 
-        if (DiceRollManager.Instance.IsDoubleDigit(rollOnAttack) || (attackerWeapon.Impale && rollOnAttack % 10 == 0) || (attackerWeapon.Dangerous && attackerSuccessValue < 0 && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
+        if (DiceRollManager.Instance.IsDoubleDigit(rollOnAttack) || (attackerWeapon.Impale && rollOnAttack % 10 == 0 && _isTrainedWeaponCategory) || (attackerWeapon.Dangerous && attackerSuccessValue < 0 && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
         {
             isFortunateOrUnfortunateEvent = true;
 
@@ -569,7 +569,7 @@ public class CombatManager : MonoBehaviour
 
         // Obsługa FUKSA i PECHA
         bool isDoubleRoll = DiceRollManager.Instance.IsDoubleDigit(rollOnAttack);
-        bool isImpaleRoll = attackerWeapon.Impale && rollOnAttack % 10 == 0;
+        bool isImpaleRoll = attackerWeapon.Impale && rollOnAttack % 10 == 0 && _isTrainedWeaponCategory;
         bool isDangerousRoll = attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9) && attackerSuccessValue < 0;
         bool isSpecialRoll = isDoubleRoll || isImpaleRoll || isDangerousRoll; // Sprawdzamy, czy mamy do czynienia z którymś z „wyjątkowych” rzutów
 
@@ -1485,20 +1485,29 @@ public class CombatManager : MonoBehaviour
             }
         }
 
+
         if (attackerWeapon.Type.Contains("ranged"))
         {
+            // Sprawdza zasięg
+            float effectiveAttackRange = attackerWeapon.AttackRange;
+
+            if (attackerWeapon.Type.Contains("throwing")) // Oblicz właściwy zasięg ataku, uwzględniając broń miotaną
+            {
+                effectiveAttackRange *= attackerStats.S / 10;
+            }
+
             // Modyfikator za dystans
             attackModifier += attackDistance switch
             {
-                _ when attackDistance <= attackerWeapon.AttackRange / 10 => 40, // Bezpośredni dystans
-                _ when attackDistance <= attackerWeapon.AttackRange / 2 => 20,  // Bliski dystans
-                _ when attackDistance <= attackerWeapon.AttackRange => 0,      // Średni dystans
-                _ when attackDistance <= attackerWeapon.AttackRange * 2 => attackerStats.Sniper > 0 ? (-10 + attackerStats.Sniper * 10) : -10, // Daleki dystans
-                _ when attackDistance <= attackerWeapon.AttackRange * 3 => attackerStats.Sniper > 0 ? (-30 + attackerStats.Sniper * 10) : -30, // Bardzo daleki dystans
+                _ when attackDistance <= effectiveAttackRange / 10 => 40, // Bezpośredni dystans
+                _ when attackDistance <= effectiveAttackRange / 2 => 20,  // Bliski dystans
+                _ when attackDistance <= effectiveAttackRange => 0,      // Średni dystans
+                _ when attackDistance <= effectiveAttackRange * 2 => attackerStats.Sniper > 0 ? (-10 + attackerStats.Sniper * 10) : -10, // Daleki dystans
+                _ when attackDistance <= effectiveAttackRange * 3 => attackerStats.Sniper > 0 ? (-30 + attackerStats.Sniper * 10) : -30, // Bardzo daleki dystans
                 _ => 0 // Domyślny przypadek, jeśli żaden warunek nie zostanie spełniony
             };
 
-            Debug.Log($"Dystans: {attackDistance}, zasięg broni: {attackerWeapon.AttackRange}");
+            Debug.Log($"Dystans: {attackDistance}, zasięg broni: {effectiveAttackRange}");
             Debug.Log("Uwzględniono modyfikator za dystans. Łączny modyfikator: " + attackModifier);
 
             //Modyfikator za rozmiar celu

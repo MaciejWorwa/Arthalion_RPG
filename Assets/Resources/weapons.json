@@ -24,6 +24,17 @@
       "Entangle": true
     },
     {
+      "Name": "Bomba żużlowa",
+      "Category": "throwing",
+      "Type": [ "ranged", "throwing" ],
+      "AttackRange": 1,
+      "S": 14,
+      "Impact": true,
+      "Dangerous": true,
+      "Blast": 3,
+      "Penetrating": true
+    },
+    {
       "Name": "Broń improwizowana",
       "Category": "basic",
       "Type": [ "melee" ],
@@ -34,6 +45,15 @@
       "Unbalanced": true
     },
     {
+      "Name": "Bułat",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 1,
+      "Slash": 1
+    },
+    {
       "Name": "Buzdygan",
       "Category": "basic",
       "Type": [ "melee" ],
@@ -41,7 +61,7 @@
       "S": 4,
       "Encumbrance": 1,
       "Unbalanced": true,
-      "Pummell": true
+      "Pummel": true
     },
     {
       "Name": "Broń naturalna",
@@ -72,6 +92,18 @@
       "Precise": true
     },
     {
+      "Name": "Flamberg",
+      "Category": "twohanded",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 5,
+      "Encumbrance": 3,
+      "Hack": true,
+      "Damaging": true,
+      "Slash": 2
+    },
+    {
       "Name": "Floret",
       "Category": "fencing",
       "Type": [ "melee" ],
@@ -82,6 +114,42 @@
       "Impale": true,
       "Precise": true,
       "Undamaging": true
+    },
+    {
+      "Name": "Garłacz",
+      "Category": "blackpowder",
+      "Type": [ "ranged" ],
+      "TwoHanded": true,
+      "AttackRange": 10,
+      "S": 8,
+      "Encumbrance": 1,
+      "Dangerous": true,
+      "ReloadTime": 2,
+      "Blackpowder": true,
+      "Blast": 3,
+      "Damaging": true
+    },
+    {
+      "Name": "Glewia",
+      "Category": "polearm",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 3,
+      "Defensive": true,
+      "Impale": true
+    },
+    {
+      "Name": "Halabarda",
+      "Category": "polearm",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 3,
+      "Defensive": true,
+      "Impale": true
     },
     {
       "Name": "Kastet",
@@ -104,6 +172,16 @@
       "Distract:": true
     },
     {
+      "Name": "Korbacz",
+      "Category": "flail",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 5,
+      "Encumbrance": 1,
+      "Wrap": true,
+      "Distract:": true
+    },
+    {
       "Name": "Kostur",
       "Category": "polearm",
       "Type": [ "melee" ],
@@ -111,8 +189,45 @@
       "AttackRange": 1.5,
       "S": 4,
       "Encumbrance": 2,
-      "Pummelling": true,
+      "Pummel": true,
       "Defensive": true
+    },
+    {
+      "Name": "Krasnoludzka kusza",
+      "Category": "crossbow",
+      "Type": [ "ranged" ],
+      "TwoHanded": true,
+      "AttackRange": 40,
+      "S": 9,
+      "Encumbrance": 3,
+      "ReloadTime": 2,
+      "Precise": true,
+      "Damaging": true
+    },
+    {
+      "Name": "Krasnoludzka rusznica",
+      "Category": "blackpowder",
+      "Type": [ "ranged" ],
+      "AttackRange": 25,
+      "S": 9,
+      "Encumbrance": 2,
+      "ReloadTime": 3,
+      "Damaging": true,
+      "Blackpowder": true,
+      "Penetrating": true
+    },
+    {
+      "Name": "Krasnoludzki pistolet",
+      "Category": "blackpowder",
+      "Type": [ "ranged" ],
+      "AttackRange": 15,
+      "S": 8,
+      "Encumbrance": 1,
+      "ReloadTime": 1,
+      "Damaging": true,
+      "Blackpowder": true,
+      "Pistol": true,
+      "Penetrating": true
     },
     {
       "Name": "Krótki łuk",
@@ -152,6 +267,17 @@
       "Defensive": true
     },
     {
+      "Name": "Łapacz",
+      "Category": "polearm",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 2,
+      "Encumbrance": 3,
+      "Defensive": true,
+      "Entangle": true
+    },
+    {
       "Name": "Łuk",
       "Category": "bow",
       "Type": [ "ranged", "strength-based" ],
@@ -169,6 +295,28 @@
       "Encumbrance": 1
     },
     {
+      "Name": "Miecz dwuręczny",
+      "Category": "twohanded",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 5,
+      "Encumbrance": 3,
+      "Hack": true,
+      "Damaging": true
+    },
+    {
+      "Name": "Miecz Dzikiej Kniei",
+      "Category": "twohanded",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 2,
+      "Fast": true,
+      "Damaging": true
+    },
+    {
       "Name": "Młot bojowy",
       "Category": "twohanded",
       "Type": [ "melee" ],
@@ -177,7 +325,7 @@
       "S": 6,
       "Encumbrance": 3,
       "Slow": true,
-      "Pummell": true,
+      "Pummel": true,
       "Damaging": true
     },
     {
@@ -188,6 +336,15 @@
       "S": 4,
       "Encumbrance": 1,
       "Unbalanced": true,
+      "Pummel": true
+    },
+    {
+      "Name": "Młot krasnoludzki",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 2,
       "Pummel": true
     },
     {
@@ -206,6 +363,18 @@
       "Blackpowder": true
     },
     {
+      "Name": "Nadziak",
+      "Category": "twohanded",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 5,
+      "Encumbrance": 3,
+      "Impale": true,
+      "Damaging": true,
+      "Tiring": true
+    },
+    {
       "Name": "Nóż",
       "Category": "basic",
       "Type": [ "melee" ],
@@ -219,6 +388,14 @@
       "Type": [ "melee" ],
       "AttackRange": 2,
       "S": 2
+    },
+    {
+      "Name": "Ostrze wojenne Eonirów",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 3,
+      "Precise": true
     },
     {
       "Name": "Oszczep",
@@ -238,6 +415,19 @@
       "Encumbrance": 1,
       "Unbalanced": true,
       "Undamaging": true
+    },
+    {
+      "Name": "Pawęż",
+      "Category": "basic",
+      "Type": [ "melee", "shield" ],
+      "AttackRange": 1.5,
+      "S": 2,
+      "Encumbrance": 4,
+      "Shield": 3,
+      "Defensive": true,
+      "Undamaging": true,
+      "Slow": true,
+      "Tiring": true
     },
     {
       "Name": "Pistolet",
@@ -263,6 +453,17 @@
       "Blackpowder": true,
       "Pistol": true,
       "Dangerous": true
+    },
+    {
+      "Name": "Półtorak",
+      "Category": "twohanded",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 5,
+      "Encumbrance": 3,
+      "Defensive": true,
+      "Damaging": true
     },
     {
       "Name": "Proca",
@@ -310,7 +511,8 @@
       "Encumbrance": 2,
       "Dangerous": true,
       "ReloadTime": 3,
-      "Blackpowder": true
+      "Blackpowder": true,
+      "Damaging": true
     },
     {
       "Name": "Rusznica dwulufowa",
@@ -323,7 +525,8 @@
       "Dangerous": true,
       "AmmoMax": 2,
       "ReloadTime": 4,
-      "Blackpowder": true
+      "Blackpowder": true,
+      "Damaging": true
     },
     {
       "Name": "Szabla",
@@ -364,6 +567,36 @@
       "Undamaging": true
     },
     {
+      "Name": "Tarcza duża",
+      "Category": "basic",
+      "Type": [ "melee", "shield" ],
+      "AttackRange": 1.5,
+      "S": 3,
+      "Encumbrance": 3,
+      "Shield": 3,
+      "Defensive": true,
+      "Undamaging": true
+    },
+    {
+      "Name": "Tasak",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 3,
+      "Encumbrance": 1,
+      "Hack": true
+    },
+    {
+      "Name": "Tłuk",
+      "Category": "brawling",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 1,
+      "Unbalanced": true,
+      "Pummel": true,
+      "Undamaging": true
+    },
+    {
       "Name": "Topór",
       "Category": "basic",
       "Type": [ "melee" ],
@@ -372,6 +605,38 @@
       "Encumbrance": 1,
       "Unbalanced": true,
       "Hack": true
+    },
+    {
+      "Name": "Topór brodaty",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 2,
+      "TrapBlade": true
+    },
+    {
+      "Name": "Topór drzewcowy",
+      "Category": "polearm",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 3,
+      "Defensive": true,
+      "Penetrating": true,
+      "Impale": true
+    },
+    {
+      "Name": "Topór zabójców",
+      "Category": "twohanded",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 6,
+      "Encumbrance": 4,
+      "Impact": true,
+      "Penetrating": true
     },
     {
       "Name": "Topór do rzucania",
@@ -383,6 +648,18 @@
       "Hack": true
     },
     {
+      "Name": "Wielki topór",
+      "Category": "twohanded",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 6,
+      "Encumbrance": 3,
+      "Impact": true,
+      "Hack": true,
+      "Tiring": true
+    },
+    {
       "Name": "Włócznia",
       "Category": "polearm",
       "Type": [ "melee" ],
@@ -391,6 +668,25 @@
       "S": 4,
       "Encumbrance": 2,
       "Impale": true
+    },
+    {
+      "Name": "Włócznia Eonirów",
+      "Category": "polearm",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 2,
+      "S": 4,
+      "Encumbrance": 1,
+      "Penetrating": true
+    },
+    {
+      "Name": "Żelazna patelnia",
+      "Category": "basic",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 3,
+      "Encumbrance": 1,
+      "Defensive": true
     },
     {
       "Name": "Czepiec kolczy",

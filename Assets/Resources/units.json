@@ -4,7 +4,10 @@
       "Race": "Człowiek",
       "Size": 3,
       "PrimaryWeaponNames": [
-        "Buzdygan", "Miecz", "Topór", "Młot jednoręczny"
+        "Buzdygan",
+        "Miecz",
+        "Topór",
+        "Młot jednoręczny"
       ],
       "WW": 20,
       "US": 20,
@@ -24,7 +27,7 @@
     {
       "Race": "Elf",
       "Size": 3,
-      "PrimaryWeaponNames": [ "Miecz", "Łuk", "Tarcza", "Skórzana kurta", "Skórzany hełm", "Napierśnik", "Młot bojowy"],
+      "PrimaryWeaponNames": [ "Miecz", "Łuk" ],
       "WW": 30,
       "US": 30,
       "S": 20,
@@ -80,6 +83,351 @@
       "ExtraPoints": 3
     },
     {
+      "Race": "Duch",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 30,
+      "US": 0,
+      "S": 30,
+      "Wt": 30,
+      "I": 10,
+      "Zw": 30,
+      "Zr": 20,
+      "Int": 15,
+      "SW": 15,
+      "Ogd": 0,
+      "Sz": 6,
+      "Fear": 2,
+      "Ethereal": true
+    },
+    {
+      "Race": "Dzik",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 35,
+      "US": 0,
+      "S": 33,
+      "Wt": 35,
+      "I": 33,
+      "Zw": 35,
+      "Zr": 0,
+      "Int": 10,
+      "SW": 10,
+      "Ogd": 0,
+      "Sz": 7,
+      "NaturalArmor": 1
+    },
+    {
+      "Race": "Goblin",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Włócznia", "Bułat", "Łuk", "Krótki łuk", "Puklerz", "Tarcza", "Miecz", "Pałka", "Nadziak" ],
+      "WW": 25,
+      "US": 30,
+      "S": 30,
+      "Wt": 30,
+      "I": 20,
+      "Zw": 35,
+      "Zr": 30,
+      "Int": 30,
+      "SW": 20,
+      "Ogd": 20,
+      "Sz": 4,
+      "NaturalArmor": 1,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Polearm",
+          "Value": 1
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Bow",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Gor",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Włócznia", "Łuk", "Puklerz", "Tarcza", "Miecz", "Pałka", "Nadziak" ],
+      "WW": 45,
+      "US": 30,
+      "S": 35,
+      "Wt": 45,
+      "I": 30,
+      "Zw": 35,
+      "Zr": 25,
+      "Int": 25,
+      "SW": 30,
+      "Ogd": 25,
+      "Sz": 4,
+      "NaturalArmor": 1,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Polearm",
+          "Value": 1
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Bow",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Gryf",
+      "Size": 5,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 50,
+      "US": 0,
+      "S": 50,
+      "Wt": 50,
+      "I": 45,
+      "Zw": 60,
+      "Zr": 0,
+      "Int": 20,
+      "SW": 40,
+      "Ogd": 0,
+      "Sz": 6,
+      "NaturalArmor": 1
+    },
+    {
+      "Race": "Hipogryf",
+      "Size": 5,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 45,
+      "US": 0,
+      "S": 55,
+      "Wt": 50,
+      "I": 20,
+      "Zw": 55,
+      "Zr": 0,
+      "Int": 5,
+      "SW": 35,
+      "Ogd": 0,
+      "Sz": 7
+    },
+    {
+      "Race": "Klanbrat",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Włócznia", "Bułat", "Krótki łuk", "Puklerz", "Miecz", "Pałka", "Łapacz" ],
+      "WW": 30,
+      "US": 30,
+      "S": 30,
+      "Wt": 30,
+      "I": 40,
+      "Zw": 35,
+      "Zr": 30,
+      "Int": 30,
+      "SW": 20,
+      "Ogd": 20,
+      "Sz": 5,
+      "NaturalArmor": 2,
+      "MeleeSerialized": [
+        {
+          "Key": "Polearm",
+          "Value": 1
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Bow",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Koń",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 25,
+      "US": 0,
+      "S": 45,
+      "Wt": 35,
+      "I": 15,
+      "Zw": 30,
+      "Zr": 0,
+      "Int": 10,
+      "SW": 10,
+      "Ogd": 10,
+      "Sz": 7
+    },
+    {
+      "Race": "Minotaur",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Wielki topór", "Młot bojowy", "Buzdygan", "Tarcza", "Topór", "Kiścień" ],
+      "WW": 45,
+      "US": 25,
+      "S": 44,
+      "Wt": 45,
+      "I": 20,
+      "Zw": 35,
+      "Zr": 25,
+      "Int": 20,
+      "SW": 30,
+      "Ogd": 15,
+      "Sz": 6,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Mutant",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Łuk", "Miecz", "Pałka", "Kusza", "Sztylet", "Nóż", "Kastet", "Tłuk", "Topór" ],
+      "WW": 30,
+      "US": 30,
+      "S": 30,
+      "Wt": 30,
+      "I": 30,
+      "Zw": 30,
+      "Zr": 30,
+      "Int": 30,
+      "SW": 30,
+      "Ogd": 30,
+      "Sz": 4,
+      "RangedSerialized": [
+        {
+          "Key": "Bow",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Niedźwiedź",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 35,
+      "US": 0,
+      "S": 55,
+      "Wt": 45,
+      "I": 20,
+      "Zw": 25,
+      "Zr": 15,
+      "Int": 10,
+      "SW": 15,
+      "Ogd": 0,
+      "Sz": 4,
+      "NaturalArmor": 1
+    },
+    {
+      "Race": "Ogr",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Topór", "Pałka", "Buzdygan", "Kiścień", "Korbacz", "Wielki topór" ],
+      "WW": 30,
+      "US": 20,
+      "S": 45,
+      "Wt": 45,
+      "I": 10,
+      "Zw": 25,
+      "Zr": 20,
+      "Int": 20,
+      "SW": 30,
+      "Ogd": 20,
+      "Sz": 6,
+      "NaturalArmor": 1,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Ork",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Topór", "Miecz", "Łuk", "Buzdygan", "Tarcza", "Korbacz", "Kiścień", "Wielki topór", "Nadziak" ],
+      "WW": 35,
+      "US": 30,
+      "S": 35,
+      "Wt": 45,
+      "I": 20,
+      "Zw": 20,
+      "Zr": 25,
+      "Int": 20,
+      "SW": 35,
+      "Ogd": 20,
+      "Sz": 4,
+      "NaturalArmor": 3,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Polearm",
+          "Value": 1
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Bow",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Olbrzymi szczur",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 25,
+      "US": 0,
+      "S": 30,
+      "Wt": 25,
+      "I": 25,
+      "Zw": 35,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 15,
+      "Ogd": 0,
+      "Sz": 4
+    },
+    {
+      "Race": "Pies",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 25,
+      "US": 0,
+      "S": 20,
+      "Wt": 20,
+      "I": 35,
+      "Zw": 30,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 10,
+      "Ogd": 15,
+      "Sz": 4
+    },
+    {
+      "Race": "Półgryf",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 35,
+      "US": 0,
+      "S": 55,
+      "Wt": 40,
+      "I": 30,
+      "Zw": 45,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 25,
+      "Ogd": 0,
+      "Sz": 7,
+      "NaturalArmor": 1
+    },
+    {
       "Race": "Smok",
       "Size": 5,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -95,6 +443,90 @@
       "Ogd": 25,
       "Sz": 6,
       "NaturalArmor": 5
+    },
+    {
+      "Race": "Szczurogr",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 35,
+      "US": 10,
+      "S": 55,
+      "Wt": 45,
+      "I": 35,
+      "Zw": 45,
+      "Zr": 25,
+      "Int": 10,
+      "SW": 25,
+      "Ogd": 15,
+      "Sz": 5,
+      "NaturalArmor": 1
+    },
+    {
+      "Race": "Szkielet",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Włócznia", "Bułat", "Łuk", "Krótki łuk", "Puklerz", "Tarcza", "Miecz", "Topór" ],
+      "WW": 25,
+      "US": 25,
+      "S": 30,
+      "Wt": 30,
+      "I": 20,
+      "Zw": 25,
+      "Zr": 25,
+      "Int": 0,
+      "SW": 0,
+      "Ogd": 0,
+      "Sz": 4,
+      "NaturalArmor": 2,
+      "Fear": 2,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Polearm",
+          "Value": 1
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Bow",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Szturmoszczur",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Włócznia", "Nadziak", "Topór drzewcowy", "Bułat", "Tarcza", "Miecz", "Topór", "Młot jednoręczny", "Glewia", "Halabarda" ],
+      "WW": 45,
+      "US": 35,
+      "S": 35,
+      "Wt": 35,
+      "I": 55,
+      "Zw": 50,
+      "Zr": 30,
+      "Int": 30,
+      "SW": 25,
+      "Ogd": 20,
+      "Sz": 5,
+      "NaturalArmor": 4,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Polearm",
+          "Value": 1
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Bow",
+          "Value": 1
+        }
+      ]
     },
     {
       "Race": "Troll",
@@ -113,6 +545,90 @@
       "Sz": 6,
       "Regeneration": true,
       "NaturalArmor": 2
+    },
+    {
+      "Race": "Ungor",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Włócznia", "Łuk", "Puklerz", "Tarcza", "Miecz", "Pałka", "Nadziak" ],
+      "WW": 35,
+      "US": 30,
+      "S": 30,
+      "Wt": 35,
+      "I": 30,
+      "Zw": 35,
+      "Zr": 25,
+      "Int": 25,
+      "SW": 35,
+      "Ogd": 25,
+      "Sz": 4,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Polearm",
+          "Value": 1
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Bow",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Widmo z kurhanu",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Wielki topór", "Miecz dwuręczny" ],
+      "WW": 35,
+      "US": 0,
+      "S": 35,
+      "Wt": 30,
+      "I": 105,
+      "Zw": 30,
+      "Zr": 25,
+      "Int": 25,
+      "SW": 50,
+      "Ogd": 15,
+      "Sz": 6,
+      "Terror": 3,
+      "Ethereal": true
+    },
+    {
+      "Race": "Wilk",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 35,
+      "US": 0,
+      "S": 35,
+      "Wt": 30,
+      "I": 35,
+      "Zw": 30,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 15,
+      "Ogd": 0,
+      "Sz": 4,
+      "NaturalArmor": 1
+    },
+    {
+      "Race": "Zombie",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Bułat", "Młot jednoręczny", "Buzdygan", "Pałka", "Miecz", "Topór" ],
+      "WW": 15,
+      "US": 0,
+      "S": 30,
+      "Wt": 30,
+      "I": 5,
+      "Zw": 10,
+      "Zr": 15,
+      "Int": 0,
+      "SW": 0,
+      "Ogd": 0,
+      "Sz": 4,
+      "Fear": 2
     }
   ]
 }
