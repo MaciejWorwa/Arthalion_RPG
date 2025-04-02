@@ -226,6 +226,9 @@ public class InitiativeQueueManager : MonoBehaviour
 
     public void CalculateAdvantageBasedOnDominance()
     {
+        //TYMCZASOWE WYŁĄCZENIE TEJ FUNKCJONALNOŚCI, BO NIE JESTEM PEWNY, CZY JĄ CHCĘ
+        return;
+
         float dominanceThreshold = DominanceBar.maxValue * 0.10f; // 10% maksymalnej wartości
         float difference = Mathf.Abs(DominanceBar.value - (DominanceBar.maxValue / 2));
 
