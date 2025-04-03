@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using TMPro;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEngine.GraphicsBuffer;
 
 public class MagicManager : MonoBehaviour
 {
@@ -64,13 +66,8 @@ public class MagicManager : MonoBehaviour
     {
         if (Unit.SelectedUnit == null) return;
 
-        if (Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus > 0)
-        {
-            Debug.Log("Ta jednostka już wcześniej splotła magię.");
-            return;
-        }
-
         Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
+        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
 
         //Sprawdzenie, czy wybrana postać może splatać magię
         if (stats.Channeling == 0)
@@ -79,52 +76,35 @@ public class MagicManager : MonoBehaviour
             return;
         }
 
-        if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction) return;
+        if (!unit.CanDoAction)
+        {
+            Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
+            return;
+        }
 
         //Wykonuje akcję
-        RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
+        RoundsManager.Instance.DoAction(unit);
 
         StartCoroutine(ChannelingMagicCoroutine());
-
-        // Test poziomu mocy zaklęcia
         IEnumerator ChannelingMagicCoroutine()
         {
-            int rollResult;
+            // Rzut na trafienie
+            int rollResult = 0;
 
-            if (!GameManager.IsAutoDiceRollingMode)
+            if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                // Czekaj na kliknięcie przycisku
-                Debug.Log("Wpisz wynik rzutu na SW.");
-                _channelingRollPanel.SetActive(true);
-                yield return new WaitUntil(() => _channelingRollPanel.activeSelf == false);
-
-                rollResult = _manualRollResult;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "splatanie magii", result => rollResult = result));
+                if (rollResult == 0) yield break;
             }
             else
             {
                 rollResult = UnityEngine.Random.Range(1, 101);
             }
 
-            int modifier = 0;
-            if (stats.MagicSense) modifier += 10; //modyfikator za zmysł magii
-            modifier += (stats.Channeling * 10) - 10; //modyfikator za umiejętność splatania magii
+            int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Channeling", 0, rollResult);
+            unit.ChannelingModifier = Math.Max(0, unit.ChannelingModifier + test[1]);
 
-            string message = $"Wynik rzutu: {rollResult}. Wartość cechy: {stats.SW}.";
-            if (modifier != 0)
-            {
-                message += $"  Modyfikator: {modifier}.";
-            }
-
-            if (stats.SW + modifier >= rollResult)
-            {
-                // Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus += stats.Mag;
-                Debug.Log($"{message} Splatanie magii zakończone sukcesem.");
-            }
-            else
-            {
-                Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus = 0;
-                Debug.Log($"{message} Splatanie magii zakończone niepowodzeniem.");
-            }
+            Debug.Log($"Poziomy sukcesu zebrane w wyniku splatania magii: <color=#4dd2ff>{unit.ChannelingModifier}</color>");
         }
     }
 
@@ -132,11 +112,11 @@ public class MagicManager : MonoBehaviour
     {
         if (Unit.SelectedUnit == null) return;
 
-        // if(Unit.SelectedUnit.GetComponent<Stats>().Mag == 0)
-        // {
-        //     Debug.Log("Wybrana jednostka nie może rzucać zaklęć.");
-        //     return;
-        // }
+        if (Unit.SelectedUnit.GetComponent<Stats>().MagicLanguage == 0)
+        {
+            Debug.Log("Wybrana jednostka nie może rzucać zaklęć.");
+            return;
+        }
 
         if (!Unit.SelectedUnit.GetComponent<Unit>().CanCastSpell)
         {
@@ -165,25 +145,27 @@ public class MagicManager : MonoBehaviour
         Debug.Log("Kliknij prawym przyciskiem myszy na jednostkę, która ma być celem zaklęcia.");
     }
 
-    public void CastSpell(GameObject target)
+    public IEnumerator CastSpell(GameObject target)
     {
-        if (Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null) yield break;
 
-        Stats spellcasterStats = Unit.SelectedUnit.GetComponent<Stats>();
-        Unit spellcasterUnit = Unit.SelectedUnit.GetComponent<Unit>();
+        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
+        Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
         Spell spell = Unit.SelectedUnit.GetComponent<Spell>();
+        Stats targetStats = target.GetComponent<Stats>();
+        Unit targetUnit = target.GetComponent<Unit>();
 
-        if (!GameManager.IsAutoDiceRollingMode)
-        {
-            CombatManager.Instance.IsManualPlayerAttack = true;
-        }
+        //if (!GameManager.IsAutoDiceRollingMode)
+        //{
+        //    CombatManager.Instance.IsManualPlayerAttack = true;
+        //}
 
         //Sprawdza dystans
         _spellDistance = CalculateDistance(Unit.SelectedUnit, target.gameObject);
         if (_spellDistance > spell.Range)
         {
             Debug.Log("Cel znajduje się poza zasięgiem zaklęcia.");
-            return;
+            yield break;
         }
 
         //Sprawdza wszystkie jednostki w obszarze działania zaklęcia
@@ -192,7 +174,7 @@ public class MagicManager : MonoBehaviour
         if (allTargets == null)
         {
             Debug.Log($"W obszarze działania zaklęcia musi znaleźć się odpowiedni cel.");
-            return;
+            yield break;
         }
 
         // Usuwa wszystkie collidery, które nie są jednostkami
@@ -208,14 +190,14 @@ public class MagicManager : MonoBehaviour
         if (allTargets.Count == 0)
         {
             Debug.Log($"W obszarze działania zaklęcia musi znaleźć się odpowiedni cel.");
-            return;
+            yield break;
         }
 
         //Zablokowanie możliwości rzucenia Pancerza Eteru jednostkom w zbroi
         if (spell.Name == "Pancerz Eteru" && (allTargets[0].GetComponent<Stats>().Armor_head > 0 || allTargets[0].GetComponent<Stats>().Armor_arms > 0 || allTargets[0].GetComponent<Stats>().Armor_torso > 0 || allTargets[0].GetComponent<Stats>().Armor_legs > 0))
         {
             Debug.Log($"Jednostki noszące zbroję nie mogą używać Pancerzu Eteru.");
-            return;
+            yield break;
         }
 
         // // W przypadku zaklęć, które atakują wiele celów naraz pozwala na wybranie kilku celów zanim zacznie rzucać zaklęcie
@@ -231,22 +213,16 @@ public class MagicManager : MonoBehaviour
         // }
 
         //Wykonuje akcję
-        if (spell.CastingTimeLeft >= 2 && spellcasterUnit.CanDoAction == true)
+        if (!unit.CanDoAction)
         {
-            if (Unit.SelectedUnit.GetComponent<Unit>().CanDoAction)
-            {
-                spell.CastingTimeLeft -= 2;
-
-                //Wykonuje akcję
-                RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
-            }
-            else return;
+            Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
+            yield break;
         }
 
-        if (spell.CastingTimeLeft > 0)
+        if (spell.CastingNumberLeft > 0)
         {
-            Debug.Log($"{Unit.SelectedUnit.GetComponent<Stats>().Name} splata zaklęcie. Pozostała/y {spell.CastingTimeLeft} akcja/e do końca.");
-            return;
+            Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color=#4dd2ff>{spell.CastingNumber - spell.CastingNumberLeft}/{spell.CastingNumber}</color>.");
+            yield break;
         }
 
         bool isSuccessful = true;
@@ -254,36 +230,101 @@ public class MagicManager : MonoBehaviour
         //Czary dotykowe (ofensywne)
         if (spell.Range <= 1.5f && spell.Type.Contains("offensive"))
         {
-            // Rzut na trafienie
-            int rollResult = UnityEngine.Random.Range(1, 101);
+            //Zresetowanie broni, aby zaklęcie dotykowe było wykonywane przy pomocy rąk
+            stats.GetComponent<Weapon>().ResetWeapon();
+            Weapon attackerWeapon = stats.GetComponent<Weapon>();
 
-            //Uwzględnienie zdolności Dotyk Mocy
-            int modifier = spellcasterStats.FastHands ? 20 : 0;
+            int attackerRollResult = 0;
+            int targetRollResult = 0;
 
-            string message = $"{spellcasterStats.Name} próbuje dotknąć {target.GetComponent<Stats>().Name}. Wynik rzutu: {rollResult}. Wartość WW: {spellcasterStats.WW}.";
-            if (modifier != 0)
+            if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                message += $"  Modyfikator: {modifier}";
-            }
-            Debug.Log(message);
-
-            if (rollResult > spellcasterStats.WW + modifier)
-            {
-                Debug.Log($"{spellcasterStats.Name} chybił.");
-                isSuccessful = false;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "dotknięcie przeciwnika", result => targetRollResult = result));
+                if (attackerRollResult == 0) yield break;
             }
             else
             {
-                //Zresetowanie broni, aby zaklęcie dotykowe było wykonywane przy pomocy rąk
-                spellcasterUnit.GetComponent<Weapon>().ResetWeapon();
-                Weapon attackerWeapon = spellcasterUnit.GetComponent<Weapon>();
+                attackerRollResult = UnityEngine.Random.Range(1, 101);
+            }
 
-                // Próba parowania lub uniku
-                Weapon targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
+            if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "dotknięcie przeciwnika", result => targetRollResult = result));
+                if (targetRollResult == 0) yield break;
+            }
+            else
+            {
+                targetRollResult = UnityEngine.Random.Range(1, 101);
+            }
 
-                //isSuccessful = CombatManager.Instance.TargetIsDefended;
+            //Uwzględnienie zdolności Dotyk Mocy
+            int modifier = stats.FastHands * 10;
+
+            int[] attackerTest = DiceRollManager.Instance.TestSkill("WW", stats, MeleeCategory.Brawling.ToString(), modifier, attackerRollResult);
+            int attackerSuccessLevel = attackerTest[1];
+
+            CombatManager.Instance.DefenceResults = new int[2];
+            int defenceSuccessValue = 0;
+            int defenceSuccessLevel = 0;
+            int parryValue = 0;
+            int dodgeValue = 0;
+            bool canParry = false;
+            bool canDodge = false;
+
+            // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
+            canParry = target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && (weapon.Type.Contains("melee") || weapon.Id == 0));
+            canDodge = true;
+            Weapon targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
+
+            if ((canParry || canDodge) && !targetUnit.Surprised)
+            {
+                Weapon weaponUsedForParry = CombatManager.Instance.GetBestParryWeapon(targetStats, targetWeapon);
+                int parryModifier = CombatManager.Instance.CalculateParryModifier(targetUnit, targetStats, stats, weaponUsedForParry, attackerWeapon);
+                int dodgeModifier = CombatManager.Instance.CalculateDodgeModifier(targetUnit, targetStats, attackerWeapon);
+
+                //Modyfikator za strach
+                if (targetUnit.FearedUnits.Contains(unit))
+                {
+                    parryModifier -= 10;
+                    dodgeModifier -= 10;
+                    Debug.Log($"Uwzględniono modyfikatory za strach przed atakującym.");
+                }
+
+                // Ograniczenie modyfikatorów do zakresu od -30 do +60
+                parryModifier = Mathf.Clamp(parryModifier, -30, 60);
+                dodgeModifier = Mathf.Clamp(dodgeModifier, -30, 60);
+
+                string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
+                string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
+
+                // Obliczamy sumaryczną wartość parowania i uniku
+                MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
+                parryValue = targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill) + parryModifier;
+                dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
+
+                // Funkcja obrony
+                yield return StartCoroutine(CombatManager.Instance.Defense(targetUnit, targetStats, stats, attackerWeapon, weaponUsedForParry, targetMeleeSkill, parryValue, dodgeValue, parryModifier, dodgeModifier, canParry, canDodge));
+
+                defenceSuccessValue = CombatManager.Instance.DefenceResults[0];
+                defenceSuccessLevel = CombatManager.Instance.DefenceResults[1];
+            }
+
+            // Następuje finalne rozstrzygnięcie
+            int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
+
+            // Sprawdzenie warunku trafienia
+            bool attackSucceeded = combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && stats.WW + stats.GetSkillModifier(stats.Melee, MeleeCategory.Brawling) > Math.Max(parryValue, dodgeValue));
+
+            if(!attackSucceeded)
+            {
+                Debug.Log("Atak chybił.");
+                yield break;
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // TUTAJ SKOŃCZYŁEM. TO CO PONIŻEJ JEST DO AKTUALIZACJI
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         StartCoroutine(CastingNumberRollCoroutine());
 
@@ -302,19 +343,19 @@ public class MagicManager : MonoBehaviour
                 CombatManager.Instance.IsManualPlayerAttack = false;
 
                 //Aktualizuje aktywną postać na kolejce inicjatywy, jeśli atakujący nie ma już dostępnych akcji. Ta funkcja jest tu wywołana, dlatego że chcemy zastosować opóźnienie i poczekać ze zmianą jednostki do momentu wpisania wartości rzutów
-                if (!spellcasterUnit.CanDoAction == true)
+                if (!unit.CanDoAction == true)
                 {
                     InitiativeQueueManager.Instance.SelectUnitByQueue();
                 }
             }
             else if (isSuccessful != false)
             {
-                isSuccessful = CastingNumberRoll(spellcasterStats, spell.CastingNumber) >= spell.CastingNumber ? true : false;
+                isSuccessful = CastingNumberRoll(stats, spell.CastingNumber) >= spell.CastingNumber ? true : false;
             }
 
             ResetSpellCasting();
-            spell.CastingTimeLeft = spell.CastingTime;
-            spellcasterUnit.CastingNumberBonus = 0;
+            spell.CastingNumberLeft = spell.CastingNumber;
+            unit.ChannelingModifier = 0;
 
             if (isSuccessful == false)
             {
@@ -331,7 +372,7 @@ public class MagicManager : MonoBehaviour
             {
                 foreach (var targetStats in _targetsStats)
                 {
-                    HandleSpellEffect(spellcasterStats, targetStats, spell);
+                    HandleSpellEffect(stats, targetStats, spell);
                 }
                 _targetsStats.Clear();
             }
@@ -339,7 +380,7 @@ public class MagicManager : MonoBehaviour
             {
                 foreach (var collider in allTargets)
                 {
-                    HandleSpellEffect(spellcasterStats, collider.GetComponent<Stats>(), spell);
+                    HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell);
                 }
             }
         }
@@ -438,7 +479,7 @@ public class MagicManager : MonoBehaviour
         Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
 
         //Uwzględnienie splecenia magii
-        modifier += Unit.SelectedUnit.GetComponent<Unit>().CastingNumberBonus;
+        modifier += Unit.SelectedUnit.GetComponent<Unit>().ChannelingModifier;
 
         bool etherArmor = false;
 
@@ -615,35 +656,35 @@ public class MagicManager : MonoBehaviour
             UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
         }
 
-        // Zaklęcia ogłuszające lub usypiające/paraliżujące
-        if (spell.Paralyzing == true || spell.Stunning == true)
-        {
-            int duration = spell.Duration;
-            int initialDuration = duration; // Przechowuje oryginalną wartość czasu trwania zaklęcia
+        //// Zaklęcia ogłuszające lub usypiające/paraliżujące
+        //if (spell.Paralyzing == true || spell.Stunning == true)
+        //{
+        //    int duration = spell.Duration;
+        //    int initialDuration = duration; // Przechowuje oryginalną wartość czasu trwania zaklęcia
 
-            if (spell.Type.Contains("random-duration"))
-            {
-                duration = UnityEngine.Random.Range(1, 11);
-                initialDuration = duration; // Aktualizuje, jeśli jest losowa długość
-            }
+        //    if (spell.Type.Contains("random-duration"))
+        //    {
+        //        duration = UnityEngine.Random.Range(1, 11);
+        //        initialDuration = duration; // Aktualizuje, jeśli jest losowa długość
+        //    }
 
-            if (targetUnit.CanDoAction == true)
-            {
-                targetUnit.CanDoAction = false;
-                duration--; // Zapobiega temu, żeby cel zaklęcia stracił dodatkową rundę, jeśli jego inicjatywa jest mniejsza niż rzucającego zaklęcie
-            }
+        //    if (targetUnit.CanDoAction == true)
+        //    {
+        //        targetUnit.CanDoAction = false;
+        //        duration--; // Zapobiega temu, żeby cel zaklęcia stracił dodatkową rundę, jeśli jego inicjatywa jest mniejsza niż rzucającego zaklęcie
+        //    }
 
-            if (spell.Paralyzing == true)
-            {
-                targetUnit.HelplessDuration += duration;
-                Debug.Log($"{targetStats.Name} zostaje sparaliżowany/uśpiony na {initialDuration} rund/y.");
-            }
-            else if (spell.Stunning == true)
-            {
-                targetUnit.StunDuration += duration;
-                Debug.Log($"{targetStats.Name} zostaje ogłuszony na {initialDuration} rund/y.");
-            }
-        }
+            //if (spell.Paralyzing == true)
+            //{
+            //    targetUnit.HelplessDuration += duration;
+            //    Debug.Log($"{targetStats.Name} zostaje sparaliżowany/uśpiony na {initialDuration} rund/y.");
+            //}
+            //else if (spell.Stunning == true)
+            //{
+            //    targetUnit.StunDuration += duration;
+            //    Debug.Log($"{targetStats.Name} zostaje ogłuszony na {initialDuration} rund/y.");
+            //}
+        //}
 
         //Zaklęcia zadające obrażenia
         if (!spell.Type.Contains("no-damage") && spell.Type.Contains("offensive"))

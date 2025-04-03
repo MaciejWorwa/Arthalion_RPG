@@ -160,6 +160,8 @@ public class SaveAndLoadManager : MonoBehaviour
             }
 
             UnitData unitData = new UnitData(unit);
+            unitData.FearedUnitIds = unit.FearedUnits?.Select(fu => fu.UnitId).ToList() ?? new List<int>();
+
             StatsData statsData = new StatsData(unit.GetComponent<Stats>());
             WeaponData weaponData = new WeaponData(unit.GetComponent<Weapon>());
             InventoryData inventoryData = new InventoryData(unit.GetComponent<Inventory>());
@@ -535,6 +537,8 @@ public class SaveAndLoadManager : MonoBehaviour
             LoadComponentDataWithReflection<UnitData, Unit>(unitGameObject, unitFilePath);
             LoadComponentDataWithReflection<WeaponData, Weapon>(unitGameObject, weaponFilePath);
 
+            unitGameObject.GetComponent<Unit>().FearedUnits = new HashSet<Unit>(unitData.FearedUnitIds.Select(id => UnitsManager.Instance.AllUnits.FirstOrDefault(u => u.UnitId == id)).Where(u => u != null));
+
             // Wczytanie umiejętności w walce każdą kategorią broni
             unitGameObject.GetComponent<Stats>().Melee = statsData.MeleeSerialized.ToDictionary(x => Enum.Parse<MeleeCategory>(x.Key), x => x.Value);
             unitGameObject.GetComponent<Stats>().Ranged = statsData.RangedSerialized.ToDictionary(x => Enum.Parse<RangedCategory>(x.Key), x => x.Value);
@@ -629,6 +633,20 @@ public class SaveAndLoadManager : MonoBehaviour
             //Aktualizuje pasek przewagi w bitwie
             unitGameObject.GetComponent<Stats>().Overall = unitGameObject.GetComponent<Stats>().CalculateOverall();
             InitiativeQueueManager.Instance.CalculateDominance();
+        }
+
+        // Teraz, gdy wszystkie jednostki są już na mapie, możemy ustawić FearedUnits
+        foreach (var unit in UnitsManager.Instance.AllUnits)
+        {
+            UnitData unitData = JsonUtility.FromJson<UnitData>(
+                File.ReadAllText(Path.Combine(saveFolderPath, unit.GetComponent<Stats>().Name + "_unit.json"))
+            );
+
+            unit.FearedUnits = new HashSet<Unit>(
+                unitData.FearedUnitIds
+                    .Select(id => UnitsManager.Instance.AllUnits.FirstOrDefault(u => u.UnitId == id))
+                    .Where(u => u != null)
+            );
         }
 
         if (saveFolderPath != Path.Combine(Application.persistentDataPath, "temp"))

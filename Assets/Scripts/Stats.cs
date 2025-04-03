@@ -90,6 +90,7 @@ public class Stats : MonoBehaviour
     public int Disarm; // Rozbrojenie
     public int DualWielder; // Dwie bronie
     public bool Ethereal; // Eteryczny
+    public int FastHands; // Ruchliwe dłonie
     public int Fear; // Strach
     public int Feint; // Finta
     public bool Frenzy; // Szał bojowy  ------------------------------------ UWZGLĘDNIĆ JESZCZE JEGO DZIAŁANIE GDY WPROWADZE MECHANIKĘ STRACHU
@@ -125,7 +126,6 @@ public class Stats : MonoBehaviour
 
     //STARE
     public bool ArmouredCasting; // Pancerz Wiary
-    public bool FastHands; //Dotyk mocy
     public bool MagicSense; //Zmysł magii
     public bool MightyMissile; // Morderczy pocisk
     public bool WillOfIron; // Żelazna wola

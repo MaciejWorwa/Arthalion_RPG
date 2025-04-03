@@ -9,11 +9,10 @@ public class Spell : MonoBehaviour
     public string Lore;
     public string[] Type; // np. offensive, buff, magic-level-related, magic-missile, healing (?) 
     public int CastingNumber; //poziom mocy
+    public int CastingNumberLeft;
     public float Range; // zasiêg
     public int Strength; // si³a zaklêcia
     public int AreaSize; // obszar dzia³ania
-    public int CastingTime; // czas rzucania zaklêcia
-    public int CastingTimeLeft;
     public int Duration; // czas trwania zaklêcia
 
     public bool SaveTestRequiring; // okreœla, czy zaklêcie powoduje koniecznoœæ wykonania testu obronnego
@@ -21,6 +20,6 @@ public class Spell : MonoBehaviour
 
     public bool ArmourIgnoring; // ignoruj¹cy zbrojê
     public bool WtIgnoring; // ignoruj¹cy wytrzyma³oœæ
-    public bool Stunning;  // og³uszaj¹cy
-    public bool Paralyzing; // wprowadzaj¹cy w stan bezbronnoœci
+    //public bool Stunning;  // og³uszaj¹cy
+    //public bool Paralyzing; // wprowadzaj¹cy w stan bezbronnoœci
 }

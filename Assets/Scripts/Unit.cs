@@ -43,14 +43,11 @@ public class Unit : MonoBehaviour
     public HashSet<Unit> FearedUnits = new HashSet<Unit>(); // Lista jednostek, których się boi
 
     //STARE
-    public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
     public int SpellDuration; // Czas trwania zaklęcia mającego wpływ na tą jednostkę
-    public int StunDuration; // Czas ogłuszenia (podany w rundach). Wartość 0 oznacza, że postać nie jest ogłuszona
-    public bool Trapped; // Unieruchomiony
 
     [Header("Modyfikatory")]
     public int AimingBonus;
-    public int CastingNumberBonus;
+    public int ChannelingModifier; // Poziom mocy zebrany poprzez splatanie magii
     public int DefensiveBonus;
     public int FeintModifier; // Modyfikator za fintę
 

@@ -491,7 +491,7 @@ public class DataManager : MonoBehaviour
                     }
                 }
 
-                spellToUpdate.CastingTimeLeft = spell.CastingTime;
+                spellToUpdate.CastingNumberLeft = spell.CastingNumber;
             }
         }
     }
@@ -580,16 +580,16 @@ public class UnitData
     public int EntangledUnitId; // Cel unieruchomienia
     public int FeintedUnitId; // Cel finty
 
-    //STARE
-    public int HelplessDuration; // Czas stanu bezbronności (podany w rundach). Wartość 0 oznacza, że postać nie jest bezbronna
-    public bool IsScared; // Jest przestraszony
     public bool IsFearTestPassed; // Zdał test strachu
+    public bool IsTerrorTestPassed; // Zdał test grozy
+    public int FearLevel; // Poziom strachu
+    public List<int> FearedUnitIds = new List<int>(); // Lista Id jednostek, których się boi
+
+    //STARE
     public int SpellDuration; // Czas trwania zaklęcia mającego wpływ na tą jednostkę
-    public int StunDuration; // Czas ogłuszenia (podany w rundach). Wartość 0 oznacza, że postać nie jest ogłuszona
-    public bool Trapped; // Unieruchomiony
 
     public int AimingBonus;
-    public int CastingNumberBonus;
+    public int ChannelingModifier; // Poziom mocy zebrany poprzez splatanie magii
     public int DefensiveBonus;
     public int FeintModifier; // Modyfikator za fintę
 
@@ -621,6 +621,12 @@ public class UnitData
         position[0] = unit.gameObject.transform.position.x;
         position[1] = unit.gameObject.transform.position.y;
         position[2] = unit.gameObject.transform.position.z;
+
+        // Zapisanie jednostek, których ta jednostka się boi
+        if (unit.FearedUnits != null)
+        {
+            FearedUnitIds = unit.FearedUnits.Select(fu => fu.UnitId).ToList();
+        }
     }
 }
 
@@ -668,6 +674,7 @@ public class StatsData
     public int Armor_legs;
     public int NaturalArmor;
 
+    [Header("Talenty")]
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
     public bool Champion; // Czempion
@@ -678,14 +685,15 @@ public class StatsData
     public int Disarm; // Rozbrojenie
     public int DualWielder; // Dwie bronie
     public bool Ethereal; // Eteryczny
+    public int FastHands; // Ruchliwe dłonie
     public int Fear; // Strach
     public int Feint; // Finta
-    public bool Frenzy; // Szał bojowy
+    public bool Frenzy; // Szał bojowy  ------------------------------------ UWZGLĘDNIĆ JESZCZE JEGO DZIAŁANIE GDY WPROWADZE MECHANIKĘ STRACHU
     public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
     public int Hardy; // Twardziel
-    public bool ImmunityToPsychology; // Niewrażliwość na psychologię ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int Implacable; // Nieubłagany
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
@@ -713,9 +721,6 @@ public class StatsData
 
     //STARE
     public bool ArmouredCasting; // Pancerz Wiary
-    public bool DaemonicAura; // Demoniczna aura (Wt +2 na niemagiczną broń, odporność na truciznę, ataki demona to broń magiczna)
-    public bool FastHands; //Dotyk mocy
-    //public bool Fearless; // Nieustraszony
     public bool MagicSense; //Zmysł magii
     public bool MightyMissile; // Morderczy pocisk
     public bool WillOfIron; // Żelazna wola
