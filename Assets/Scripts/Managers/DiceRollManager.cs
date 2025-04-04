@@ -224,7 +224,7 @@ public class DiceRollManager : MonoBehaviour
         int successLevel = (skillValue + attributeValue + modifier) / 10 - rollResult / 10;
 
         // Okreœlenie koloru na podstawie poziomu sukcesu
-        string successLevelColor = successValue > 0 ? "green" : "red";
+        string successLevelColor = successValue >= 0 ? "green" : "red";
 
         // Tworzenie stringa dla modyfikatora
         string modifierString = modifier != 0 ? $" Modyfikator: {modifier}," : "";

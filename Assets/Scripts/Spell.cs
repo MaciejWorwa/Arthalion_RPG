@@ -7,15 +7,15 @@ public class Spell : MonoBehaviour
     public int Id;
     public string Name;
     public string Lore;
-    public string[] Type; // np. offensive, buff, magic-level-related, magic-missile, healing (?) 
+    public string[] Type; // np. offensive, buff, armor-ignoring, magic-missile 
     public int CastingNumber; //poziom mocy
-    public int CastingNumberLeft;
     public float Range; // zasiêg
     public int Strength; // si³a zaklêcia
     public int AreaSize; // obszar dzia³ania
     public int Duration; // czas trwania zaklêcia
 
     public bool SaveTestRequiring; // okreœla, czy zaklêcie powoduje koniecznoœæ wykonania testu obronnego
+    public int AttributeValue; // okreœla o ile s¹ zmieniane cechy opisane w tabeli Attribute
     public string[] Attribute; // okreœla cechê, jaka jest testowana podczas próby oparcia siê zaklêciu lub cechê na któr¹ wp³ywa zaklêcie (np. podnosi j¹ lub obni¿a). Czasami jest to wiêcej cech, np. Pancerz Etery wp³ywa na ka¿d¹ z lokalizacji
 
     public bool ArmourIgnoring; // ignoruj¹cy zbrojê

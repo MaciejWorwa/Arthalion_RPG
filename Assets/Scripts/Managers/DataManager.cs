@@ -433,6 +433,13 @@ public class DataManager : MonoBehaviour
             return;
         }
 
+        // Posortowanie ID zgodnie z kolejnością broni w pliku json (czyli alfabetycznie)
+        for (int i = 0; i < spellsList.Count; i++)
+        {
+            if (spellsList[i].Id != 0) break;
+            spellsList[i].Id = i + 1;
+        }
+
         //Odniesienie do klasy spell postaci
         Spell spellToUpdate = null;
         if (Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Spell>() != null && !string.IsNullOrEmpty(spellName))
@@ -490,8 +497,6 @@ public class DataManager : MonoBehaviour
                         targetField.SetValue(spellToUpdate, field.GetValue(spell));
                     }
                 }
-
-                spellToUpdate.CastingNumberLeft = spell.CastingNumber;
             }
         }
     }
@@ -675,6 +680,7 @@ public class StatsData
     public int NaturalArmor;
 
     [Header("Talenty")]
+    public int AethyricAttunement; // Zmysł Magii ----------------------------------- MECHANIKA DO WPROWADZENIA
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
     public bool Champion; // Czempion
@@ -917,22 +923,21 @@ public class SpellData
     public int Id;
     public string Name;
     public string Lore;
-    public string[] Type;
+    public string[] Type; // np. offensive, buff, armor-ignoring, magic-missile 
     public int CastingNumber; //poziom mocy
-    public float Range;
-    public int Strength;
-    public int AreaSize;
-    public int CastingTime;
-    public int CastingTimeLeft;
-    public int Duration;
+    public float Range; // zasięg
+    public int Strength; // siła zaklęcia
+    public int AreaSize; // obszar działania
+    public int Duration; // czas trwania zaklęcia
 
     public bool SaveTestRequiring; // określa, czy zaklęcie powoduje konieczność wykonania testu obronnego
+    public int AttributeValue; // określa o ile są zmieniane cechy opisane w tabeli Attribute
     public string[] Attribute; // określa cechę, jaka jest testowana podczas próby oparcia się zaklęciu lub cechę na którą wpływa zaklęcie (np. podnosi ją lub obniża). Czasami jest to więcej cech, np. Pancerz Etery wpływa na każdą z lokalizacji
 
     public bool ArmourIgnoring; // ignorujący zbroję
     public bool WtIgnoring; // ignorujący wytrzymałość
-    public bool Stunning;  // ogłuszający
-    public bool Paralyzing; // wprowadzający w stan bezbronności
+    //public bool Stunning;  // ogłuszający
+    //public bool Paralyzing; // wprowadzający w stan bezbronności
 
     public SpellData(Spell spell)
     {

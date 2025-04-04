@@ -132,7 +132,7 @@ public class Unit : MonoBehaviour
         }
         else if (Input.GetMouseButtonUp(1) && SelectedUnit != null && MagicManager.IsTargetSelecting)
         {
-            MagicManager.Instance.CastSpell(this.gameObject);
+            StartCoroutine(MagicManager.Instance.CastSpell(this.gameObject));
         }
     }
     public void SelectUnit()

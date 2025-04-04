@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using TMPro;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UI;
@@ -43,12 +44,6 @@ public class MagicManager : MonoBehaviour
     private List<Stats> _targetsStats; // Lista jednostek, które są wybierane jako cele zaklęcia, które pozwala wybrać więcej niż jeden cel
     public List<Stats> UnitsStatsAffectedBySpell; // Lista jednostek, na które w danym momencie wpływa jakieś zaklęcie z czasem trwania, np. Pancerz Eteru
 
-    [SerializeField] private GameObject _applyCastingNumberPanel;
-    [SerializeField] private TMP_InputField _castingNumberInputField;
-    [SerializeField] private GameObject _channelingRollPanel;
-    [SerializeField] private TMP_InputField _channelingRollInputField;
-    [SerializeField] private GameObject _applyDamagePanel;
-    [SerializeField] private TMP_InputField _damageInputField;
     // Zmienne do przechowywania wyniku
     private int _manualRollResult;
     private bool _isWaitingForRoll;
@@ -88,7 +83,6 @@ public class MagicManager : MonoBehaviour
         StartCoroutine(ChannelingMagicCoroutine());
         IEnumerator ChannelingMagicCoroutine()
         {
-            // Rzut na trafienie
             int rollResult = 0;
 
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
@@ -101,10 +95,16 @@ public class MagicManager : MonoBehaviour
                 rollResult = UnityEngine.Random.Range(1, 101);
             }
 
-            int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Channeling", 0, rollResult);
+            // Modyfikator za zbroję
+            int modifier = CalculateArmorModifier(stats);
+
+            int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Channeling", modifier, rollResult);
+
             unit.ChannelingModifier = Math.Max(0, unit.ChannelingModifier + test[1]);
 
             Debug.Log($"Poziomy sukcesu zebrane w wyniku splatania magii: <color=#4dd2ff>{unit.ChannelingModifier}</color>");
+
+            CheckForChaosManifestation(stats, rollResult, test[0], test[1]);
         }
     }
 
@@ -155,77 +155,66 @@ public class MagicManager : MonoBehaviour
         Stats targetStats = target.GetComponent<Stats>();
         Unit targetUnit = target.GetComponent<Unit>();
 
-        //if (!GameManager.IsAutoDiceRollingMode)
-        //{
-        //    CombatManager.Instance.IsManualPlayerAttack = true;
-        //}
-
         //Sprawdza dystans
-        _spellDistance = CalculateDistance(Unit.SelectedUnit, target.gameObject);
-        if (_spellDistance > spell.Range)
+        _spellDistance = CombatManager.Instance.CalculateDistance(Unit.SelectedUnit, target.gameObject);
+        float spellRange = spell.Range != 1.5f ? spell.Range * stats.SW : spell.Range; // Zazwyczaj zasięg zaklęcia jest zależny od Siły Woli czarodzieja. Czary dotykowe mają zasięg równy 1.5f
+        if (_spellDistance > spellRange)
         {
             Debug.Log("Cel znajduje się poza zasięgiem zaklęcia.");
             yield break;
         }
 
-        //Sprawdza wszystkie jednostki w obszarze działania zaklęcia
+        Debug.Log($"Dystans: {_spellDistance}. Zasięg zaklęcia: {spellRange}");
+
+        // Pobiera wszystkie collidery w obszarze działania zaklęcia
         List<Collider2D> allTargets = Physics2D.OverlapCircleAll(target.transform.position, spell.AreaSize / 2).ToList();
 
-        if (allTargets == null)
-        {
-            Debug.Log($"W obszarze działania zaklęcia musi znaleźć się odpowiedni cel.");
-            yield break;
-        }
-
-        // Usuwa wszystkie collidery, które nie są jednostkami
-        for (int i = allTargets.Count - 1; i >= 0; i--)
-        {
-            //Usuwa collidery, które nie są jednostkami oraz rzucającego zaklęcie w przypadku zaklęć ofensywnych. Uwzględnia także zaklęcia, które czarodziej może rzucić tylko na siebie, usuwając wszelkie jednostki, które nim nie są.
-            if (allTargets[i].GetComponent<Unit>() == null || (allTargets[i].gameObject == Unit.SelectedUnit && spell.Type.Contains("offensive")) || (allTargets[i].gameObject != Unit.SelectedUnit && spell.Type.Contains("self-only")))
-            {
-                allTargets.RemoveAt(i);
-            }
-        }
+        // Filtruje wśród colliderów jednostki, na których można użyć tego zaklęcia
+        allTargets.RemoveAll(collider =>
+            collider.GetComponent<Unit>() == null ||
+            (collider.gameObject == Unit.SelectedUnit && spell.Type.Contains("offensive")) ||
+            (collider.gameObject != Unit.SelectedUnit && spell.Type.Contains("self-only"))
+        );
 
         if (allTargets.Count == 0)
         {
-            Debug.Log($"W obszarze działania zaklęcia musi znaleźć się odpowiedni cel.");
+            Debug.Log("W obszarze działania zaklęcia musi znaleźć się odpowiedni cel.");
             yield break;
         }
 
-        //Zablokowanie możliwości rzucenia Pancerza Eteru jednostkom w zbroi
-        if (spell.Name == "Pancerz Eteru" && (allTargets[0].GetComponent<Stats>().Armor_head > 0 || allTargets[0].GetComponent<Stats>().Armor_arms > 0 || allTargets[0].GetComponent<Stats>().Armor_torso > 0 || allTargets[0].GetComponent<Stats>().Armor_legs > 0))
+        //// W przypadku zaklęć, które atakują wiele celów naraz pozwala na wybranie kilku celów zanim zacznie rzucać zaklęcie
+        //if (spell.Type.Contains("multiple-targets") && spell.Type.Contains("magic-level-related") && _targetsStats.Count < spellcasterStats.Mag)
+        //{
+        //    _targetsStats.Add(allTargets[0].GetComponent<Stats>());
+
+        //    if (_targetsStats.Count < spellcasterStats.Mag)
+        //    {
+        //        Debug.Log("Wskaż prawym przyciskiem myszy kolejny cel. Możesz wskakać kilkukrotnie tę samą jednostkę.");
+        //        return;
+        //    }
+        //}
+
+        // W przypadku zaklęć, które atakują wiele celów naraz pozwala na wybranie kilku celów zanim zacznie rzucać zaklęcie
+        // W RAMACH TESU USTALIWŁEM LIMIT NA SZTYWNO JAKO 3 CELE
+        if (spell.Type.Contains("multiple-targets") && _targetsStats.Count < 3)
         {
-            Debug.Log($"Jednostki noszące zbroję nie mogą używać Pancerzu Eteru.");
-            yield break;
+            _targetsStats.Add(allTargets[0].GetComponent<Stats>());
+
+            // W RAMACH TESU USTALIWŁEM LIMIT NA SZTYWNO JAKO 3 CELE
+            if (_targetsStats.Count < 3)
+            {
+                Debug.Log("Wskaż prawym przyciskiem myszy kolejny cel. Możesz wskakać kilkukrotnie tę samą jednostkę.");
+                yield break;
+            }
         }
 
-        // // W przypadku zaklęć, które atakują wiele celów naraz pozwala na wybranie kilku celów zanim zacznie rzucać zaklęcie
-        // if (spell.Type.Contains("multiple-targets") && spell.Type.Contains("magic-level-related") && _targetsStats.Count < spellcasterStats.Mag)
-        // {
-        //     _targetsStats.Add(allTargets[0].GetComponent<Stats>());
-
-        //     if (_targetsStats.Count < spellcasterStats.Mag)
-        //     {
-        //         Debug.Log("Wskaż prawym przyciskiem myszy kolejny cel. Możesz wskakać kilkukrotnie tę samą jednostkę.");
-        //         return;
-        //     }
-        // }
-
-        //Wykonuje akcję
         if (!unit.CanDoAction)
         {
             Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
             yield break;
         }
 
-        if (spell.CastingNumberLeft > 0)
-        {
-            Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color=#4dd2ff>{spell.CastingNumber - spell.CastingNumberLeft}/{spell.CastingNumber}</color>.");
-            yield break;
-        }
-
-        bool isSuccessful = true;
+        RoundsManager.Instance.DoAction(unit);
 
         //Czary dotykowe (ofensywne)
         if (spell.Range <= 1.5f && spell.Type.Contains("offensive"))
@@ -234,33 +223,22 @@ public class MagicManager : MonoBehaviour
             stats.GetComponent<Weapon>().ResetWeapon();
             Weapon attackerWeapon = stats.GetComponent<Weapon>();
 
-            int attackerRollResult = 0;
-            int targetRollResult = 0;
+            int touchRollResult = 0;
 
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "dotknięcie przeciwnika", result => targetRollResult = result));
-                if (attackerRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "dotknięcie przeciwnika", result => touchRollResult = result));
+                if (touchRollResult == 0) yield break;
             }
             else
             {
-                attackerRollResult = UnityEngine.Random.Range(1, 101);
-            }
-
-            if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
-            {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "dotknięcie przeciwnika", result => targetRollResult = result));
-                if (targetRollResult == 0) yield break;
-            }
-            else
-            {
-                targetRollResult = UnityEngine.Random.Range(1, 101);
+                touchRollResult = UnityEngine.Random.Range(1, 101);
             }
 
             //Uwzględnienie zdolności Dotyk Mocy
-            int modifier = stats.FastHands * 10;
+            int touchModifier = stats.FastHands * 10;
 
-            int[] attackerTest = DiceRollManager.Instance.TestSkill("WW", stats, MeleeCategory.Brawling.ToString(), modifier, attackerRollResult);
+            int[] attackerTest = DiceRollManager.Instance.TestSkill("WW", stats, MeleeCategory.Brawling.ToString(), touchModifier, touchRollResult);
             int attackerSuccessLevel = attackerTest[1];
 
             CombatManager.Instance.DefenceResults = new int[2];
@@ -315,73 +293,58 @@ public class MagicManager : MonoBehaviour
             // Sprawdzenie warunku trafienia
             bool attackSucceeded = combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && stats.WW + stats.GetSkillModifier(stats.Melee, MeleeCategory.Brawling) > Math.Max(parryValue, dodgeValue));
 
-            if(!attackSucceeded)
+            if (!attackSucceeded)
             {
                 Debug.Log("Atak chybił.");
                 yield break;
             }
         }
 
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // TUTAJ SKOŃCZYŁEM. TO CO PONIŻEJ JEST DO AKTUALIZACJI
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        StartCoroutine(CastingNumberRollCoroutine());
-
-        // Test poziomu mocy zaklęcia
-        IEnumerator CastingNumberRollCoroutine()
+        int rollResult = 0;
+        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
         {
-            if (!GameManager.IsAutoDiceRollingMode && isSuccessful != false)
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "język magiczny", result => rollResult = result));
+        }
+        else
+        {
+            rollResult = UnityEngine.Random.Range(1, 101);
+        }
+
+        // Modyfikator za zbroję
+        int modifier = CalculateArmorModifier(stats);
+
+        // Test języka magicznego na rzucanie zaklęcia
+        int[] castingTest = DiceRollManager.Instance.TestSkill("Int", stats, "MagicLanguage", modifier, rollResult);
+
+        int successLevels = Math.Max(0, castingTest[1] + unit.ChannelingModifier);
+        string color = successLevels >= spell.CastingNumber ? "green" : "red"; // Zielony, jeśli >= CastingNumber, inaczej czerwony
+        Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color={color}>{successLevels}/{spell.CastingNumber}</color>.");
+
+        bool spellFailed = spell.CastingNumber - successLevels > 0;
+        Debug.Log(spellFailed ? "Rzucanie zaklęcia nie powiodło się." : "Zaklęcie zostało splecione pomyślnie.");
+
+        // Zresetowanie zaklęcia
+        ResetSpellCasting();
+        //_targetsStats.Clear();
+        unit.ChannelingModifier = 0;
+
+        // Zaklęcie nie zostało w pełni splecione - przerywamy funkcję
+        if (spellFailed) yield break;
+
+        // Wywołanie efektu zaklęcia
+        if (spell.Type.Contains("multiple-targets"))
+        {
+            foreach (Stats tStats in _targetsStats)
             {
-                // Czekaj na kliknięcie przycisku
-                Debug.Log("Wpisz poziom mocy uzyskany na kościach.");
-                _applyCastingNumberPanel.SetActive(true);
-                yield return new WaitUntil(() => _applyCastingNumberPanel.activeSelf == false);
-
-                isSuccessful = _manualRollResult >= spell.CastingNumber ? true : false;
-
-                CombatManager.Instance.IsManualPlayerAttack = false;
-
-                //Aktualizuje aktywną postać na kolejce inicjatywy, jeśli atakujący nie ma już dostępnych akcji. Ta funkcja jest tu wywołana, dlatego że chcemy zastosować opóźnienie i poczekać ze zmianą jednostki do momentu wpisania wartości rzutów
-                if (!unit.CanDoAction == true)
-                {
-                    InitiativeQueueManager.Instance.SelectUnitByQueue();
-                }
+                StartCoroutine(HandleSpellEffect(stats, tStats, spell, rollResult, castingTest[1]));
             }
-            else if (isSuccessful != false)
+            //_targetsStats.Clear();
+        }
+        else
+        {
+            foreach (Collider2D collider in allTargets)
             {
-                isSuccessful = CastingNumberRoll(stats, spell.CastingNumber) >= spell.CastingNumber ? true : false;
-            }
-
-            ResetSpellCasting();
-            spell.CastingNumberLeft = spell.CastingNumber;
-            unit.ChannelingModifier = 0;
-
-            if (isSuccessful == false)
-            {
-                Debug.Log("Rzucanie zaklęcia nie powiodło się.");
-                _targetsStats.Clear();
-                yield break;
-            }
-            else
-            {
-                Debug.Log("Rzucanie zaklęcia powiodło się.");
-            }
-
-            if (spell.Type.Contains("multiple-targets"))
-            {
-                foreach (var targetStats in _targetsStats)
-                {
-                    HandleSpellEffect(stats, targetStats, spell);
-                }
-                _targetsStats.Clear();
-            }
-            else
-            {
-                foreach (var collider in allTargets)
-                {
-                    HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell);
-                }
+                StartCoroutine(HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell, rollResult, castingTest[1]));
             }
         }
     }
@@ -391,6 +354,11 @@ public class MagicManager : MonoBehaviour
         IsTargetSelecting = false;
         //Zmienia kolor przycisku na nieaktywny
         _castSpellButton.GetComponent<Image>().color = Color.white;
+
+        if(Unit.SelectedUnit != null)
+        {
+            GridManager.Instance.HighlightTilesInMovementRange(Unit.SelectedUnit.GetComponent<Stats>());
+        }
     }
 
     public void ResetSpellEffect(Unit unit)
@@ -422,65 +390,32 @@ public class MagicManager : MonoBehaviour
         UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
     }
 
-    private int CastingNumberRoll(Stats stats, int spellCastingNumber)
+    private void CheckForChaosManifestation(Stats stats, int rollResult, int successValue, int successLevel)
     {
-        // Zresetowanie poziomu mocy
-        int castingNumber = 0;
+        bool isSuccessful = successValue >= 0;
+        bool hasDouble = DiceRollManager.Instance.IsDoubleDigit(rollResult);
+        bool hasZeroOnes = rollResult % 10 == 0;
 
-        // Lista i słownik wszystkich wyników rzutów, potrzebne do sprawdzenia wystąpienia manifestacji chaosu
-        List<int> allRollResults = new List<int>();
-
-        string resultString = "Wynik rzutu na poziom mocy - ";
-
-        // // Rzuty na poziom mocy w zależności od wartości Magii
-        // for (int i = 0; i < stats.Mag; i++)
-        // {
-        //     int rollResult = UnityEngine.Random.Range(1, 11);
-        //     allRollResults.Add(rollResult);
-        //     castingNumber += rollResult;
-
-        //     resultString += $"kość {i+1}: <color=#4dd2ff>{rollResult}</color> ";
-        // }
-
-        int modifier = CalculateCastingNumberModifier();
-        castingNumber += modifier;
-
-        string modifierString = "";
-        if (modifier != 0)
+        if ((isSuccessful && hasDouble && stats.AethyricAttunement == 0) || (!isSuccessful && (hasDouble || hasZeroOnes)))
         {
-            modifierString = $" Modyfikator: {modifier}.";
+            int roll = UnityEngine.Random.Range(1, 101);
+            int modifier = Math.Max(0, (-successLevel) * 10);
+            int finalRoll = roll + modifier;
+
+            if (modifier != 0)
+            {
+                Debug.Log($"<color=red>Występuje manifestacja Chaosu!</color> Wynik rzutu: {roll}. Modyfikator za poziomy porażki: {modifier}. Poziom manifestacji: <color=red>{finalRoll}</color>.");
+            }
+            else
+            {
+                Debug.Log($"<color=red>Występuje manifestacja Chaosu!</color> Wynik rzutu na manifestację: <color=red>{finalRoll}</color>.");
+            }
         }
-
-        Debug.Log(resultString);
-        if ((castingNumber + modifier) < spellCastingNumber)
-        {
-            Debug.Log($"Uzyskany poziom mocy na kościach: {castingNumber - modifier}.{modifierString} Wymagany poziom mocy: <color=red>{spellCastingNumber}</color>");
-        }
-        else
-        {
-            Debug.Log($"Uzyskany poziom mocy na kościach: {castingNumber - modifier}.{modifierString} Wymagany poziom mocy: <color=green>{spellCastingNumber}</color>");
-        }
-
-        CheckForChaosManifestation(allRollResults);
-
-        stats.GetComponent<Unit>().CanCastSpell = false;
-
-        return castingNumber;
     }
 
-    //Modyfikator do poziomu mocy
-    private int CalculateCastingNumberModifier()
+    private int CalculateArmorModifier(Stats stats)
     {
-        if (Unit.SelectedUnit == null) return 0;
-
-        //Modyfikator do poziomu mocy
         int modifier = 0;
-
-        Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
-
-        //Uwzględnienie splecenia magii
-        modifier += Unit.SelectedUnit.GetComponent<Unit>().ChannelingModifier;
-
         bool etherArmor = false;
 
         if (UnitsStatsAffectedBySpell != null && UnitsStatsAffectedBySpell.Count > 0)
@@ -504,77 +439,10 @@ public class MagicManager : MonoBehaviour
             modifier -= Math.Max(0, armors.Max() - armouredCastingModifier); //Odejmuje największa wartość zbroi i uwzględnia Pancerz Wiary
         }
 
-        return modifier;
+        return modifier * 10;
     }
 
-    // Korutyna czekająca na wpisanie wyniku przez użytkownika
-    private IEnumerator WaitForRollValue()
-    {
-        _isWaitingForRoll = true;
-        _manualRollResult = 0;
-
-        // Wyświetl panel do wpisania wyniku
-        if (_applyCastingNumberPanel != null)
-        {
-            _applyCastingNumberPanel.SetActive(true);
-        }
-
-        // Wyzeruj pole tekstowe
-        if (_castingNumberInputField != null)
-        {
-            _castingNumberInputField.text = "";
-        }
-
-        // Czekaj aż użytkownik wpisze wartość i kliknie Submit
-        while (_isWaitingForRoll)
-        {
-            yield return null; // Czekaj na następną ramkę
-        }
-
-        // Ukryj panel po wpisaniu
-        if (_applyCastingNumberPanel != null)
-        {
-            _applyCastingNumberPanel.SetActive(false);
-        }
-    }
-
-    public void OnSubmitRoll(bool isChanneling)
-    {
-        if (Unit.SelectedUnit == null) return;
-
-        if (!isChanneling && _castingNumberInputField != null && int.TryParse(_castingNumberInputField.text, out int result))
-        {
-            _manualRollResult = result + CalculateCastingNumberModifier();
-            _castingNumberInputField.text = ""; // Czyścimy pole
-        }
-        else if (isChanneling && _channelingRollInputField != null && int.TryParse(_channelingRollInputField.text, out int channelingRollResult))
-        {
-            _manualRollResult = channelingRollResult;
-            _channelingRollInputField.text = ""; // Czyścimy pole
-        }
-
-        _isWaitingForRoll = false; // Przerywamy oczekiwanie
-    }
-
-    private void CheckForChaosManifestation(List<int> allRollResults)
-    {
-        var groupedResults = allRollResults.GroupBy(x => x).Where(g => g.Count() > 1);
-
-        foreach (var group in groupedResults)
-        {
-            string type = group.Count() switch
-            {
-                2 => "pomniejsza",
-                3 => "poważna",
-                _ => "katastrofalna"
-            };
-
-            int roll = UnityEngine.Random.Range(1, 101);
-            Debug.Log($"Wartość {group.Key} wypadła {group.Count()} razy. <color=red>Występuje {type} manifestacja Chaosu!</color> Wynik rzutu na manifestację: {roll}.");
-        }
-    }
-
-    private void HandleSpellEffect(Stats spellcasterStats, Stats targetStats, Spell spell)
+    private IEnumerator HandleSpellEffect(Stats spellcasterStats, Stats targetStats, Spell spell, int rollResult, int successLevel)
     {
         Unit targetUnit = targetStats.GetComponent<Unit>();
 
@@ -599,7 +467,7 @@ public class MagicManager : MonoBehaviour
             //Szuka odpowiedniej cechy w statystykach celu
             FieldInfo field = targetStats.GetType().GetField(spell.Attribute[0]);
 
-            if (field == null || field.FieldType != typeof(int)) return;
+            if (field == null || field.FieldType != typeof(int)) yield break;
 
             int value = (int)field.GetValue(targetStats);
 
@@ -612,7 +480,39 @@ public class MagicManager : MonoBehaviour
             else
             {
                 Debug.Log($"{targetStats.Name} wykonał test na {spell.Attribute[0]} i wyrzucił {saveRollResult}. Wartość cechy: {value}. Udało mu się przeciwstawić zaklęciu.");
-                return;
+                yield break;
+            }
+        }
+
+        // Uwzględnienie testu obronnego
+        if (spell.SaveTestRequiring == true && spell.Attribute.Length > 0)
+        {
+            // Szuka odpowiedniej cechy w statystykach celu
+            string attributeName = spell.Attribute[0];
+
+            // Rzut na test obronny
+            int saveRollResult = 0;
+            if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, $"rzut obronny ({attributeName})", result => saveRollResult = result));
+                if (saveRollResult == 0) yield break;
+            }
+            else
+            {
+                saveRollResult = UnityEngine.Random.Range(1, 101);
+            }
+
+            // Test obronny przy użyciu TestSkill
+            int[] skillTestResults = DiceRollManager.Instance.TestSkill(attributeName, targetStats, null, 0, saveRollResult);
+
+            if (skillTestResults[0] < 0)
+            {
+                Debug.Log($"{targetStats.Name} nie udało mu się przeciwstawić zaklęciu.");
+            }
+            else
+            {
+                Debug.Log($"{targetStats.Name} udało mu się przeciwstawić zaklęciu.");
+                yield break;
             }
         }
         else if (spell.Attribute != null && spell.Attribute.Length > 0) // Zaklęcia wpływające na cechy, np. Uzdrowienie i Pancerz Eteru
@@ -622,10 +522,11 @@ public class MagicManager : MonoBehaviour
                 //Szuka odpowiedniej cechy w statystykach celu
                 FieldInfo field = targetStats.GetType().GetField(spell.Attribute[i]);
 
-                if (field == null || field.FieldType != typeof(int)) return;
+                if (field == null || field.FieldType != typeof(int)) yield break;
 
                 int value = spell.Strength;
-
+                
+                // TO PRAWDOPODOBNIE BĘDZIE ZALEŻNE OD POZIOMÓW SUKCESU LUB BONUSU Z JAKIEJŚ CECHY
                 // if (spell.Type.Contains("magic-level-related"))
                 // {
                 //     value += spellcasterStats.Mag;
@@ -647,7 +548,7 @@ public class MagicManager : MonoBehaviour
                     UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
 
                     Debug.Log($"{targetStats.Name} odzyskał {value} punktów Żywotności.");
-                    return;
+                    yield break;
                 }
 
                 field.SetValue(targetStats, (int)field.GetValue(targetStats) + value);
@@ -656,167 +557,26 @@ public class MagicManager : MonoBehaviour
             UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
         }
 
-        //// Zaklęcia ogłuszające lub usypiające/paraliżujące
-        //if (spell.Paralyzing == true || spell.Stunning == true)
-        //{
-        //    int duration = spell.Duration;
-        //    int initialDuration = duration; // Przechowuje oryginalną wartość czasu trwania zaklęcia
-
-        //    if (spell.Type.Contains("random-duration"))
-        //    {
-        //        duration = UnityEngine.Random.Range(1, 11);
-        //        initialDuration = duration; // Aktualizuje, jeśli jest losowa długość
-        //    }
-
-        //    if (targetUnit.CanDoAction == true)
-        //    {
-        //        targetUnit.CanDoAction = false;
-        //        duration--; // Zapobiega temu, żeby cel zaklęcia stracił dodatkową rundę, jeśli jego inicjatywa jest mniejsza niż rzucającego zaklęcie
-        //    }
-
-            //if (spell.Paralyzing == true)
-            //{
-            //    targetUnit.HelplessDuration += duration;
-            //    Debug.Log($"{targetStats.Name} zostaje sparaliżowany/uśpiony na {initialDuration} rund/y.");
-            //}
-            //else if (spell.Stunning == true)
-            //{
-            //    targetUnit.StunDuration += duration;
-            //    Debug.Log($"{targetStats.Name} zostaje ogłuszony na {initialDuration} rund/y.");
-            //}
-        //}
-
         //Zaklęcia zadające obrażenia
         if (!spell.Type.Contains("no-damage") && spell.Type.Contains("offensive"))
         {
-            if (!GameManager.IsAutoDiceRollingMode) //Tryb ręczny. Póki co nie działa z zaklęciami, które wystrzeliwują kilka pocisków
-            {
-                StartCoroutine(WaitForDamageValue());
-                IEnumerator WaitForDamageValue()
-                {
-                    _applyDamagePanel.SetActive(true);
-                    // Czekaj na kliknięcie przycisku
-                    yield return new WaitUntil(() => _applyDamagePanel.activeSelf == false);
-
-                    if (int.TryParse(_damageInputField.text, out int inputDamage))
-                    {
-                        DealMagicDamage(spellcasterStats, targetStats, spell, inputDamage);
-                        _damageInputField.text = null;
-                    }
-                }
-            }
-            else
-            {
-                DealMagicDamage(spellcasterStats, targetStats, spell);
-            }
+            DealMagicDamage(spellcasterStats, targetStats, spell, rollResult, successLevel);
         }
     }
 
-    private void DealMagicDamage(Stats spellcasterStats, Stats targetStats, Spell spell, int manualRollResult = 0)
+    private void DealMagicDamage(Stats spellcasterStats, Stats targetStats, Spell spell, int rollResult, int successLevel)
     {
-        int rollResult = manualRollResult == 0 ? UnityEngine.Random.Range(1, 11) : manualRollResult;
-        int damage = rollResult + spell.Strength;
+        int damage = successLevel + spell.Strength;
+        Debug.Log($"Poziom sukcesu {spellcasterStats.Name}: {successLevel}. Siła zaklęcia: {spell.Strength}");
 
-        int armor = CalculateArmor(targetStats);
+        //Ustalamy miejsce trafienia
+        string hitLocation = !String.IsNullOrEmpty(CombatManager.Instance.HitLocation) ? CombatManager.Instance.HitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollResult) ? CombatManager.Instance.DetermineHitLocation() : CombatManager.Instance.DetermineHitLocation(rollResult));
 
-        //Uwzględnienie zdolności Ignorujący Zbroję
-        if (spell.ArmourIgnoring == true)
-        {
-            armor = 0;
-        }
+        // Sprawdzamy zbroję
+        int armor = CombatManager.Instance.CalculateArmor(spellcasterStats, targetStats, hitLocation, rollResult);
 
-        //Uwzględnienie zdolności Morderczy Pocisk
-        if (spell.Type.Contains("magic-missile") && spellcasterStats.MightyMissile == true)
-        {
-            damage++;
-        }
+        if (spell.ArmourIgnoring) armor = 0;
 
-        Debug.Log($"{spellcasterStats.Name} wyrzucił {rollResult} i zadał {damage} obrażeń.");
-
-        //Aktualizuje osiągnięcia
-        spellcasterStats.TotalDamageDealt += damage;
-        if (damage > spellcasterStats.HighestDamageDealt)
-        {
-            spellcasterStats.HighestDamageDealt = damage;
-        }
-
-        targetStats.TotalDamageTaken += damage;
-        if (damage > targetStats.HighestDamageTaken)
-        {
-            targetStats.HighestDamageTaken = damage;
-        }
-
-        //Zadanie obrażeń
-        if (damage > (targetStats.Wt + armor))
-        {
-            targetStats.TempHealth -= damage - (targetStats.Wt + armor);
-
-            Debug.Log(targetStats.Name + " znegował " + (targetStats.Wt + armor) + " obrażeń.");
-
-            //Zaktualizowanie punktów żywotności
-            targetStats.GetComponent<Unit>().DisplayUnitHealthPoints();
-            Debug.Log($"Punkty żywotności {targetStats.Name}: {targetStats.TempHealth}/{targetStats.MaxHealth}");
-        }
-        else
-        {
-            Debug.Log($"Atak {spellcasterStats.Name} nie przebił się przez pancerz.");
-        }
-
-        //Śmierć
-        if (targetStats.TempHealth < 0 && GameManager.IsAutoKillMode)
-        {
-            CombatManager.Instance.HandleDeath(targetStats, targetStats.gameObject, spellcasterStats);
-        }
-    }
-
-    private int CalculateArmor(Stats targetStats)
-    {
-        int attackLocalization = UnityEngine.Random.Range(1, 101);
-        int armor = 0;
-
-        switch (attackLocalization)
-        {
-            case int n when (n >= 1 && n <= 15):
-                Debug.Log("Trafienie w głowę.");
-                armor = targetStats.Armor_head;
-                break;
-            case int n when (n >= 16 && n <= 35):
-                Debug.Log("Trafienie w prawą rękę.");
-                armor = targetStats.Armor_arms;
-                break;
-            case int n when (n >= 36 && n <= 55):
-                Debug.Log("Trafienie w lewą rękę.");
-                armor = targetStats.Armor_arms;
-                break;
-            case int n when (n >= 56 && n <= 80):
-                Debug.Log("Trafienie w korpus.");
-                armor = targetStats.Armor_torso;
-                break;
-            case int n when (n >= 81 && n <= 90):
-                Debug.Log("Trafienie w prawą nogę.");
-                armor = targetStats.Armor_legs;
-                break;
-            case int n when (n >= 91 && n <= 100):
-                Debug.Log("Trafienie w lewą nogę.");
-                armor = targetStats.Armor_legs;
-                break;
-        }
-
-        return armor;
-    }
-
-    private float CalculateDistance(GameObject spellcaster, GameObject target)
-    {
-        if (spellcaster != null && target != null)
-        {
-            _spellDistance = Vector3.Distance(spellcaster.transform.position, target.transform.position);
-
-            return _spellDistance;
-        }
-        else
-        {
-            Debug.LogError("Nie udało się ustalić odległości pomiędzy rzucającym zaklęcie a celem.");
-            return 0;
-        }
+        CombatManager.Instance.ApplyDamageToTarget(damage, armor, spellcasterStats, targetStats, targetStats.GetComponent<Unit>());
     }
 }

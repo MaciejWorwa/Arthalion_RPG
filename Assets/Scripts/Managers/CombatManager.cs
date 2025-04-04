@@ -59,7 +59,7 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _improveGrappleButton;
     [SerializeField] private UnityEngine.UI.Button _escapeGrappleButton;
 
-    private string _hitLocation = null;    // Zmienna do przechowywania wyboru lokacji
+    public string HitLocation = null;    // Zmienna do przechowywania wyboru lokacji
     [SerializeField] private GameObject _selectHitLocationPanel;
 
     private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
@@ -456,7 +456,7 @@ public class CombatManager : MonoBehaviour
         int attackModifier = CalculateAttackModifier(attacker, attackerWeapon, target, attackDistance, furiousAssault);
 
         // Modyfikator do trafienia, za wybór konkretnej lokacji
-        if (_hitLocation != null && _hitLocation.Length > 0 && !((attackerWeapon.Pummel || attackerWeapon.Id == 4) && attackerStats.StrikeToStun > 0))
+        if (HitLocation != null && HitLocation.Length > 0 && !((attackerWeapon.Pummel || attackerWeapon.Id == 4) && attackerStats.StrikeToStun > 0))
         {
             attackModifier -= 20;
             Debug.Log("Modyfikator -20 do trafienia za wybór konkretnej lokalizacji");
@@ -526,12 +526,12 @@ public class CombatManager : MonoBehaviour
         }
 
         //Ustalamy miejsce trafienia
-        string hitLocation = !String.IsNullOrEmpty(_hitLocation) ? _hitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollOnAttack) ? DetermineHitLocation() : DetermineHitLocation(rollOnAttack));
+        string hitLocation = !String.IsNullOrEmpty(HitLocation) ? HitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollOnAttack) ? DetermineHitLocation() : DetermineHitLocation(rollOnAttack));
 
-        if (!String.IsNullOrEmpty(_hitLocation))
+        if (!String.IsNullOrEmpty(HitLocation))
         {
             Debug.Log($"Atak jest skierowany w {TranslateHitLocation(hitLocation)}.");
-            _hitLocation = null;
+            HitLocation = null;
         }
 
         // Obsługa fuksa / pecha
@@ -734,9 +734,9 @@ public class CombatManager : MonoBehaviour
 
                 //Ustalamy miejsce trafienia
                 hitLocation = DiceRollManager.Instance.IsDoubleDigit(defenceRollResult) ? DetermineHitLocation() : DetermineHitLocation(defenceRollResult);
-                int attackerArmor = CalculateArmor(targetStats, attackerStats, targetWeapon, hitLocation, defenceRollResult);
+                int attackerArmor = CalculateArmor(targetStats, attackerStats, hitLocation, defenceRollResult, targetWeapon);
 
-                ApplyDamageToTarget(riposteDamage, attackerArmor, targetStats, targetWeapon, attackerStats, attacker);
+                ApplyDamageToTarget(riposteDamage, attackerArmor, targetStats, attackerStats, attacker, targetWeapon);
 
                 // Animacja ataku
                 StartCoroutine(AnimationManager.Instance.PlayAnimation("attack", target.gameObject, attacker.gameObject));
@@ -818,7 +818,7 @@ public class CombatManager : MonoBehaviour
 
         // 11) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
-        int armor = CalculateArmor(attackerStats, targetStats, attackerWeapon, hitLocation, rollOnAttack);
+        int armor = CalculateArmor(attackerStats, targetStats, hitLocation, rollOnAttack, attackerWeapon);
         int damage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, targetStats, attackerWeapon);
         string furiousAssaultString = attackerStats.FuriousAssault > 0 && !furiousAssault ? $" Jednostka może skorzystać z talentu Wściekły Atak i zaatakować {targetStats.Name} ponownie." : "";
         Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.{furiousAssaultString}");
@@ -892,15 +892,15 @@ public class CombatManager : MonoBehaviour
             foreach (Unit affectedUnit in affectedUnits)
             {
                 Stats affectedStats = affectedUnit.GetComponent<Stats>();
-                int affectedUnitArmor = CalculateArmor(attackerStats, affectedStats, attackerWeapon, hitLocation, rollOnAttack);
+                int affectedUnitArmor = CalculateArmor(attackerStats, affectedStats, hitLocation, rollOnAttack, attackerWeapon);
                 int affectedUnitDamage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, affectedStats, attackerWeapon);
 
-                ApplyDamageToTarget(affectedUnitDamage, affectedUnitArmor, attackerStats, attackerWeapon, affectedStats, affectedUnit, attackDistance);
+                ApplyDamageToTarget(affectedUnitDamage, affectedUnitArmor, attackerStats, affectedStats, affectedUnit, attackerWeapon);
             }
         }
         else
         {
-            ApplyDamageToTarget(damage, armor, attackerStats, attackerWeapon, targetStats, target, attackDistance);
+            ApplyDamageToTarget(damage, armor, attackerStats, targetStats, target, attackerWeapon);
         }
 
         // 13) Animacja ataku i ewentualnie sprawdzenie śmierci
@@ -937,7 +937,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Weapon attackerWeapon, Stats targetStats, Unit target, float attackDistance = 0)
+    public void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Stats targetStats, Unit target, Weapon attackerWeapon = null)
     {
         int targetWt = targetStats.Wt / 10;
         int reducedDamage = armor + targetWt + targetStats.Robust;
@@ -956,7 +956,7 @@ public class CombatManager : MonoBehaviour
         else
         {
             // Jeśli atak nie przebił pancerza, ale broń NIE JEST tępa, to broń zadaje 1 obrażeń
-            if (!attackerWeapon.Undamaging)
+            if (attackerWeapon != null && !attackerWeapon.Undamaging)
             {
                 finalDamage = 1;
                 reducedDamage = damage - 1;
@@ -1322,7 +1322,7 @@ public class CombatManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("Nie udało się ustalić odległości pomiędzy walczącymi.");
+            Debug.LogError("Nie udało się ustalić odległości pomiędzy jednostkami.");
             return 0;
         }
     }
@@ -1498,7 +1498,7 @@ public class CombatManager : MonoBehaviour
                 _ => 0 // Domyślny przypadek, jeśli żaden warunek nie zostanie spełniony
             };
 
-            Debug.Log($"Dystans: {attackDistance}, zasięg broni: {effectiveAttackRange}");
+            Debug.Log($"Dystans: {attackDistance}. Zasięg broni: {effectiveAttackRange}");
             Debug.Log("Uwzględniono modyfikator za dystans. Łączny modyfikator: " + attackModifier);
 
             //Modyfikator za rozmiar celu
@@ -2028,11 +2028,11 @@ public class CombatManager : MonoBehaviour
 
     public void SelectHitLocation(string hitLocation)
     {
-        _hitLocation = hitLocation;
+        HitLocation = hitLocation;
     }
 
     // Metoda określająca miejsce trafienia
-    private string DetermineHitLocation(int rollResult = 0)
+    public string DetermineHitLocation(int rollResult = 0)
     {
         int attackLocalization;
         if (rollResult == 0) // Sytuacja, która ma miejsce w przypadku trafień krytycznych. Wtedy rzut na lokalizację jest ustalany losowo.
@@ -2087,7 +2087,7 @@ public class CombatManager : MonoBehaviour
         return message;
     }
 
-    private int CalculateArmor(Stats attackerStats, Stats targetStats, Weapon attackerWeapon, string hitLocation, int attackRollResult)
+    public int CalculateArmor(Stats attackerStats, Stats targetStats, string hitLocation, int attackRollResult, Weapon attackerWeapon = null)
     {
         // Normalizujemy lokalizację trafienia
         string normalizedHitLocation = hitLocation switch
@@ -2109,7 +2109,7 @@ public class CombatManager : MonoBehaviour
         Inventory inventory = targetStats.GetComponent<Inventory>();
 
         //Podwaja wartość zbroi w przypadku walki przy użyciu broni Tępej
-        if (attackerWeapon.Undamaging) armor *= 2;
+        if (attackerWeapon != null && attackerWeapon.Undamaging) armor *= 2;
 
         //Zwiększenie pancerza, jeśli cel ataku posiada tarcze i użył parowania podczas obrony w tym ataku
         if (_parryOrDodge == "parry")
@@ -2141,7 +2141,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Uwzględnienie cechy pancerza "Wrażliwe punkty"
-        if (isCriticalHit && attackerWeapon.Impale)
+        if (isCriticalHit && attackerWeapon != null && attackerWeapon.Impale)
         {
             foreach (Weapon armorItem in armorByLocation)
             {
@@ -2155,12 +2155,12 @@ public class CombatManager : MonoBehaviour
         // Sprawdzenie, czy żadna część pancerza nie jest metalowa
         bool noMetalArmor = armorByLocation.All(weapon => weapon.Category == "leather");
 
-        if (attackerWeapon.Penetrating && noMetalArmor && _isTrainedWeaponCategory)
+        if (attackerWeapon != null && attackerWeapon.Penetrating && noMetalArmor && _isTrainedWeaponCategory)
         {
             armor = 0;
             Debug.Log("Broń przekłuwająca całkowicie ignoruje niemetalowy pancerz.");
         }
-        else if (attackerWeapon.Penetrating && armor > 0 && _isTrainedWeaponCategory)
+        else if (attackerWeapon != null && attackerWeapon.Penetrating && armor > 0 && _isTrainedWeaponCategory)
         {
             armor--;
         }
@@ -2185,7 +2185,7 @@ public class CombatManager : MonoBehaviour
         Weapon selectedArmor = (armorAndShield.Length == 2) ? armorAndShield[UnityEngine.Random.Range(0, 2)] : armorAndShield.FirstOrDefault();
 
         //Uwzględnienie broni Rąbiącej
-        if (attackerWeapon.Hack && _isTrainedWeaponCategory)
+        if (attackerWeapon != null && attackerWeapon.Hack && _isTrainedWeaponCategory)
         {
             if (selectedArmor != null)
             {
@@ -2212,7 +2212,7 @@ public class CombatManager : MonoBehaviour
         }
 
         //Uwzgędnienie talentu Strzał Przebijający
-        if (attackerWeapon.Type.Contains("ranged") && attackerStats.SureShot > 0)
+        if (attackerWeapon != null && attackerWeapon.Type.Contains("ranged") && attackerStats.SureShot > 0)
         {
             armor = Math.Max(0, armor - attackerStats.SureShot);
         }

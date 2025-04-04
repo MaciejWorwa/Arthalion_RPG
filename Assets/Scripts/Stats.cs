@@ -80,6 +80,7 @@ public class Stats : MonoBehaviour
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Talenty")]
+    public int AethyricAttunement; // Zmysł Magii ----------------------------------- MECHANIKA DO WPROWADZENIA
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
     public bool Champion; // Czempion
