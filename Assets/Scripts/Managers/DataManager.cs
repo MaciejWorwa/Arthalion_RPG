@@ -34,7 +34,7 @@ public class DataManager : MonoBehaviour
     [SerializeField] private GameObject _buttonPrefab; // Przycisk odpowiadający każdej z broni
     [SerializeField] private Transform _weaponScrollViewContent; // Lista wszystkich dostępnych broni
     [SerializeField] private Transform _spellbookScrollViewContent; // Lista wszystkich dostępnych zaklęć
-    [SerializeField] private TMP_Dropdown _spellLoresDropdown; // Lista tradycji magii potrzebna do sortowania listy zaklęć
+    [SerializeField] private TMP_Dropdown _spellArcanesDropdown; // Lista tradycji magii potrzebna do sortowania listy zaklęć
     [SerializeField] private TMP_Dropdown _weaponQualityDropdown; // Lista jakości broni
     [SerializeField] private Transform _unitScrollViewContent; // Lista wszystkich dostępnych ras (jednostek)
     [SerializeField] private TMP_InputField _searchInputFieldForUnits;
@@ -448,7 +448,7 @@ public class DataManager : MonoBehaviour
         }
 
         //Filtrowanie listy zaklęć wg wybranej tradycji
-        string selectedLore = _spellLoresDropdown.options[_spellLoresDropdown.value].text;
+        string selectedArcane = _spellArcanesDropdown.options[_spellArcanesDropdown.value].text;
 
         // Czyści obecną listę
         _spellbookScrollViewContent.GetComponent<CustomDropdown>().ClearButtons();
@@ -456,7 +456,7 @@ public class DataManager : MonoBehaviour
         foreach (var spell in spellsList)
         {
             //Filtrowanie listy zaklęć wg wybranej tradycji
-            if (spell.Lore != selectedLore && selectedLore != "Wszystkie zaklęcia") continue;
+            if (spell.Arcane != selectedArcane && selectedArcane != "Wszystkie zaklęcia") continue;
 
             // // Filtrowanie zaklęć, których Poziom Mocy jest poza możliwościami aktualnej jednostki
             // if (Unit.SelectedUnit != null && spell.CastingNumber > Unit.SelectedUnit.GetComponent<Stats>().Mag * 11) continue;
@@ -601,7 +601,7 @@ public class UnitData
     public bool CanMove;
     public bool CanAttack;
     public bool CanCastSpell;
-
+    public bool CanDispell;
 
     public UnitData(Unit unit)
     {
@@ -701,6 +701,7 @@ public class StatsData
     public int Hardy; // Twardziel
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int Implacable; // Nieubłagany
+    public int InstinctiveDiction; // Precyzyjne inkantowanie ----------------------------------- MECHANIKA DO WPROWADZENIA
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający
@@ -922,7 +923,7 @@ public class SpellData
 {
     public int Id;
     public string Name;
-    public string Lore;
+    public string Arcane;
     public string[] Type; // np. offensive, buff, armor-ignoring, magic-missile 
     public int CastingNumber; //poziom mocy
     public float Range; // zasięg

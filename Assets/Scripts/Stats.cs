@@ -101,6 +101,7 @@ public class Stats : MonoBehaviour
     public int Hardy; // Twardziel
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int Implacable; // Nieubłagany
+    public int InstinctiveDiction; // Precyzyjne inkantowanie ----------------------------------- MECHANIKA DO WPROWADZENIA
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający

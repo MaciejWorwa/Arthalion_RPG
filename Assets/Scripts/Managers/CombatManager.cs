@@ -1016,6 +1016,13 @@ public class CombatManager : MonoBehaviour
                 UnitsManager.Instance.UpdateUnitPanel(target.gameObject);
             }
 
+            //Resetuje splatanie magii
+            if(target.ChannelingModifier != 0)
+            {
+                target.ChannelingModifier = 0;
+                Debug.Log($"Splatanie magii {targetStats.Name} zostało przerwane. Wszystkie zebrane poziomy sukcesu przepadają.");
+            }
+
             StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, target.gameObject, finalDamage));
         }
         else

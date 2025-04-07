@@ -94,7 +94,8 @@ public class Tile : MonoBehaviour
 
                 if (MagicManager.IsTargetSelecting)
                 {
-                    MagicManager.Instance.CastSpell(this.gameObject);
+                    //StartCoroutine(MagicManager.Instance.CastSpell(this.gameObject));
+                    MagicManager.Instance.Target = this.gameObject;
                     return;
                 }
 
@@ -112,7 +113,8 @@ public class Tile : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(1) && Unit.SelectedUnit != null && MagicManager.IsTargetSelecting)
         {
-            MagicManager.Instance.CastSpell(this.gameObject);
+            //StartCoroutine(MagicManager.Instance.CastSpell(this.gameObject));
+            MagicManager.Instance.Target = this.gameObject;
         }
 
         // Sprawdzamy, czy można umieszczać elementy na mapie

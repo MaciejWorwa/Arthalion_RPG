@@ -863,7 +863,6 @@ public class UnitsManager : MonoBehaviour
         {
             _spellbookButton.SetActive(true);
             DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć, które może rzucić jednostka
-            unit.GetComponent<Unit>().CanCastSpell = true;
 
             if (unit.GetComponent<Spell>() == null)
             {

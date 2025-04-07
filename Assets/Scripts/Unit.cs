@@ -55,6 +55,7 @@ public class Unit : MonoBehaviour
     public bool CanMove = true;
     public bool CanDoAction = true;
     public bool CanCastSpell = false;
+    public bool CanDispell = false;
 
     public Stats Stats;
     public TMP_Text NameDisplay;
@@ -132,7 +133,8 @@ public class Unit : MonoBehaviour
         }
         else if (Input.GetMouseButtonUp(1) && SelectedUnit != null && MagicManager.IsTargetSelecting)
         {
-            StartCoroutine(MagicManager.Instance.CastSpell(this.gameObject));
+            //StartCoroutine(MagicManager.Instance.CastSpell(this.gameObject));
+            MagicManager.Instance.Target = this.gameObject;
         }
     }
     public void SelectUnit()

@@ -232,11 +232,11 @@ public class DiceRollManager : MonoBehaviour
         // Wyœwietlenie wyniku
         if (skillName != null)
         {
-            Debug.Log($"{stats.Name} rzuca na {skillName}: {rollResult}, Wartoœæ umiejêtnoœci: {skillValue + attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");
+            Debug.Log($"{stats.Name} rzuca na {skillName}: {rollResult}. Wartoœæ umiejêtnoœci: {skillValue + attributeValue}.{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>.");
         }
         else
         {
-            Debug.Log($"{stats.Name} rzuca na {attributeName}: {rollResult}, Wartoœæ cechy: {attributeValue},{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>");
+            Debug.Log($"{stats.Name} rzuca na {attributeName}: {rollResult}. Wartoœæ cechy: {attributeValue}.{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>.");
         }
 
         //Pech i szczêœcie

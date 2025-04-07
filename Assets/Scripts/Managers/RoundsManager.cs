@@ -70,8 +70,10 @@ public class RoundsManager : MonoBehaviour
         {
             if (unit == null) continue;
 
+            Stats stats = unit.GetComponent<Stats>();
+
             //Stosuje zdolności specjalne różnych jednostek (np. regeneracja żywotności trolla)
-            unit.GetComponent<Stats>().CheckForSpecialRaceAbilities();
+            stats.CheckForSpecialRaceAbilities();
 
             unit.IsTurnFinished = false;
             unit.CanDoAction = true;
@@ -91,6 +93,11 @@ public class RoundsManager : MonoBehaviour
             if (unit.Entangled > 0)
             {
                 unit.CanMove = false;
+            }
+            if (stats.MagicLanguage > 0)
+            {
+                unit.CanCastSpell = true;
+                unit.CanDispell = true;
             }
 
             if (unit.SpellDuration > 0)
@@ -122,31 +129,31 @@ public class RoundsManager : MonoBehaviour
             }
 
             // Dla jednostek z talentem Waleczne Serce wykonujemy dodatkową próbę opanownia paniki
-            if (unit.GetComponent<Stats>().StoutHearted > 0 && unit.Broken > 0)
+            if (stats.StoutHearted > 0 && unit.Broken > 0)
             {
                 StartCoroutine(StatesManager.Instance.Broken(unit));
             }
 
             // Dla jednostek z talentem Atak wyprzedzający resetujemy pulę ataków
-            if (unit.GetComponent<Stats>().ReactionStrike > 0)
+            if (stats.ReactionStrike > 0)
             {
-                unit.GetComponent<Stats>().ReactionStrikesLeft = unit.GetComponent<Stats>().ReactionStrike;
+                stats.ReactionStrikesLeft = stats.ReactionStrike;
             }
 
             // Dla jednostek z talentem Riposta resetujemy pulę ataków
-            if (unit.GetComponent<Stats>().Riposte > 0)
-            {
-                unit.GetComponent<Stats>().RiposteAttacksLeft = unit.GetComponent<Stats>().Riposte;
+            if (stats.Riposte > 0)
+            {   
+                stats.RiposteAttacksLeft = stats.Riposte;
             }
 
             // Dla jednostek w Szale Bojowym resetujemy pulę ataków
             if (unit.IsFrenzy)
             {
-                unit.GetComponent<Stats>().FrenzyAttacksLeft = 2;
+                stats.FrenzyAttacksLeft = 2;
             }
 
             //Aktualizuje osiągnięcia
-            unit.GetComponent<Stats>().RoundsPlayed++;
+            stats.RoundsPlayed++;
         }
 
         // Wykonuje testy grozy i strachu, jeśli na polu bitwy są jednostki straszne lub przerażające

@@ -2,15 +2,15 @@
   "Spells": [
     {
       "Name": "Magiczne żądło",
-      "Lore": "Magia prosta - tajemna",
+      "Arcane": "Magia prosta - tajemna",
       "Type": [ "offensive", "magic-missile" ],
       "CastingNumber": 0,
-      "Range": 1.5,
+      "Range": 1,
       "Strength": 0
     },
     {
       "Name": "Wyssanie",
-      "Lore": "Magia prosta - tajemna",
+      "Arcane": "Magia prosta - tajemna",
       "Type": [ "offensive" ],
       "CastingNumber": 0,
       "Range": 1.5,
@@ -22,7 +22,7 @@
     {
       "Id": 1,
       "Name": "Błogosławieństwo siły",
-      "Lore": "Magia prosta - kapłańska",
+      "Arcane": "Magia prosta - kapłańska",
       "Type": [ "buff" ],
       "Strength": 5,
       "CastingNumber": 6,
@@ -34,7 +34,7 @@
     {
       "Id": 2,
       "Name": "Błogosławieństwo uzdrawiania",
-      "Lore": "Magia prosta - kapłańska",
+      "Arcane": "Magia prosta - kapłańska",
       "Type": [ "buff" ],
       "Strength": 1,
       "CastingNumber": 5,
@@ -45,7 +45,7 @@
     {
       "Id": 3,
       "Name": "Błyskawica",
-      "Lore": "Tradycja Niebios",
+      "Arcane": "Tradycja Niebios",
       "Type": [ "offensive", "magic-missile" ],
       "CastingNumber": 10,
       "Range": 18,
@@ -55,7 +55,7 @@
     {
       "Id": 4,
       "Name": "Gorejący wzrok",
-      "Lore": "Tradycja Światła",
+      "Arcane": "Tradycja Światła",
       "Type": [ "offensive", "magic-missile" ],
       "CastingNumber": 7,
       "Range": 8,
@@ -66,7 +66,7 @@
     {
       "Id": 5,
       "Name": "Łaska Chaosu",
-      "Lore": "Tradycja Chaosu",
+      "Arcane": "Tradycja Chaosu",
       "Type": [ "buff", "self-only" ],
       "Strength": 10,
       "CastingNumber": 9,
@@ -78,7 +78,7 @@
     {
       "Id": 6,
       "Name": "Magiczne żądło OLD",
-      "Lore": "Magia prosta - tajemna",
+      "Arcane": "Magia prosta - tajemna",
       "Type": [ "offensive", "magic-missile" ],
       "CastingNumber": 0,
       "Range": 8,
@@ -88,18 +88,17 @@
     {
       "Id": 7,
       "Name": "Nawałnica",
-      "Lore": "Tradycja Niebios",
+      "Arcane": "Tradycja Niebios",
       "Type": [ "offensive" ],
-      "CastingNumber": 25,
-      "Range": 24,
+      "CastingNumber": 3,
+      "Range": 1,
       "AreaSize": 5,
-      "Strength": 5,
-      "CastingTime": 2
+      "Strength": 5
     },
     {
       "Id": 8,
       "Name": "Ogień U'zhul",
-      "Lore": "Tradycja Ognia",
+      "Arcane": "Tradycja Ognia",
       "Type": [ "offensive", "magic-missile" ],
       "CastingNumber": 6,
       "Range": 18,
@@ -109,7 +108,7 @@
     {
       "Id": 9,
       "Name": "Ognista kula",
-      "Lore": "Tradycja Ognia",
+      "Arcane": "Tradycja Ognia",
       "Type": [ "offensive", "magic-level-related", "magic-missile", "multiple-targets" ],
       "CastingNumber": 12,
       "Range": 24,
@@ -119,7 +118,7 @@
     {
       "Id": 10,
       "Name": "Paląca krew",
-      "Lore": "Tradycja Chaosu",
+      "Arcane": "Tradycja Chaosu",
       "Type": [ "offensive", "magic-level-related", "magic-missile", "multiple-targets" ],
       "CastingNumber": 13,
       "Range": 12,
@@ -129,7 +128,7 @@
     {
       "Id": 11,
       "Name": "Pancerz Eteru",
-      "Lore": "Magia powszechna",
+      "Arcane": "Magia powszechna",
       "Type": [ "buff", "magic-level-related", "self-only" ],
       "CastingNumber": 5,
       "Range": 1,
@@ -140,7 +139,7 @@
     {
       "Id": 12,
       "Name": "Srebrzyste strzały Arha",
-      "Lore": "Tradycja Metalu",
+      "Arcane": "Tradycja Metalu",
       "Type": [ "offensive", "magic-level-related", "magic-missile", "multiple-targets" ],
       "CastingNumber": 0,
       "Range": 24,
@@ -150,7 +149,7 @@
     {
       "Id": 13,
       "Name": "Sztylety cienia",
-      "Lore": "Tradycja Cienia",
+      "Arcane": "Tradycja Cienia",
       "Type": [ "offensive", "magic-level-related", "magic-missile", "multiple-targets" ],
       "CastingNumber": 21,
       "Range": 24,
@@ -161,7 +160,7 @@
     {
       "Id": 14,
       "Name": "Uśpienie",
-      "Lore": "Magia prosta - tajemna",
+      "Arcane": "Magia prosta - tajemna",
       "Type": [ "offensive", "random-duration", "no-damage" ],
       "CastingNumber": 6,
       "Range": 1.5,
@@ -173,7 +172,7 @@
     {
       "Id": 15,
       "Name": "Uzdrowienie",
-      "Lore": "Tradycja Światła",
+      "Arcane": "Tradycja Światła",
       "Type": [ "magic-level-related" ],
       "CastingNumber": 10,
       "Range": 1.5,
@@ -183,7 +182,7 @@
     {
       "Id": 16,
       "Name": "Wizja męki",
-      "Lore": "Tradycja Chaosu",
+      "Arcane": "Tradycja Chaosu",
       "Type": [ "offensive", "no-damage" ],
       "CastingNumber": 7,
       "Range": 12,
