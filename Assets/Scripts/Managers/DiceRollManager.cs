@@ -220,6 +220,28 @@ public class DiceRollManager : MonoBehaviour
         if (stats.GetComponent<Unit>().Fatiqued > 0) modifier -= stats.GetComponent<Unit>().Fatiqued * 10;
         else if (stats.GetComponent<Unit>().Poison > 0) modifier -= 10;
 
+        // Modyfikator za dekoncentruj¹cego przeciwnika w pobli¿u
+        foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
+        {
+            Unit unit = entry.Key;
+            Stats distractingStats = unit.GetComponent<Stats>();
+            if (distractingStats.Distracting && !ReferenceEquals(distractingStats, stats) && !unit.CompareTag(stats.tag))
+            {
+                float radius = (distractingStats.Wt / 10) / 2f;
+                float distance = Vector2.Distance(unit.transform.position, stats.transform.position);
+
+                if (distance <= radius)
+                {
+                    modifier -= 20;
+                    Debug.Log($"{stats.Name} jest zdekoncentrowany przez {distractingStats.Name}.");
+                    break; // tylko raz -20, nawet jeœli wiêcej jednostek dekoncentruje
+                }
+            }
+        }
+
+        if (modifier > 60) modifier = 60; // Górny limit modyfikatora
+        if (modifier < -30) modifier = -30; // Dolny limit modyfikatora
+
         int successValue = skillValue + attributeValue + modifier - rollResult;
         int successLevel = (skillValue + attributeValue + modifier) / 10 - rollResult / 10;
 

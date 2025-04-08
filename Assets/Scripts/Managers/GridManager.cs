@@ -257,7 +257,8 @@ public class GridManager : MonoBehaviour
     {
         ResetColorOfTilesInMovementRange();
 
-        Collider2D[] allColliders = Physics2D.OverlapCircleAll(tileUnderCursor.transform.position, Unit.SelectedUnit.GetComponent<Spell>().AreaSize / 2);
+        float areaSize = Unit.SelectedUnit.GetComponent<Spell>().AreaSize * (Unit.SelectedUnit.GetComponent<Stats>().SW / 10) / 2f;
+        Collider2D[] allColliders = Physics2D.OverlapCircleAll(tileUnderCursor.transform.position, areaSize);
 
         foreach (var collider in allColliders)
         {

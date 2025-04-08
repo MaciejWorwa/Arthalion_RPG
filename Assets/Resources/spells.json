@@ -1,196 +1,117 @@
 {
   "Spells": [
     {
+      "Name": "Błyskawica T'Essli",
+      "Arcane": "Tradycja Niebios",
+      "Type": [ "offensive", "magic-missile", "buff" ],
+      "CastingNumber": 7,
+      "Range": 1,
+      "Strength": 10,
+      "MetalArmourIgnoring": true
+    },
+    {
+      "Name": "Dekoncentracja",
+      "Arcane": "Magia powszechna",
+      "Type": [ "buff", "self-only" ],
+      "CastingNumber": 4,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        { "Key": "Distracting", "Value": 1 }
+      ]
+    },
+    {
+      "Name": "Magiczna ochrona",
+      "Arcane": "Magia powszechna",
+      "Type": [ "buff", "self-only" ],
+      "CastingNumber": 5,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        { "Key": "Ward", "Value": 9 }
+      ]
+    },
+    {
       "Name": "Magiczne żądło",
-      "Arcane": "Magia prosta - tajemna",
+      "Arcane": "Magia prosta",
       "Type": [ "offensive", "magic-missile" ],
       "CastingNumber": 0,
       "Range": 1,
       "Strength": 0
     },
     {
+      "Name": "Pancerz Eteru",
+      "Arcane": "Magia powszechna",
+      "Type": [ "buff", "self-only" ],
+      "CastingNumber": 2,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        { "Key": "NaturalArmor", "Value": 1 }
+      ]
+    },
+    {
+      "Name": "Pocisk",
+      "Arcane": "Magia powszechna",
+      "Type": [ "offensive", "magic-missile" ],
+      "CastingNumber": 4,
+      "Range": 1,
+      "Strength": 4
+    },
+    {
+      "Name": "Przerażający wygląd",
+      "Arcane": "Magia powszechna",
+      "Type": [ "buff", "self-only" ],
+      "CastingNumber": 4,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        { "Key": "Terror", "Value": 1 }
+      ]
+    },
+    {
+      "Name": "Purpurowy całun",
+      "Arcane": "Tradycja Śmierci",
+      "Type": [ "buff", "self-only", "attribute-scaling-by-SW" ],
+      "CastingNumber": 9,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        { "Key": "NaturalArmor", "Value": 1 },
+        { "Key": "Fear", "Value": 1 }
+      ]
+    },
+    {
+      "Name": "Straszny wygląd",
+      "Arcane": "Magia powszechna",
+      "Type": [ "buff", "self-only" ],
+      "CastingNumber": 3,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        { "Key": "Fear", "Value": 1 }
+      ]
+    },
+    {
+      "Name": "Wybuch",
+      "Arcane": "Magia powszechna",
+      "Type": [ "offensive", "magic-missile" ],
+      "CastingNumber": 4,
+      "Range": 1,
+      "AreaSize": 1,
+      "Strength": 3
+    },
+    {
       "Name": "Wyssanie",
-      "Arcane": "Magia prosta - tajemna",
-      "Type": [ "offensive" ],
+      "Arcane": "Magia prosta",
+      "Type": [ "offensive", "self-attribute" ],
       "CastingNumber": 0,
       "Range": 1.5,
       "Strength": 0,
-      "AttributeValue":  1,
-      "Attribute": [ "TempHealth" ],
-      "ArmourIgnoring":  true
-    },
-    {
-      "Id": 1,
-      "Name": "Błogosławieństwo siły",
-      "Arcane": "Magia prosta - kapłańska",
-      "Type": [ "buff" ],
-      "Strength": 5,
-      "CastingNumber": 6,
-      "Range": 1.5,
-      "CastingTime": 1,
-      "Duration": 6,
-      "Attribute": [ "WW", "K" ]
-    },
-    {
-      "Id": 2,
-      "Name": "Błogosławieństwo uzdrawiania",
-      "Arcane": "Magia prosta - kapłańska",
-      "Type": [ "buff" ],
-      "Strength": 1,
-      "CastingNumber": 5,
-      "Range": 1.5,
-      "CastingTime": 1,
-      "Attribute": [ "TempHealth" ]
-    },
-    {
-      "Id": 3,
-      "Name": "Błyskawica",
-      "Arcane": "Tradycja Niebios",
-      "Type": [ "offensive", "magic-missile" ],
-      "CastingNumber": 10,
-      "Range": 18,
-      "Strength": 5,
-      "CastingTime": 1
-    },
-    {
-      "Id": 4,
-      "Name": "Gorejący wzrok",
-      "Arcane": "Tradycja Światła",
-      "Type": [ "offensive", "magic-missile" ],
-      "CastingNumber": 7,
-      "Range": 8,
-      "Strength": 6,
-      "CastingTime": 2
-    },
-
-    {
-      "Id": 5,
-      "Name": "Łaska Chaosu",
-      "Arcane": "Tradycja Chaosu",
-      "Type": [ "buff", "self-only" ],
-      "Strength": 10,
-      "CastingNumber": 9,
-      "Range": 1,
-      "CastingTime": 2,
-      "Duration": 6,
-      "Attribute": [ "WW", "Odp", "SW", "Ogd" ]
-    },
-    {
-      "Id": 6,
-      "Name": "Magiczne żądło OLD",
-      "Arcane": "Magia prosta - tajemna",
-      "Type": [ "offensive", "magic-missile" ],
-      "CastingNumber": 0,
-      "Range": 8,
-      "Strength": 3,
-      "CastingTime": 1
-    },
-    {
-      "Id": 7,
-      "Name": "Nawałnica",
-      "Arcane": "Tradycja Niebios",
-      "Type": [ "offensive" ],
-      "CastingNumber": 3,
-      "Range": 1,
-      "AreaSize": 5,
-      "Strength": 5
-    },
-    {
-      "Id": 8,
-      "Name": "Ogień U'zhul",
-      "Arcane": "Tradycja Ognia",
-      "Type": [ "offensive", "magic-missile" ],
-      "CastingNumber": 6,
-      "Range": 18,
-      "Strength": 4,
-      "CastingTime": 1
-    },
-    {
-      "Id": 9,
-      "Name": "Ognista kula",
-      "Arcane": "Tradycja Ognia",
-      "Type": [ "offensive", "magic-level-related", "magic-missile", "multiple-targets" ],
-      "CastingNumber": 12,
-      "Range": 24,
-      "Strength": 3,
-      "CastingTime": 1
-    },
-    {
-      "Id": 10,
-      "Name": "Paląca krew",
-      "Arcane": "Tradycja Chaosu",
-      "Type": [ "offensive", "magic-level-related", "magic-missile", "multiple-targets" ],
-      "CastingNumber": 13,
-      "Range": 12,
-      "Strength": 4,
-      "CastingTime": 1
-    },
-    {
-      "Id": 11,
-      "Name": "Pancerz Eteru",
-      "Arcane": "Magia powszechna",
-      "Type": [ "buff", "magic-level-related", "self-only" ],
-      "CastingNumber": 5,
-      "Range": 1,
-      "CastingTime": 1,
-      "Duration": 6,
-      "Attribute": [ "Armor_head", "Armor_arms", "Armor_torso", "Armor_legs" ]
-    },
-    {
-      "Id": 12,
-      "Name": "Srebrzyste strzały Arha",
-      "Arcane": "Tradycja Metalu",
-      "Type": [ "offensive", "magic-level-related", "magic-missile", "multiple-targets" ],
-      "CastingNumber": 0,
-      "Range": 24,
-      "Strength": 3,
-      "CastingTime": 1
-    },
-    {
-      "Id": 13,
-      "Name": "Sztylety cienia",
-      "Arcane": "Tradycja Cienia",
-      "Type": [ "offensive", "magic-level-related", "magic-missile", "multiple-targets" ],
-      "CastingNumber": 21,
-      "Range": 24,
-      "Strength": 3,
-      "CastingTime": 1,
+      "Attributes": [
+        { "Key": "TempHealth", "Value": 1 }
+      ],
       "ArmourIgnoring": true
-    },
-    {
-      "Id": 14,
-      "Name": "Uśpienie",
-      "Arcane": "Magia prosta - tajemna",
-      "Type": [ "offensive", "random-duration", "no-damage" ],
-      "CastingNumber": 6,
-      "Range": 1.5,
-      "CastingTime": 1,
-      "SaveTestRequiring": true,
-      "Attribute": [ "SW" ],
-      "Paralyzing": true
-    },
-    {
-      "Id": 15,
-      "Name": "Uzdrowienie",
-      "Arcane": "Tradycja Światła",
-      "Type": [ "magic-level-related" ],
-      "CastingNumber": 10,
-      "Range": 1.5,
-      "CastingTime": 1,
-      "Attribute": [ "TempHealth" ]
-    },
-    {
-      "Id": 16,
-      "Name": "Wizja męki",
-      "Arcane": "Tradycja Chaosu",
-      "Type": [ "offensive", "no-damage" ],
-      "CastingNumber": 7,
-      "Range": 12,
-      "CastingTime": 1,
-      "Duration": 1,
-      "SaveTestRequiring": true,
-      "Attribute": [ "SW" ],
-      "Stunning": true
     }
   ]
 }

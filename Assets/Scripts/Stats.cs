@@ -67,7 +67,6 @@ public class Stats : MonoBehaviour
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
-    public int NaturalArmor;
 
     [Header("Umiejętności")]
     public int Athletics;
@@ -80,33 +79,27 @@ public class Stats : MonoBehaviour
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Talenty")]
-    public int AethyricAttunement; // Zmysł Magii ----------------------------------- MECHANIKA DO WPROWADZENIA
+    public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
-    public bool Champion; // Czempion
     public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
-    public int Daemonic; // Demoniczny
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
     public int DualWielder; // Dwie bronie
-    public bool Ethereal; // Eteryczny
     public int FastHands; // Ruchliwe dłonie
-    public int Fear; // Strach
     public int Feint; // Finta
-    public bool Frenzy; // Szał bojowy  ------------------------------------ UWZGLĘDNIĆ JESZCZE JEGO DZIAŁANIE GDY WPROWADZE MECHANIKĘ STRACHU
+    public bool Frenzy; // Szał bojowy
     public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
     public int Hardy; // Twardziel
-    public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int Implacable; // Nieubłagany
-    public int InstinctiveDiction; // Precyzyjne inkantowanie ----------------------------------- MECHANIKA DO WPROWADZENIA
+    public int InstinctiveDiction; // Precyzyjne inkantowanie
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający
     public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
-    public bool Regeneration; // Regeneracja
     public bool Relentless; // Nieustępliwy
     public int Resolute; // Nieugięty
     public int Riposte; // Riposta
@@ -123,8 +116,19 @@ public class Stats : MonoBehaviour
     public int StrongBack; // Mocne plecy
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
-    public int Terror; // Groza
     public int Unshakable; // Niewzruszony
+
+    [Header("Cechy stworzeń")]
+    public bool Champion; // Czempion
+    public int Daemonic; // Demoniczny
+    public bool Distracting; // Dekoncentrujący
+    public bool Ethereal; // Eteryczny
+    public int Fear; // Strach
+    public bool ImmunityToPsychology; // Niewrażliwość na psychologię
+    public int NaturalArmor;
+    public bool Regeneration; // Regeneracja
+    public int Terror; // Groza
+    public int Ward; // Ochrona
 
     //STARE
     public bool ArmouredCasting; // Pancerz Wiary

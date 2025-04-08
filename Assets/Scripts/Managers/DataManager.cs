@@ -680,33 +680,27 @@ public class StatsData
     public int NaturalArmor;
 
     [Header("Talenty")]
-    public int AethyricAttunement; // Zmysł Magii ----------------------------------- MECHANIKA DO WPROWADZENIA
+    public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
-    public bool Champion; // Czempion
     public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
-    public int Daemonic; // Demoniczny
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
     public int DualWielder; // Dwie bronie
-    public bool Ethereal; // Eteryczny
     public int FastHands; // Ruchliwe dłonie
-    public int Fear; // Strach
     public int Feint; // Finta
-    public bool Frenzy; // Szał bojowy  ------------------------------------ UWZGLĘDNIĆ JESZCZE JEGO DZIAŁANIE GDY WPROWADZE MECHANIKĘ STRACHU
+    public bool Frenzy; // Szał bojowy
     public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
     public int Hardy; // Twardziel
-    public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int Implacable; // Nieubłagany
-    public int InstinctiveDiction; // Precyzyjne inkantowanie ----------------------------------- MECHANIKA DO WPROWADZENIA
+    public int InstinctiveDiction; // Precyzyjne inkantowanie
     public int IronJaw; // Żelazna szczęka
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający
     public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
-    public bool Regeneration; // Regeneracja
     public bool Relentless; // Nieustępliwy
     public int Resolute; // Nieugięty
     public int Riposte; // Riposta
@@ -723,8 +717,18 @@ public class StatsData
     public int StrongBack; // Mocne plecy
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
-    public int Terror; // Groza
     public int Unshakable; // Niewzruszony
+
+    [Header("Cechy stworzeń")]
+    public bool Champion; // Czempion
+    public int Daemonic; // Demoniczny
+    public bool Distracting; // Dekoncentrujący
+    public bool Ethereal; // Eteryczny
+    public int Fear; // Strach
+    public bool ImmunityToPsychology; // Niewrażliwość na psychologię
+    public bool Regeneration; // Regeneracja
+    public int Terror; // Groza
+    public int Ward; // Ochrona
 
     //STARE
     public bool ArmouredCasting; // Pancerz Wiary
@@ -932,31 +936,43 @@ public class SpellData
     public int Duration; // czas trwania zaklęcia
 
     public bool SaveTestRequiring; // określa, czy zaklęcie powoduje konieczność wykonania testu obronnego
-    public int AttributeValue; // określa o ile są zmieniane cechy opisane w tabeli Attribute
-    public string[] Attribute; // określa cechę, jaka jest testowana podczas próby oparcia się zaklęciu lub cechę na którą wpływa zaklęcie (np. podnosi ją lub obniża). Czasami jest to więcej cech, np. Pancerz Etery wpływa na każdą z lokalizacji
+    //public int AttributeValue; // określa o ile są zmieniane cechy opisane w tabeli Attribute
+    //public string[] Attribute; // określa cechę, jaka jest testowana podczas próby oparcia się zaklęciu lub cechę na którą wpływa zaklęcie (np. podnosi ją lub obniża). Czasami jest to więcej cech, np. Pancerz Etery wpływa na każdą z lokalizacji
 
-    public bool ArmourIgnoring; // ignorujący zbroję
-    public bool WtIgnoring; // ignorujący wytrzymałość
-    //public bool Stunning;  // ogłuszający
-    //public bool Paralyzing; // wprowadzający w stan bezbronności
+    //public Dictionary<string, int> Attributes;
+    public List<AttributePair> Attributes;
+
+    public bool ArmourIgnoring;
+    public bool MetalArmourIgnoring;
+    public bool WtIgnoring;
 
     public SpellData(Spell spell)
     {
-        // Pobiera wszystkie pola (zmienne) z klasy spell
         var fields = spell.GetType().GetFields();
         var thisFields = this.GetType().GetFields();
 
-        // Dla każdego pola z klasy spell odnajduje pole w klasie this (czyli SpellData) i ustawia mu wartość jego odpowiednika z klasy spell
         foreach (var thisField in thisFields)
         {
-            var field = fields.FirstOrDefault(f => f.Name == thisField.Name); // Znajduje pierwsze pole o tej samej nazwie wśród pól z klasy spell
+            var field = fields.FirstOrDefault(f => f.Name == thisField.Name);
 
             if (field != null && field.GetValue(spell) != null)
             {
                 thisField.SetValue(this, field.GetValue(spell));
             }
         }
+
+        if (spell.Attributes != null)
+        {
+            Attributes = new List<AttributePair>(spell.Attributes);
+        }
     }
+}
+
+[System.Serializable]
+public class AttributePair
+{
+    public string Key;
+    public int Value;
 }
 
 [System.Serializable]

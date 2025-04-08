@@ -2,10 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.TextCore.Text;
+using static UnityEngine.UI.CanvasScaler;
 
 public class Tile : MonoBehaviour
 {
@@ -52,9 +55,15 @@ public class Tile : MonoBehaviour
         }
 
         //Podświetla pola w obszarze działania zaklęcia
-        if (MagicManager.IsTargetSelecting && Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Spell>().AreaSize > 1)
+        if (MagicManager.IsTargetSelecting && Unit.SelectedUnit != null)
         {
-            GridManager.Instance.HighlightTilesInSpellArea(this.gameObject);
+            // Ustala obszar działania zaklęcia. Zwykle jest to mnożnik bonusu z Siły Woli
+            float areaSize = Unit.SelectedUnit.GetComponent<Spell>().AreaSize * (Unit.SelectedUnit.GetComponent<Stats>().SW / 10) / 2f;
+
+            if (areaSize > 0)
+            {
+                GridManager.Instance.HighlightTilesInSpellArea(this.gameObject);
+            }
         }
     }
 

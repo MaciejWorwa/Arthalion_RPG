@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEditor;
 using UnityEngine;
 
@@ -963,16 +964,21 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        // Uwzględnienie cechy Demoniczny
-        if (targetStats.Daemonic > 0)
+        // Uwzględnienie cechy Demoniczny lub Ochrona
+        if (targetStats.Daemonic > 0 || targetStats.Ward > 0)
         {
             int rollResult = UnityEngine.Random.Range(1, 11);
-            bool ignoredDamage = rollResult >= targetStats.Daemonic;
-            string daemonicRollMessage = ignoredDamage
+
+            // Wybiera aktywną cechę i jej nazwę
+            int activeDefense = targetStats.Daemonic > targetStats.Ward ? targetStats.Daemonic : targetStats.Ward;
+            string defenseName = targetStats.Daemonic > targetStats.Ward ? "Demoniczny" : "Ochrona";
+
+            bool ignoredDamage = rollResult >= activeDefense;
+            string rollMessage = ignoredDamage
                 ? $"{targetStats.Name} ignoruje wszystkie obrażenia."
                 : $"{targetStats.Name} nie udało się uniknąć obrażeń.";
 
-            Debug.Log($"{targetStats.Name} wykonuje rzut obronny w związku z cechą \"Demoniczny\". Wynik rzutu: {rollResult}. {daemonicRollMessage}");
+            Debug.Log($"{targetStats.Name} wykonuje rzut obronny w związku z cechą \"{defenseName}\". Wynik rzutu: {rollResult}. {rollMessage}");
 
             if (ignoredDamage) return;
         }
@@ -1010,17 +1016,19 @@ public class CombatManager : MonoBehaviour
 
             target.LastAttackerStats = attackerStats;
 
-            //Aktualizuje żywotność w panelu jednostki, jeśli dostała obrażenia w wyniku ataku okazyjnego
+            // Aktualizuje żywotność w panelu jednostki, jeśli dostała obrażenia w wyniku ataku okazyjnego
             if (Unit.SelectedUnit == target.gameObject)
             {
                 UnitsManager.Instance.UpdateUnitPanel(target.gameObject);
             }
 
-            //Resetuje splatanie magii
+            // Resetuje splatanie magii
             if(target.ChannelingModifier != 0)
             {
-                target.ChannelingModifier = 0;
-                Debug.Log($"Splatanie magii {targetStats.Name} zostało przerwane. Wszystkie zebrane poziomy sukcesu przepadają.");
+                Debug.Log($"Splatanie magii {targetStats.Name} zostało przerwane.");
+
+                // Manifestacja Chaosu z modyfikatorem równym uzyskanym poziomom splecenia magii
+                MagicManager.Instance.CheckForChaosManifestation(targetStats, 0, 0, -target.ChannelingModifier, "Channeling", 0, true);
             }
 
             StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, target.gameObject, finalDamage));
@@ -1179,7 +1187,7 @@ public class CombatManager : MonoBehaviour
         if (DiceRollManager.Instance.RollModifier != 0)
         {
             parryValue += DiceRollManager.Instance.RollModifier;
-            parryModifierString = $" Modyfikator: {parryModifier + DiceRollManager.Instance.RollModifier},";
+            parryModifierString = $" Modyfikator: {parryModifier + DiceRollManager.Instance.RollModifier}.";
             DiceRollManager.Instance.ResetRollModifier();
         }
 
@@ -1198,7 +1206,7 @@ public class CombatManager : MonoBehaviour
         int defenceSuccessValue = DefenceResults[0];
         int defenceSuccessLevel = DefenceResults[1];
         string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
-        Debug.Log($"{targetStats.Name} próbuje parować przy użyciu {targetWeapon.Name}. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill)},{parryModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+        Debug.Log($"{targetStats.Name} próbuje parować przy użyciu {targetWeapon.Name}. Wynik rzutu: {defenceRollResult}. Wartość umiejętności: {targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill)}.{parryModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>.");
 
         // Obsługa fuksa / pecha
         if (DiceRollManager.Instance.IsDoubleDigit(defenceRollResult))
@@ -1230,7 +1238,7 @@ public class CombatManager : MonoBehaviour
     public IEnumerator Dodge(Unit target, Stats targetStats, int dodgeValue, int dodgeModifier)
     {
         int defenceRollResult = 0;
-        string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
+        string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}." : "";
 
         // Jeżeli jest ustawiony modyfikator w panelu jednostki
         if (DiceRollManager.Instance.RollModifier != 0)
@@ -1255,7 +1263,7 @@ public class CombatManager : MonoBehaviour
         int defenceSuccessValue = DefenceResults[0];
         int defenceSuccessLevel = DefenceResults[1];
         string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
-        Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}, Wartość umiejętności: {targetStats.Dodge + targetStats.Zw},{dodgeModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>");
+        Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}. Wartość umiejętności: {targetStats.Dodge + targetStats.Zw}.{dodgeModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>.");
 
         // Obsługa fuksa / pecha
         if (DiceRollManager.Instance.IsDoubleDigit(defenceRollResult))
