@@ -17,7 +17,10 @@
       "Range": 1.5,
       "Duration": 1,
       "Attributes": [
-        { "Key": "Distracting", "Value": 1 }
+        {
+          "Key": "Distracting",
+          "Value": 1
+        }
       ]
     },
     {
@@ -28,7 +31,10 @@
       "Range": 1.5,
       "Duration": 1,
       "Attributes": [
-        { "Key": "Ward", "Value": 9 }
+        {
+          "Key": "Ward",
+          "Value": 9
+        }
       ]
     },
     {
@@ -47,12 +53,23 @@
       "Range": 1.5,
       "Duration": 1,
       "Attributes": [
-        { "Key": "NaturalArmor", "Value": 1 }
+        {
+          "Key": "NaturalArmor",
+          "Value": 1
+        }
       ]
     },
     {
       "Name": "Pocisk",
       "Arcane": "Magia powszechna",
+      "Type": [ "offensive", "magic-missile" ],
+      "CastingNumber": 4,
+      "Range": 1,
+      "Strength": 4
+    },
+    {
+      "Name": "Pocisk Hysh TEMP",
+      "Arcane": "Tradycja Światła",
       "Type": [ "offensive", "magic-missile" ],
       "CastingNumber": 4,
       "Range": 1,
@@ -66,7 +83,10 @@
       "Range": 1.5,
       "Duration": 1,
       "Attributes": [
-        { "Key": "Terror", "Value": 1 }
+        {
+          "Key": "Terror",
+          "Value": 1
+        }
       ]
     },
     {
@@ -77,8 +97,14 @@
       "Range": 1.5,
       "Duration": 1,
       "Attributes": [
-        { "Key": "NaturalArmor", "Value": 1 },
-        { "Key": "Fear", "Value": 1 }
+        {
+          "Key": "NaturalArmor",
+          "Value": 1
+        },
+        {
+          "Key": "Fear",
+          "Value": 1
+        }
       ]
     },
     {
@@ -89,7 +115,10 @@
       "Range": 1.5,
       "Duration": 1,
       "Attributes": [
-        { "Key": "Fear", "Value": 1 }
+        {
+          "Key": "Fear",
+          "Value": 1
+        }
       ]
     },
     {
@@ -109,7 +138,10 @@
       "Range": 1.5,
       "Strength": 0,
       "Attributes": [
-        { "Key": "TempHealth", "Value": 1 }
+        {
+          "Key": "TempHealth",
+          "Value": 1
+        }
       ],
       "ArmourIgnoring": true
     }

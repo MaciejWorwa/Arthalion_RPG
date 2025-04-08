@@ -485,7 +485,7 @@ public class DataManager : MonoBehaviour
                 _spellbookScrollViewContent.GetComponent<CustomDropdown>().SetSelectedIndex(currentIndex); // Wybiera element i aktualizuje jego wygląd
             });
 
-            if (spellToUpdate != null && spell.Name == spellName && spellToUpdate.Name != spell.Name)
+            if (spellToUpdate != null && spell.Name == spellName)
             {
                 // Używanie refleksji do aktualizacji wartości wszystkich pól w klasie Spell
                 FieldInfo[] fields = typeof(SpellData).GetFields(BindingFlags.Instance | BindingFlags.Public);
@@ -1052,18 +1052,18 @@ public class InitiativeQueueManagerData
     public int PlayersAdvantage;
     public int EnemiesAdvantage;
 
+    public List<StatsData> UnitsStatsAffectedBySpell = new List<StatsData>();
+
     public InitiativeQueueManagerData()
     {
         PlayersAdvantage = InitiativeQueueManager.Instance.PlayersAdvantage;
         EnemiesAdvantage = InitiativeQueueManager.Instance.EnemiesAdvantage;
-    }
-}
 
-[System.Serializable]
-public class UnitNameAndActionsLeft
-{
-    public string UnitName;
-    public int ActionsLeft;
+        foreach (Stats stats in MagicManager.Instance.UnitsStatsAffectedBySpell)
+        {
+            UnitsStatsAffectedBySpell.Add(new StatsData(stats));
+        }
+    }
 }
 
 [System.Serializable]

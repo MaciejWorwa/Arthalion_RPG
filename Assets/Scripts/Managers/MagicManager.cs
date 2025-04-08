@@ -145,8 +145,6 @@ public class MagicManager : MonoBehaviour
             return;
         }
 
-        RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
-
         if (!Unit.SelectedUnit.GetComponent<Unit>().CanCastSpell && RoundsManager.RoundNumber != 0)
         {
             Debug.Log("Wybrana jednostka nie może w tej rundzie rzucić więcej zaklęć.");
@@ -158,6 +156,8 @@ public class MagicManager : MonoBehaviour
             Debug.Log("Musisz najpierw wybrać zaklęcie z listy.");
             return;
         }
+
+        RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
 
         Target = null;
         string selectedSpellName = _spellbookDropdown.SelectedButton.GetComponentInChildren<TextMeshProUGUI>().text;
@@ -217,7 +217,7 @@ public class MagicManager : MonoBehaviour
         Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color={color}>{successLevels}/{spell.CastingNumber}</color>.");
 
         bool spellFailed = spell.CastingNumber - successLevels > 0;
-        Debug.Log(spellFailed ? "Rzucanie zaklęcia nie powiodło się." : "Zaklęcie zostało splecione pomyślnie.");
+        Debug.Log(spellFailed ? $"Rzucanie zaklęcia {spell.Name} nie powiodło się." : $"Zaklęcie {spell.Name} zostało splecione pomyślnie.");
 
         if (unit.ChannelingModifier > 0 && spellFailed) //Jeśli czarodziej splatał wcześniej magię i zaklęcie nie powiodło się, występuję manifestacja Chaosu (od nadmiaru zebranej magii)
         {
@@ -461,7 +461,6 @@ public class MagicManager : MonoBehaviour
 
         UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
     }
-
     #endregion
 
     #region Handle spell effect
@@ -484,61 +483,6 @@ public class MagicManager : MonoBehaviour
 
             UnitsStatsAffectedBySpell.Add(targetStats.Clone());
         }
-
-        ////Uwzględnienie testu obronnego
-        //if (spell.SaveTestRequiring == true && spell.Attribute.Length > 0)
-        //{
-        //    //Szuka odpowiedniej cechy w statystykach celu
-        //    FieldInfo field = targetStats.GetType().GetField(spell.Attribute[0]);
-
-        //    if (field == null || field.FieldType != typeof(int)) yield break;
-
-        //    int value = (int)field.GetValue(targetStats);
-
-        //    int saveRollResult = UnityEngine.Random.Range(1, 101);
-
-        //    if (saveRollResult > value)
-        //    {
-        //        Debug.Log($"{targetStats.Name} wykonał test na {spell.Attribute[0]} i wyrzucił {saveRollResult}. Wartość cechy: {value}. Nie udało mu się przeciwstawić zaklęciu.");
-        //    }
-        //    else
-        //    {
-        //        Debug.Log($"{targetStats.Name} wykonał test na {spell.Attribute[0]} i wyrzucił {saveRollResult}. Wartość cechy: {value}. Udało mu się przeciwstawić zaklęciu.");
-        //        yield break;
-        //    }
-        //}
-
-        // Uwzględnienie testu obronnego
-        //if (spell.SaveTestRequiring == true && spell.Attribute.Length > 0)
-        //{
-        //    // Szuka odpowiedniej cechy w statystykach celu
-        //    string attributeName = spell.Attribute[0];
-
-        //    // Rzut na test obronny
-        //    int saveRollResult = 0;
-        //    if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
-        //    {
-        //        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, $"rzut obronny ({attributeName})", result => saveRollResult = result));
-        //        if (saveRollResult == 0) yield break;
-        //    }
-        //    else
-        //    {
-        //        saveRollResult = UnityEngine.Random.Range(1, 101);
-        //    }
-
-        //    // Test obronny przy użyciu TestSkill
-        //    int[] skillTestResults = DiceRollManager.Instance.TestSkill(attributeName, targetStats, null, 0, saveRollResult);
-
-        //    if (skillTestResults[0] < 0)
-        //    {
-        //        Debug.Log($"{targetStats.Name} nie udało się przeciwstawić zaklęciu.");
-        //    }
-        //    else
-        //    {
-        //        Debug.Log($"{targetStats.Name} udało się przeciwstawić zaklęciu.");
-        //        yield break;
-        //    }
-        //}
 
         // Uwzględnienie testu obronnego
         if (spell.SaveTestRequiring == true && spell.Attributes != null && spell.Attributes.Count > 0)
@@ -623,73 +567,29 @@ public class MagicManager : MonoBehaviour
                         field.SetValue(affectedStats, (int)field.GetValue(affectedStats) + value);
                         Debug.Log($"{affectedStats.Name} zmienił/a cechę {attributeName} o {value}.");
                     }
+
+                    if (attributeName == "NaturalArmor")
+                    {
+                        InventoryManager.Instance.CheckForEquippedWeapons();
+                    }
                 }
             }
-        
-
-        //else if (spell.Attribute != null && spell.Attribute.Length > 0) // Zaklęcia wpływające na cechy, np. Uzdrowienie i Pancerz Eteru
-        //{
-        //    for (int i = 0; i < spell.Attribute.Length; i++)
-        //    {
-        //        // Określenie, na czyje statystyki wpływa zaklęcie – cel czy rzucającego
-        //        Stats affectedStats = spell.Type.Contains("self-attribute") ? spellcasterStats : targetStats;
-
-        //        // Szukanie odpowiedniej cechy
-        //        FieldInfo field = affectedStats.GetType().GetField(spell.Attribute[i]);
-
-        //        if (field == null) yield break;
-
-        //        if (field.FieldType == typeof(bool))
-        //        {
-        //            field.SetValue(affectedStats, true);
-        //            Debug.Log($"W efekcie zaklęcia {affectedStats.Name} otrzymał/a cechę {spell.Attribute[i]} na {targetUnit.SpellDuration} rund/y.");
-        //        }
-        //        else if (field.FieldType == typeof(int))
-        //        {
-        //            int value = spell.AttributeValue;
-
-        //            if (spell.Type.Contains("attribute-scaling-by-SW"))
-        //            {
-        //                value *= affectedStats.SW / 10;
-        //            }
-
-        //            // TO PRAWDOPODOBNIE BĘDZIE ZALEŻNE OD POZIOMÓW SUKCESU LUB BONUSU Z JAKIEJŚ CECHY
-        //            // if (spell.Type.Contains("magic-level-related"))
-        //            // {
-        //            //     value += spellcasterStats.Mag;
-        //            // }
-
-        //            if (spell.Attribute[i] == "TempHealth")
-        //            {
-        //                // Zapobiega leczeniu ponad maksymalną wartość żywotności
-        //                if (value + affectedStats.TempHealth <= affectedStats.MaxHealth)
-        //                {
-        //                    field.SetValue(affectedStats, (int)field.GetValue(affectedStats) + value);
-
-        //                    //Zaktualizowanie punktów żywotności
-        //                    affectedStats.GetComponent<Unit>().DisplayUnitHealthPoints();
-        //                    UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
-
-        //                    Debug.Log($"W efekcie zaklęcia {affectedStats.Name} odzyskał/a {value} punktów Żywotności.");
-        //                }
-        //            }
-        //            else
-        //            {
-        //                field.SetValue(affectedStats, (int)field.GetValue(affectedStats) + value);
-
-        //                Debug.Log($"W efekcie zaklęcia {affectedStats.Name} zmienił/a cechę {spell.Attribute[i]} o {value} na {targetUnit.SpellDuration} rund/y.");
-        //            }
-        //        }
-        //    }
 
             UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
         }
 
         // Uwzględnienie zasad specjalnych Tradycji Śmierci
-        if (spell.Arcane == "Tradycja Śmierci")
+        if (spell.Arcane == "Tradycja Śmierci" && targetStats != spellcasterStats)
         {
             targetUnit.Fatiqued++;
             Debug.Log($"<color=#FF7F50>Poziom wyczerpania {targetStats.Name} wzrasta o 1, gdyż jest celem zaklęcia z Tradycji Śmierci.</color>");
+        }
+
+        // Uwzględnienie zasad specjalnych Tradycji Światła
+        if (spell.Arcane == "Tradycja Światła" && targetStats != spellcasterStats)
+        {
+            targetUnit.Blinded++;
+            Debug.Log($"<color=#FF7F50>Poziom oślepienia {targetStats.Name} wzrasta o 1, gdyż jest celem zaklęcia z Tradycji Światła.</color>");
         }
 
         //Zaklęcia zadające obrażenia
@@ -715,6 +615,16 @@ public class MagicManager : MonoBehaviour
             _ => hitLocation
         };
 
+        // Uwzględnienie zasad specjalnych Tradycji Światła (DODAĆ TU JESZCZE OŻYWIEŃCÓW, JEŚLI JUŻ WPROWADZĘ CECHĘ OŻYWIENIEC)
+        if (spell.Arcane == "Tradycja Światła" && targetStats.Daemonic != 0 && targetStats != spellcasterStats)
+        {
+            damage += spellcasterStats.Int / 10;
+            spell.WtIgnoring = true;
+            spell.ArmourIgnoring = true;
+            string unitType = targetStats.Daemonic != 0 ? "Demoniczny" : "Ożywieniec";
+            Debug.Log($"{targetStats.Name} otrzymuje {spellcasterStats.Int / 10} dodatkowe obrażenia za cechę {unitType}, gdyż jest celem zaklęcia z Tradycji Światła.");
+        }
+
         // Sprawdzamy zbroję
         int armor = CombatManager.Instance.CalculateArmor(spellcasterStats, targetStats, hitLocation, rollResult);
 
@@ -737,7 +647,7 @@ public class MagicManager : MonoBehaviour
             }
         }
 
-        CombatManager.Instance.ApplyDamageToTarget(damage, armor, spellcasterStats, targetStats, targetStats.GetComponent<Unit>());
+        CombatManager.Instance.ApplyDamageToTarget(damage, armor, spellcasterStats, targetStats, targetStats.GetComponent<Unit>(), null, spell.WtIgnoring);
     }
     #endregion
 

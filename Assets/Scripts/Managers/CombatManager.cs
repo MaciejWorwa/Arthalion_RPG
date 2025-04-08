@@ -938,9 +938,9 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    public void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Stats targetStats, Unit target, Weapon attackerWeapon = null)
+    public void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Stats targetStats, Unit target, Weapon attackerWeapon = null, bool ignoring_Wt = false)
     {
-        int targetWt = targetStats.Wt / 10;
+        int targetWt = ignoring_Wt ? 0 : targetStats.Wt / 10;
         int reducedDamage = armor + targetWt + targetStats.Robust;
         int finalDamage = 0;
 
