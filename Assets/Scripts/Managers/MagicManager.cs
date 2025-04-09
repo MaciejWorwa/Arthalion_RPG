@@ -37,6 +37,7 @@ public class MagicManager : MonoBehaviour
     [SerializeField] private CustomDropdown _spellbookDropdown;
     [SerializeField] private Button _castSpellButton;
     public List<Spell> SpellBook = new List<Spell>();
+    [SerializeField] private UnityEngine.UI.Toggle _grimuarToggle;
     public static bool IsTargetSelecting;
     private float _spellDistance;
 
@@ -212,20 +213,22 @@ public class MagicManager : MonoBehaviour
         // Test języka magicznego na rzucanie zaklęcia
         int[] castingTest = DiceRollManager.Instance.TestSkill("Int", stats, "MagicLanguage", modifier, rollResult);
 
-        int successLevels = castingTest[1] + unit.ChannelingModifier;
-        string color = successLevels >= spell.CastingNumber ? "green" : "red"; // Zielony, jeśli >= CastingNumber, inaczej czerwony
-        Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color={color}>{successLevels}/{spell.CastingNumber}</color>.");
+        int castingNumberRequired = _grimuarToggle.isOn ? spell.CastingNumber * 2 : spell.CastingNumber;
 
-        bool spellFailed = spell.CastingNumber - successLevels > 0;
+        int successLevels = castingTest[1] + unit.ChannelingModifier;
+        string color = successLevels >= castingNumberRequired ? "green" : "red"; // Zielony, jeśli >= CastingNumber, inaczej czerwony
+        Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color={color}>{successLevels}/{castingNumberRequired}</color>.");
+
+        bool spellFailed = castingNumberRequired - successLevels > 0;
         Debug.Log(spellFailed ? $"Rzucanie zaklęcia {spell.Name} nie powiodło się." : $"Zaklęcie {spell.Name} zostało splecione pomyślnie.");
 
         if (unit.ChannelingModifier > 0 && spellFailed) //Jeśli czarodziej splatał wcześniej magię i zaklęcie nie powiodło się, występuję manifestacja Chaosu (od nadmiaru zebranej magii)
         {
-            CheckForChaosManifestation(stats, rollResult, castingTest[0], castingTest[1], "MagicLanguage", spell.CastingNumber - successLevels, true);
+            CheckForChaosManifestation(stats, rollResult, castingTest[0], castingTest[1], "MagicLanguage", castingNumberRequired - successLevels, true);
         }
         else // Standardowe sprawdzenie warunków manifestacji
         {
-            CheckForChaosManifestation(stats, rollResult, castingTest[0], castingTest[1], "MagicLanguage", spell.CastingNumber - successLevels);
+            CheckForChaosManifestation(stats, rollResult, castingTest[0], castingTest[1], "MagicLanguage", castingNumberRequired - successLevels);
         }
 
         // Zresetowanie zaklęcia
