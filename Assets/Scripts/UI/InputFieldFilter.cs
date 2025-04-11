@@ -7,51 +7,69 @@ public class InputFieldFilter : MonoBehaviour
     [SerializeField] private TMP_InputField _inputField;
     [SerializeField] private bool _isAttributeInput;
     [SerializeField] private bool _isMoneyInput;
+    [SerializeField] private bool _isDiceRoll;
 
     private void Start()
     {
         _inputField = GetComponent<TMP_InputField>();
-        _inputField.onValidateInput += ValidateInput;
+
+        if (_inputField != null)
+        {
+            _inputField.onValidateInput += ValidateInput;
+
+            if (_isDiceRoll)
+            {
+                _inputField.onEndEdit.AddListener(ValidateDiceRollValue);
+            }
+        }
     }
 
     private char ValidateInput(string text, int charIndex, char addedChar)
     {
         if (_isAttributeInput)
         {
-            // Sprawdź, czy dodany znak jest cyfrą i czy wartość nie przekracza 99
-            if (char.IsDigit(addedChar) && (text.Length < 2 || text == "9" && addedChar <= '9'))
+            // Dozwolone cyfry, max 2 znaki, maksymalnie 99
+            if (char.IsDigit(addedChar) && (text.Length < 2 || (text == "9" && addedChar <= '9')))
             {
                 return addedChar;
             }
-            else
-            {
-                return '\0'; // Blokuj dodanie nieprawidłowego znaku
-            }
+            return '\0';
         }
         else if (_isMoneyInput)
         {
-            // Jeśli jest to pole do wpisywania pieniędzy:
-            // dozwolone wyłącznie cyfry oraz znaki '+' i '-'.
+            // Dozwolone cyfry oraz + i -
             if (char.IsDigit(addedChar) || addedChar == '+' || addedChar == '-')
             {
                 return addedChar;
             }
-            else
+            return '\0';
+        }
+        else if (_isDiceRoll)
+        {
+            // Dozwolone tylko cyfry
+            if (char.IsDigit(addedChar))
             {
-                return '\0'; // Blokuj dodanie nieprawidłowego znaku
+                return addedChar;
             }
+            return '\0';
         }
         else
         {
-            // Dozwolone znaki: cyfry, litery i spacje
+            // Domyślnie: cyfry, litery i spacje
             if (char.IsLetterOrDigit(addedChar) || char.IsWhiteSpace(addedChar))
             {
-                return addedChar; // Zwróć dodany znak
+                return addedChar;
             }
-            else
-            {
-                return '\0'; // Zablokuj dodanie nieprawidłowego znaku
-            }
+            return '\0';
+        }
+    }
+
+    private void ValidateDiceRollValue(string input)
+    {
+        if (int.TryParse(input, out int value))
+        {
+            value = Mathf.Clamp(value, 1, 100);
+            _inputField.text = value.ToString();
         }
     }
 }

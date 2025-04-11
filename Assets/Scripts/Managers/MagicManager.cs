@@ -7,6 +7,7 @@ using TMPro;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 using static UnityEngine.GraphicsBuffer;
 
 public class MagicManager : MonoBehaviour
@@ -35,7 +36,7 @@ public class MagicManager : MonoBehaviour
     }
 
     [SerializeField] private CustomDropdown _spellbookDropdown;
-    [SerializeField] private Button _castSpellButton;
+    [SerializeField] private UnityEngine.UI.Button _castSpellButton;
     public List<Spell> SpellBook = new List<Spell>();
     [SerializeField] private UnityEngine.UI.Toggle _grimuarToggle;
     public static bool IsTargetSelecting;
@@ -67,6 +68,17 @@ public class MagicManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _extraDurationButton;
     private string _overcastingString;
 
+    [Header("Tradycje magii")]
+    [SerializeField] private List<UnityEngine.UI.Toggle> _arcanesToggles;
+    [SerializeField] private UnityEngine.UI.Toggle _aqshyToggle;
+    [SerializeField] private UnityEngine.UI.Toggle _azyrToggle;
+    [SerializeField] private UnityEngine.UI.Toggle _chamonToggle;
+    [SerializeField] private UnityEngine.UI.Toggle _ghurToggle;
+    [SerializeField] private UnityEngine.UI.Toggle _ghyranToggle;
+    [SerializeField] private UnityEngine.UI.Toggle _hyshToggle;
+    [SerializeField] private UnityEngine.UI.Toggle _shyishToggle;
+    [SerializeField] private UnityEngine.UI.Toggle _ulguToggle;
+
     void Start()
     {
         //Wczytuje listę wszystkich zaklęć
@@ -74,6 +86,17 @@ public class MagicManager : MonoBehaviour
 
         _targetsStats = new List<Stats>();
         UnitsStatsAffectedBySpell = new List<Stats>();
+
+        _arcanesToggles = new List<UnityEngine.UI.Toggle> {
+        _aqshyToggle, _azyrToggle, _chamonToggle,
+        _ghurToggle, _ghyranToggle, _hyshToggle,
+        _shyishToggle, _ulguToggle
+        };
+
+        foreach (var toggle in _arcanesToggles)
+        {
+            toggle.onValueChanged.AddListener((isOn) => OnArcaneToggleChanged(toggle, isOn));
+        }
     }
 
     #region Channeling magic
@@ -173,8 +196,10 @@ public class MagicManager : MonoBehaviour
 
         Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
         Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
-        Spell spell = Unit.SelectedUnit.GetComponent<Spell>();       
-      
+        Spell spell = Unit.SelectedUnit.GetComponent<Spell>();
+
+        SetArcaneToggle(spell);
+
         unit.CanCastSpell = false;
 
         int rollResult = 0;
@@ -191,23 +216,31 @@ public class MagicManager : MonoBehaviour
         int modifier = CalculateArmorModifier(stats) + stats.InstinctiveDiction * 10;
 
         // Modyfikator za poziomy podpalenia w pobliżu (tylko dla Tradycji Ognia)
-        if (spell.Arcane == "Tradycja Ognia")
+        if (_aqshyToggle.isOn)
         {
             int totalAblaze = 0; // Zmienna do sumowania wartości poziomów podpaleń
+            float maxDistance = (stats.SW / 10) / 2f; // Maksymalny zasięg uwzględniający modyfikator za podpalenia
             foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
             {
                 Unit u = entry.Key;
                 Stats unitStats = u.GetComponent<Stats>();
 
-                // Sprawdzamy, czy jednostka ma Ablaze większe niż 0 i nie jest tą samą jednostką
-                if (unit.Ablaze > 0 && !ReferenceEquals(unitStats, stats))
+                // Sprawdzamy, czy jednostka ma Ablaze większe niż 0 i znajduje się w odpowiednim zasięgu od rzucającego zaklęcie
+                if (u.Ablaze > 0 && !ReferenceEquals(unitStats, stats))
                 {
-                    totalAblaze += u.Ablaze;
-                    Debug.Log($"{unitStats.Name} ma {u.Ablaze} poziomów podpalenia.");
+                    float distance = Vector2.Distance(u.transform.position, stats.transform.position);
+                    if (distance <= maxDistance)
+                    {
+                        totalAblaze += u.Ablaze;
+                    }
                 }
             }
 
-            modifier += totalAblaze;
+            if (totalAblaze > 0)
+            {
+                modifier += totalAblaze * 10;
+                Debug.Log($"Modyfikator z Tradycji Ognia za podpalenia w pobliżu: {totalAblaze * 10}.");
+            }
         }
 
         // Test języka magicznego na rzucanie zaklęcia
@@ -244,7 +277,7 @@ public class MagicManager : MonoBehaviour
         _targetsStats.Clear();
 
         //Zmienia kolor przycisku na aktywny
-        _castSpellButton.GetComponent<Image>().color = Color.green;
+        _castSpellButton.GetComponent<UnityEngine.UI.Image>().color = Color.green;
 
         Debug.Log("Kliknij prawym przyciskiem myszy na jednostkę, która ma być celem zaklęcia.");
 
@@ -426,7 +459,7 @@ public class MagicManager : MonoBehaviour
     {
         IsTargetSelecting = false;
         //Zmienia kolor przycisku na nieaktywny
-        _castSpellButton.GetComponent<Image>().color = Color.white;
+        _castSpellButton.GetComponent<UnityEngine.UI.Image>().color = Color.white;
         _wantsToDispell = false;
 
         if (Unit.SelectedUnit != null)
@@ -550,7 +583,7 @@ public class MagicManager : MonoBehaviour
                 {
                     bool boolValue = value != 0;
                     field.SetValue(affectedStats, boolValue);
-                    Debug.Log($"{affectedStats.Name} otrzymał/a cechę {attributeName}: {(boolValue ? "aktywna" : "nieaktywna")}.");
+                    Debug.Log($"{affectedStats.Name} zyskuje cechę {attributeName}: {(boolValue ? "aktywna" : "nieaktywna")}.");
                 }
                 else if (field.FieldType == typeof(int))
                 {
@@ -562,13 +595,13 @@ public class MagicManager : MonoBehaviour
                             field.SetValue(affectedStats, newValue);
                             affectedStats.GetComponent<Unit>().DisplayUnitHealthPoints();
                             UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
-                            Debug.Log($"{affectedStats.Name} odzyskał/a {value} punktów tymczasowej Żywotności.");
+                            Debug.Log($"{affectedStats.Name} odzyskuje {value} punktów tymczasowej Żywotności.");
                         }
                     }
                     else
                     {
                         field.SetValue(affectedStats, (int)field.GetValue(affectedStats) + value);
-                        Debug.Log($"{affectedStats.Name} zmienił/a cechę {attributeName} o {value}.");
+                        Debug.Log($"{affectedStats.Name} zmienia cechę {attributeName} o {value}.");
                     }
 
                     if (attributeName == "NaturalArmor")
@@ -582,17 +615,33 @@ public class MagicManager : MonoBehaviour
         }
 
         // Uwzględnienie zasad specjalnych Tradycji Śmierci
-        if (spell.Arcane == "Tradycja Śmierci" && targetStats != spellcasterStats)
+        if (_shyishToggle.isOn && targetStats != spellcasterStats)
         {
             targetUnit.Fatiqued++;
             Debug.Log($"<color=#FF7F50>Poziom wyczerpania {targetStats.Name} wzrasta o 1, gdyż jest celem zaklęcia z Tradycji Śmierci.</color>");
         }
 
         // Uwzględnienie zasad specjalnych Tradycji Światła
-        if (spell.Arcane == "Tradycja Światła" && targetStats != spellcasterStats)
+        if (_hyshToggle.isOn && targetStats != spellcasterStats)
         {
             targetUnit.Blinded++;
             Debug.Log($"<color=#FF7F50>Poziom oślepienia {targetStats.Name} wzrasta o 1, gdyż jest celem zaklęcia z Tradycji Światła.</color>");
+        }
+
+        // Uwzględnienie zasad specjalnych Tradycji Życia
+        if (_ghyranToggle.isOn && targetStats.Daemonic == 0 && !targetStats.Undead && (targetUnit.Fatiqued != 0 || targetUnit.Bleeding != 0))
+        {
+            targetUnit.Fatiqued = 0;
+            targetUnit.Bleeding = 0;
+            Debug.Log($"<color=#FF7F50>{targetStats.Name} traci wszystkie poziomy wyczerpania i krwawienia, gdyż jest celem zaklęcia z Tradycji Życia.</color>");
+        }
+
+        // Uwzględnienie zasad specjalnych Tradycji Zwierząt ---------------------- DO UZUPEŁNIENIA, ŻEBY TO ZAUTOMATYZOWAĆ
+        if (_ghurToggle.isOn && spellcasterStats.Fear < 1)
+        {
+            //spellcasterStats.Fear++;
+            int duration = UnityEngine.Random.Range(1, 11);
+            Debug.Log($"{spellcasterStats.Name} zyskuje cechę Strach (1) na {duration} rund/y, ponieważ rzucił/a zzaklęcie z Tradycji Zwierząt. <color=red>Uwzględnij to manualnie.</color>");
         }
 
         //Zaklęcia zadające obrażenia
@@ -618,14 +667,36 @@ public class MagicManager : MonoBehaviour
             _ => hitLocation
         };
 
-        // Uwzględnienie zasad specjalnych Tradycji Światła (DODAĆ TU JESZCZE OŻYWIEŃCÓW, JEŚLI JUŻ WPROWADZĘ CECHĘ OŻYWIENIEC)
-        if (spell.Arcane == "Tradycja Światła" && targetStats.Daemonic != 0 && targetStats != spellcasterStats)
+        // Uwzględnienie zasad specjalnych Tradycji Światła lub Życia
+        if ((_hyshToggle.isOn || _ghyranToggle.isOn) && (targetStats.Daemonic != 0 || targetStats.Undead) && targetStats != spellcasterStats)
         {
-            damage += spellcasterStats.Int / 10;
+            bool isGhyran = _ghyranToggle.isOn;
+            int bonusDamage = isGhyran ? spellcasterStats.SW / 10 : spellcasterStats.Int / 10;
+            damage += bonusDamage;
+            spell.WtIgnoring = true;
+            spell.ArmourIgnoring = true;
+
+            string unitType = targetStats.Daemonic != 0 ? "Demoniczny" : "Ożywieniec";
+            string traditionName = isGhyran ? "Tradycji Życia" : "Tradycji Światła";
+
+            Debug.Log($"{targetStats.Name} otrzymuje {bonusDamage} dodatkowe obrażenia za cechę {unitType}, gdyż jest celem zaklęcia z {traditionName}.");
+        }
+
+        // Uwzględnienie zasad specjalnych Tradycji Życia
+        if (_ghyranToggle.isOn && (targetStats.Daemonic != 0 || targetStats.Undead) && targetStats != spellcasterStats)
+        {
+            damage += spellcasterStats.SW / 10;
             spell.WtIgnoring = true;
             spell.ArmourIgnoring = true;
             string unitType = targetStats.Daemonic != 0 ? "Demoniczny" : "Ożywieniec";
-            Debug.Log($"{targetStats.Name} otrzymuje {spellcasterStats.Int / 10} dodatkowe obrażenia za cechę {unitType}, gdyż jest celem zaklęcia z Tradycji Światła.");
+            Debug.Log($"{targetStats.Name} otrzymuje {spellcasterStats.Int / 10} dodatkowe obrażenia za cechę {unitType}, gdyż jest celem zaklęcia z Tradycji Życia.");
+        }
+
+        // Uwzględnienie zasad specjalnych Tradycji Ognia
+        if (_aqshyToggle.isOn)
+        {
+            targetStats.GetComponent<Unit>().Ablaze++;
+            Debug.Log($"<color=#FF7F50>Poziom podpalenia {targetStats.Name} wzrasta o 1, gdyż jest celem zaklęcia z Tradycji Ognia.</color>");
         }
 
         // Sprawdzamy zbroję
@@ -638,19 +709,54 @@ public class MagicManager : MonoBehaviour
         bool hasMetalArmor = armorByLocation.Any(weapon => weapon.Category == "chain" || weapon.Category == "plate");
         int metalArmorValue = armorByLocation.Where(armorItem => (armorItem.Category == "chain" || armorItem.Category == "plate") && armorItem.Armor - armorItem.Damage > 0).Sum(armorItem => armorItem.Armor - armorItem.Damage);
 
-        if (spell.ArmourIgnoring) armor = 0;
-        if (spell.MetalArmourIgnoring && hasMetalArmor)
+        if (spell.ArmourIgnoring || _ulguToggle.isOn) armor = 0;
+        if ((spell.MetalArmourIgnoring || _chamonToggle.isOn || _azyrToggle.isOn) && hasMetalArmor)
         {
             armor -= metalArmorValue;
 
             // Zwiększenie obrażeń o wartość metalowej zbroi
-            if(spell.Arcane == "Tradycja Metalu")
+            if(_chamonToggle.isOn)
             {
                 damage += metalArmorValue;
+                Debug.Log($"{targetStats.Name} otrzymuje {metalArmorValue} dodatkowe obrażenia za metalowy pancerz, gdyż jest celem zaklęcia z Tradycji Metalu.");
             }
         }
 
+        // Zadanie obrażeń 
         CombatManager.Instance.ApplyDamageToTarget(damage, armor, spellcasterStats, targetStats, targetStats.GetComponent<Unit>(), null, spell.WtIgnoring);
+
+        // Zastosowanie efektu Tradycji Niebios (obrażenia przeskakują na sąsiednie jednostki)
+        if (_azyrToggle.isOn)
+        {
+            Vector2 targetPos = targetStats.transform.position;
+            Vector2[] adjacentPositions = {
+                    targetPos + Vector2.right,
+                    targetPos + Vector2.left,
+                    targetPos + Vector2.up,
+                    targetPos + Vector2.down,
+                    targetPos + new Vector2(1, 1),
+                    targetPos + new Vector2(-1, -1),
+                    targetPos + new Vector2(-1, 1),
+                    targetPos + new Vector2(1, -1)
+                };
+
+            foreach (var pos in adjacentPositions)
+            {
+                Collider2D collider = Physics2D.OverlapPoint(pos);
+                if (collider != null)
+                {
+                    Unit adjacentUnit = collider.GetComponent<Unit>();
+                    if (adjacentUnit != null && adjacentUnit != targetStats.GetComponent<Unit>())
+                    {
+                        int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(spellcasterStats, adjacentUnit.GetComponent<Stats>(), hitLocation, rollResult);
+                        int electricDamage = (spellcasterStats.SW / 10) + UnityEngine.Random.Range(1, 11);
+                        Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {electricDamage} obrażeń spowodowanych ładunkiem elektrycznym zaklęcia z Tradycji Niebios.");
+
+                        CombatManager.Instance.ApplyDamageToTarget(electricDamage, adjacentUnitArmor, spellcasterStats, adjacentUnit.GetComponent<Stats>(), adjacentUnit, null, false);
+                    }
+                }
+            }
+        }
     }
     #endregion
 
@@ -754,6 +860,52 @@ public class MagicManager : MonoBehaviour
                 unit.ChannelingModifier = 0;
                 Debug.Log($"Wszystkie poziomy sukcesu zebrane w wyniku splatania magii przepadają.");
             }
+        }
+    }
+    #endregion
+
+    #region Arcanes special effects
+    private void OnArcaneToggleChanged(UnityEngine.UI.Toggle changedToggle, bool isOn)
+    {
+        if (!isOn) return;
+
+        foreach (var toggle in _arcanesToggles)
+        {
+            if (toggle != changedToggle)
+            {
+                toggle.isOn = false;
+            }
+        }
+    }
+
+    private void SetArcaneToggle(Spell spell)
+    {
+        switch (spell.Arcane)
+        {
+            case "Tradycja Ognia":
+                _aqshyToggle.isOn = true;
+                break;
+            case "Tradycja Niebios":
+                _azyrToggle.isOn = true;
+                break;
+            case "Tradycja Metalu":
+                _chamonToggle.isOn = true;
+                break;
+            case "Tradycja Bestii":
+                _ghurToggle.isOn = true;
+                break;
+            case "Tradycja Życia":
+                _ghyranToggle.isOn = true;
+                break;
+            case "Tradycja Światła":
+                _hyshToggle.isOn = true;
+                break;
+            case "Tradycja Śmierci":
+                _shyishToggle.isOn = true;
+                break;
+            case "Tradycja Cienia":
+                _ulguToggle.isOn = true;
+                break;
         }
     }
     #endregion

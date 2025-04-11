@@ -728,6 +728,7 @@ public class StatsData
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public bool Regeneration; // Regeneracja
     public int Terror; // Groza
+    public bool Undead; // Ożywieniec
     public int Ward; // Ochrona
 
     //STARE

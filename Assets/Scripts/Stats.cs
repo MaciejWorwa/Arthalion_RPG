@@ -128,6 +128,7 @@ public class Stats : MonoBehaviour
     public int NaturalArmor;
     public bool Regeneration; // Regeneracja
     public int Terror; // Groza
+    public bool Undead; // Ożywieniec
     public int Ward; // Ochrona
 
     //STARE

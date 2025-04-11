@@ -6,8 +6,7 @@
       "Type": [ "offensive", "magic-missile", "buff" ],
       "CastingNumber": 7,
       "Range": 1,
-      "Strength": 10,
-      "MetalArmourIgnoring": true
+      "Strength": 10
     },
     {
       "Name": "Dekoncentracja",
@@ -62,14 +61,6 @@
     {
       "Name": "Pocisk",
       "Arcane": "Magia powszechna",
-      "Type": [ "offensive", "magic-missile" ],
-      "CastingNumber": 4,
-      "Range": 1,
-      "Strength": 4
-    },
-    {
-      "Name": "Pocisk Hysh TEMP",
-      "Arcane": "Tradycja Światła",
       "Type": [ "offensive", "magic-missile" ],
       "CastingNumber": 4,
       "Range": 1,

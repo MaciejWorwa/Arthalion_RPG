@@ -374,12 +374,12 @@ public class MovementManager : MonoBehaviour
         }
 
         //Sprawdza, czy jednostka może wykonać bieg lub szarże
-        if ((modifier == 2 || modifier == 3) && !unit.CanDoAction)
+        if (modifier > 1 && !unit.CanDoAction)
         {
             Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
             yield break;
         }
-        else if (modifier == 3 && stats.Race == "Zombie")
+        else if (modifier > 1 && stats.Race == "Zombie")
         {
             Debug.Log("Ta jednostka nie może wykonywać akcji biegu.");
             yield break;
@@ -394,9 +394,6 @@ public class MovementManager : MonoBehaviour
             CombatManager.Instance.ChangeAttackType("StandardAttack"); //Resetuje szarże jako obecny typ ataku i ustawia standardowy atak
         }
 
-        //Oblicza obecną szybkość
-        stats.TempSz *= modifier;
-
         if (unit.IsRunning)
         {
             int rollResult = 0;
@@ -409,10 +406,17 @@ public class MovementManager : MonoBehaviour
                 //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
+            //Oblicza obecną szybkość
+            stats.TempSz *= modifier;
             stats.TempSz += DiceRollManager.Instance.TestSkill("Zw", stats, "Athletics", 20, rollResult)[1] / 2;
 
             //Uwzględnia talent Szybkobiegacz
             stats.TempSz += stats.Sprinter;
+        }
+        else
+        {
+            //Oblicza obecną szybkość
+            stats.TempSz *= modifier;
         }
 
         // Uwzględnia ogłuszenie i powalenie
@@ -531,7 +535,7 @@ public class MovementManager : MonoBehaviour
                         if (!collider.CompareTag(allyTag) && !opponentsUnits.Contains(collider.GetComponent<Unit>()) && InventoryManager.Instance.ChooseWeaponToAttack(collider.gameObject).Type.Contains("melee"))
                         {
                             opponentsUnits.Add(collider.GetComponent<Unit>());
-                            Debug.Log($"dodajemy {collider.GetComponent<Stats>().Name} do listy jednostek, ktore będą wykonywaly atak okazyjny");
+                            Debug.Log($"Dodajemy {collider.GetComponent<Stats>().Name} do listy jednostek, ktore będą wykonywały atak okazyjny");
                         }
                     }
                 }
@@ -551,9 +555,6 @@ public class MovementManager : MonoBehaviour
                     {
                         yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie", result => rollOnAttack = result));
                         if (rollOnAttack == 0) yield break;
-
-                        //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie"));
-                        //rollOnAttack = DiceRollManager.Instance.ManualRollResult;
                     }
                     else
                     {
