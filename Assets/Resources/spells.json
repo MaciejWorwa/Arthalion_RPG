@@ -45,6 +45,24 @@
       "Strength": 0
     },
     {
+      "Name": "Natchnienie",
+      "Arcane": "Tradycja Światła",
+      "Type": [ "buff", "self-only" ],
+      "CastingNumber": 8,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        {
+          "Key": "Int",
+          "Value": 20
+        },
+        {
+          "Key": "I",
+          "Value": 20
+        }
+      ]
+    },
+    {
       "Name": "Pancerz Eteru",
       "Arcane": "Magia powszechna",
       "Type": [ "buff", "self-only" ],
@@ -95,6 +113,60 @@
         {
           "Key": "Fear",
           "Value": 1
+        }
+      ]
+    },
+    {
+      "Name": "Regeneracja",
+      "Arcane": "Tradycja Życia",
+      "Type": [ "buff" ],
+      "CastingNumber": 6,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        {
+          "Key": "Regeneration",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Name": "Skóra łowcy",
+      "Arcane": "Tradycja Zwierząt",
+      "Type": [ "buff", "self-only" ],
+      "CastingNumber": 6,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        {
+          "Key": "Wt",
+          "Value": 20
+        },
+        {
+          "Key": "Fear",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Name": "Skóra z kory",
+      "Arcane": "Tradycja Życia",
+      "Type": [ "buff" ],
+      "CastingNumber": 3,
+      "Range": 1.5,
+      "Duration": 1,
+      "Attributes": [
+        {
+          "Key": "NaturalArmor",
+          "Value": 2
+        },
+        {
+          "Key": "Zr",
+          "Value": -10
+        },
+        {
+          "Key": "Zw",
+          "Value": -10
         }
       ]
     },
