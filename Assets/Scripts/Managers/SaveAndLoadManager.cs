@@ -595,6 +595,12 @@ public class SaveAndLoadManager : MonoBehaviour
             inventory.SilverCoins = inventoryData.SilverCoins;
             inventory.GoldCoins = inventoryData.GoldCoins;
 
+            // Odtworzenie zapisanych efektów zaklęć
+            if (statsData.ActiveSpellEffects != null && statsData.ActiveSpellEffects.Count > 0)
+            {
+                unitGameObject.GetComponent<Stats>().ActiveSpellEffects = statsData.ActiveSpellEffects.Select(seData => seData.ToSpellEffect()).ToList();
+            }
+
             // Wczytanie tokena, jeśli istnieje
             if (File.Exists(tokenJsonPath))
             {
@@ -687,6 +693,10 @@ public class SaveAndLoadManager : MonoBehaviour
 
         foreach (FieldInfo dataField in dataFields)
         {
+            // Pomijamy pole ActiveSpellEffects, aby nie próbować przypisywać List<SpellEffectData> do List<SpellEffect>
+            if (dataField.Name == "ActiveSpellEffects")
+                continue;
+
             FieldInfo componentField = componentFields.FirstOrDefault(f => f.Name == dataField.Name);
             if (componentField != null)
             {

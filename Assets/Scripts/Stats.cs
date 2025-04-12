@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 public enum SizeCategory
@@ -148,6 +149,8 @@ public class Stats : MonoBehaviour
     public int RoundsPlayed; // Suma rozegranych rund
     public int FortunateEvents; // Ilość "Szczęść"
     public int UnfortunateEvents; // Ilość "Pechów"
+
+    public List<SpellEffect> ActiveSpellEffects = new List<SpellEffect>();
 
     private void Awake()
     {
@@ -407,7 +410,66 @@ public class Stats : MonoBehaviour
 
         return overall;
     }
+    public int GetEffectiveStat(string statName)
+    {
+        int baseValue = 0;
+        // Pobieramy bazową wartość danej statystyki – można odnieść się do właściwego pola
+        FieldInfo field = this.GetType().GetField(statName, BindingFlags.Public | BindingFlags.Instance);
+        if (field != null && field.FieldType == typeof(int))
+        {
+            baseValue = (int)field.GetValue(this);
+        }
 
+        // Sumujemy wszystkie modyfikatory, które dotyczą danej statystyki
+        int modifierSum = ActiveSpellEffects
+                            .Where(effect => effect.StatModifiers.ContainsKey(statName))
+                            .Sum(effect => effect.StatModifiers[statName]);
+
+        return baseValue + modifierSum;
+    }
+
+    public void UpdateSpellEffects()
+    {
+        for (int i = ActiveSpellEffects.Count - 1; i >= 0; i--)
+        {
+            SpellEffect effect = ActiveSpellEffects[i];
+            effect.RemainingRounds--;
+
+            if (effect.RemainingRounds <= 0)
+            {
+                // Odwrócenie działania efektu – dla każdej modyfikowanej statystyki odejmujemy wartość buffa.
+                foreach (var mod in effect.StatModifiers)
+                {
+                    FieldInfo field = this.GetType().GetField(mod.Key, BindingFlags.Public | BindingFlags.Instance);
+                    if (field != null && field.FieldType == typeof(int))
+                    {
+                        int currentValue = (int)field.GetValue(this);
+                        field.SetValue(this, currentValue - mod.Value);
+                    }
+                    if (field != null && field.FieldType == typeof(bool))
+                    {
+                        // Załóżmy, że w słowniku mod.Value == 1 oznacza, że buff włączył daną cechę
+                        // Aby odwrócić, ustawiamy ją na false – oczywiście, jeśli oryginalna wartość była false.
+                        // Jeśli mogło być też true – trzeba to odpowiednio przechowywać (np. jako dodatkowe pole w SpellEffect).
+                        field.SetValue(this, false);
+                    }
+
+                    if (field.Name == "NaturalArmor")
+                    {
+                        InventoryManager.Instance.CheckForEquippedWeapons();
+                    }
+
+                }
+                Debug.Log($"Efekt zaklęcia {effect.SpellName} oddziałujący na {Name} wygasł.");
+                ActiveSpellEffects.RemoveAt(i);
+            }
+        }
+
+        if(Unit.SelectedUnit != null)
+        {
+            UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
+        }
+    }
 
     //Zwraca kopię tej klasy
     public Stats Clone()

@@ -65,6 +65,7 @@ public class RoundsManager : MonoBehaviour
             InitiativeQueueManager.Instance.CalculateAdvantageBasedOnDominance();
         }
 
+
         //Resetuje ilość dostępnych akcji dla wszystkich jednostek
         foreach (Unit unit in UnitsManager.Instance.AllUnits)
         {
@@ -100,14 +101,19 @@ public class RoundsManager : MonoBehaviour
                 unit.CanDispell = true;
             }
 
-            if (unit.SpellDuration > 0)
-            {
-                unit.SpellDuration--;
+            //if (unit.SpellDuration > 0)
+            //{
+            //    unit.SpellDuration--;
 
-                if (unit.SpellDuration == 0)
-                {
-                    MagicManager.Instance.ResetSpellEffect(unit);
-                }
+            //    if (unit.SpellDuration == 0)
+            //    {
+            //        MagicManager.Instance.ResetSpellEffect(unit);
+            //    }
+            //}
+
+            if(stats.ActiveSpellEffects != null && stats.ActiveSpellEffects.Count != 0)
+            {
+                stats.UpdateSpellEffects();
             }
 
             if (unit.EntangledUnitId != 0)

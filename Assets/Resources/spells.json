@@ -63,6 +63,24 @@
       ]
     },
     {
+      "Name": "WW + 30, WT + 30",
+      "Arcane": "Tradycja Światła",
+      "Type": [ "buff" ],
+      "CastingNumber": 1,
+      "Range": 10,
+      "Duration": 1,
+      "Attributes": [
+        {
+          "Key": "WW",
+          "Value": 30
+        },
+        {
+          "Key": "Wt",
+          "Value": 30
+        }
+      ]
+    },
+    {
       "Name": "Pancerz Eteru",
       "Arcane": "Magia powszechna",
       "Type": [ "buff", "self-only" ],

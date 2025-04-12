@@ -44,7 +44,6 @@ public class MagicManager : MonoBehaviour
 
     public GameObject Target;
     private List<Stats> _targetsStats; // Lista jednostek, które są wybierane jako cele zaklęcia, które pozwala wybrać więcej niż jeden cel
-    public List<Stats> UnitsStatsAffectedBySpell; // Lista jednostek, na które w danym momencie wpływa jakieś zaklęcie z czasem trwania, np. Pancerz Eteru
 
     [Header("Panele do manualnego zarządzania")]
     [SerializeField] private GameObject _dispellPanel;
@@ -85,7 +84,6 @@ public class MagicManager : MonoBehaviour
         DataManager.Instance.LoadAndUpdateSpells();
 
         _targetsStats = new List<Stats>();
-        UnitsStatsAffectedBySpell = new List<Stats>();
 
         _arcanesToggles = new List<UnityEngine.UI.Toggle> {
         _aqshyToggle, _azyrToggle, _chamonToggle,
@@ -298,6 +296,7 @@ public class MagicManager : MonoBehaviour
         {
             Debug.Log("Cel znajduje się poza zasięgiem zaklęcia.");
             ResetSpellCasting();
+            unit.CanCastSpell = true;
             yield break;
         }
 
@@ -318,6 +317,7 @@ public class MagicManager : MonoBehaviour
         {
             Debug.Log("W obszarze działania zaklęcia musi znaleźć się odpowiedni cel.");
             ResetSpellCasting();
+            unit.CanCastSpell = true;
             yield break;
         }
 
@@ -467,36 +467,6 @@ public class MagicManager : MonoBehaviour
             GridManager.Instance.HighlightTilesInMovementRange(Unit.SelectedUnit.GetComponent<Stats>());
         }
     }
-
-    public void ResetSpellEffect(Unit unit)
-    {
-        for (int i = 0; i < UnitsStatsAffectedBySpell.Count; i++)
-        {
-            if (unit.UnitId == UnitsStatsAffectedBySpell[i].GetComponent<Unit>().UnitId)
-            {
-                // Przywraca pierwotne wartości dla cech int i bool. 
-                FieldInfo[] fields = typeof(Stats).GetFields(BindingFlags.Public | BindingFlags.Instance);
-                foreach (FieldInfo field in fields)
-                {
-                    // Celowo pomija obecne punkty żywotności, bo mogły ulec zmianie w trakcie działania zaklęcia.
-                    if (field.Name == "TempHealth") continue;
-
-                    object currentValue = field.GetValue(unit.GetComponent<Stats>());
-                    object originalValue = field.GetValue(UnitsStatsAffectedBySpell[i]);
-
-                    if (!Equals(currentValue, originalValue))
-                    {
-                        field.SetValue(unit.GetComponent<Stats>(), originalValue);
-                    }
-                }
-
-                UnitsStatsAffectedBySpell.RemoveAt(i);
-                break; // zakończ pętlę po znalezieniu i usunięciu pasującego wpisu
-            }
-        }
-
-        UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
-    }
     #endregion
 
     #region Handle spell effect
@@ -507,17 +477,40 @@ public class MagicManager : MonoBehaviour
         //Uwzględnienie czasu trwania zaklęcia, które wpływa na statystyki postaci
         if (spell.Duration != 0 && spell.Type.Contains("buff"))
         {
-            //Zakończenie wpływu poprzedniego zaklęcia, jeżeli na wybraną jednostkę już jakieś działało. JEST TO ZROBIONE TYMCZASOWO. TEN LIMIT ZOSTAŁ WPROWADZONY DLA UPROSZCZENIA KODU.
-            if (UnitsStatsAffectedBySpell != null && UnitsStatsAffectedBySpell.Any(stat => stat.GetComponent<Unit>().UnitId == targetUnit.UnitId))
+            // Obliczenie czasu trwania efektu – przykładowo modyfikowany przez Siłę Woli (SW)
+            int effectDuration = spell.Duration * (spellcasterStats.SW / 10);
+
+            // Przygotowanie słownika modyfikacji – iterujemy po liście atrybutów, które zaklęcie ma zmieniać
+            Dictionary<string, int> modifications = new Dictionary<string, int>();
+
+            // Przykładowa logika: dla każdego atrybutu pobieramy klucz i wartość
+            // Jeśli chcemy skalować pierwszy atrybut przez SW, można to zrobić warunkowo
+            for (int i = 0; i < spell.Attributes.Count; i++)
             {
-                ResetSpellEffect(targetUnit);
-                Debug.Log($"Poprzednie zaklęcie wpływające na {targetStats.Name} zostało zresetowane. W obecnej wersji symulatora nie ma możliwości kumulowania efektów wielu zaklęć.");
+                string attributeName = spell.Attributes[i].Key;
+                int baseModifier = spell.Attributes[i].Value;
+
+                // Jeśli to pierwszy atrybut i zaklęcie ma skalowanie przez SW
+                if (i == 0 && spell.Type.Contains("attribute-scaling-by-SW"))
+                {
+                    baseModifier *= spellcasterStats.SW / 10;
+                }
+                modifications[attributeName] = baseModifier;
             }
 
-            // Czas trwania zaklęcia zazwyczaj opiera się na mnożniku bonusu z Siły Woli
-            targetUnit.SpellDuration = spell.Duration * (spellcasterStats.SW / 10);
+            // Jeśli efekt dotyczy jednostki, która już ma jakiś efekt tego samego zaklęcia, możesz zdecydować czy mają się kumulować,
+            // czy nadpisywać – poniżej przykład, gdzie zawsze nadpisujemy poprzedni efekt z danego spellName.
+            var existingEffect = targetStats.ActiveSpellEffects.FirstOrDefault(e => e.SpellName == spell.Name);
+            if (existingEffect != null)
+            {
+                existingEffect.RemainingRounds = effectDuration;
+                Debug.Log($"Nadpisujemy poprzedni efekt zaklęcia {spell.Name} u {targetStats.Name}.");
+                yield break;
+            }
 
-            UnitsStatsAffectedBySpell.Add(targetStats.Clone());
+            // Tworzymy nowy efekt
+            SpellEffect newEffect = new SpellEffect(spell.Name, effectDuration, modifications);
+            targetStats.ActiveSpellEffects.Add(newEffect);
         }
 
         // Uwzględnienie testu obronnego
@@ -553,13 +546,6 @@ public class MagicManager : MonoBehaviour
         }
         else if (spell.Attributes != null && spell.Attributes.Count > 0)
         {
-            Debug.Log($"Debug atrybutów dla zaklęcia {spell.Name}:");
-
-            foreach (var attribute in spell.Attributes)
-            {
-                Debug.Log($"- {attribute.Key}: {attribute.Value}");
-            }
-
             // Konwersja listy Attributes do listy kluczy
             var keys = spell.Attributes.Select(a => a.Key).ToList(); // Używamy LINQ, aby uzyskać listę kluczy
             for (int i = 0; i < keys.Count; i++)
@@ -601,7 +587,7 @@ public class MagicManager : MonoBehaviour
                     else
                     {
                         field.SetValue(affectedStats, (int)field.GetValue(affectedStats) + value);
-                        Debug.Log($"{affectedStats.Name} zmienia cechę {attributeName} o {value}.");
+                        Debug.Log($"Zaklęcie {spell.Name} zmienia u {affectedStats.Name} cechę {attributeName} o {value}.");
                     }
 
                     if (attributeName == "NaturalArmor")

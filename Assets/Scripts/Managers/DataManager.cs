@@ -174,7 +174,8 @@ public class DataManager : MonoBehaviour
             FieldInfo[] fields = typeof(StatsData).GetFields(BindingFlags.Instance | BindingFlags.Public);
             foreach (var field in fields)
             {
-                if (field.Name == "Name") continue; //NIE WIEM, CZY TO MA SENS
+                if (field.Name == "Name" || field.Name == "ActiveSpellEffects")
+                    continue; // pomiń pola, których nie chcemy kopiować refleksyjnie
                 var targetField = typeof(Stats).GetField(field.Name, BindingFlags.Instance | BindingFlags.Public);
                 targetField?.SetValue(statsToUpdate, field.GetValue(statsData));
             }
@@ -757,36 +758,46 @@ public class StatsData
     public int FortunateEvents; // Ilość "Szczęść"
     public int UnfortunateEvents; // Ilość "Pechów"
 
+    // lista efektów zaklęcia
+    public List<SpellEffectData> ActiveSpellEffects = new List<SpellEffectData>();
+
     public StatsData(Stats stats)
     {
-        // Pobiera wszystkie pola (zmienne) z klasy Stats
         var fields = stats.GetType().GetFields();
         var thisFields = this.GetType().GetFields();
 
         foreach (var thisField in thisFields)
         {
-            var field = fields.FirstOrDefault(f => f.Name == thisField.Name);
+            // Pomijamy pole ActiveSpellEffects, bo wykonamy je ręcznie
+            if (thisField.Name == "ActiveSpellEffects")
+                continue;
 
+            var field = fields.FirstOrDefault(f => f.Name == thisField.Name);
             if (field != null && field.GetValue(stats) != null)
             {
                 if (thisField.FieldType == typeof(List<string>) && field.FieldType == typeof(List<string>))
                 {
-                    // Specjalne przypisanie dla listy
                     var listValue = (List<string>)field.GetValue(stats);
                     thisField.SetValue(this, new List<string>(listValue));
                 }
                 else
                 {
-                    // Standardowe przypisanie
                     thisField.SetValue(this, field.GetValue(stats));
                 }
             }
         }
 
-        // Przekonwertuj słowniki na listy dla JSON
+        // Konwersja słowników w formie list
         MeleeSerialized = stats.Melee.Select(kvp => new Pair { Key = kvp.Key.ToString(), Value = kvp.Value }).ToList();
         RangedSerialized = stats.Ranged.Select(kvp => new Pair { Key = kvp.Key.ToString(), Value = kvp.Value }).ToList();
+
+        // Ręczna konwersja aktywnych efektów zaklęć
+        if (stats.ActiveSpellEffects != null && stats.ActiveSpellEffects.Count > 0)
+        {
+            ActiveSpellEffects = stats.ActiveSpellEffects.Select(e => new SpellEffectData(e)).ToList();
+        }
     }
+
 }
 
 //Klasa pomocnicza do zapisywania słowników
@@ -970,6 +981,32 @@ public class SpellData
 }
 
 [System.Serializable]
+public class SpellEffectData
+{
+    public string SpellName;
+    public int RemainingRounds;
+    // Używamy listy Pair, gdzie Pair ma pola Key (string) i Value (int)
+    public List<Pair> StatModifiers;
+
+    public SpellEffectData() { }
+
+    public SpellEffectData(SpellEffect effect)
+    {
+        SpellName = effect.SpellName;
+        RemainingRounds = effect.RemainingRounds;
+        StatModifiers = effect.StatModifiers.Select(kvp => new Pair { Key = kvp.Key, Value = kvp.Value }).ToList();
+    }
+
+    // Metoda pomocnicza do odtworzenia obiektu SpellEffect po wczytaniu
+    public SpellEffect ToSpellEffect()
+    {
+        Dictionary<string, int> modifiers = StatModifiers.ToDictionary(p => p.Key, p => p.Value);
+        return new SpellEffect(SpellName, RemainingRounds, modifiers);
+    }
+}
+
+
+[System.Serializable]
 public class AttributePair
 {
     public string Key;
@@ -1003,12 +1040,6 @@ public class InventoryData
                 EquippedWeaponsId[i] = inventory.EquippedWeapons[i].Id;
             }
         }
-
-        //foreach (var armor in inventory.AllArmors)
-        //{
-        //    ArmorData armorData = new ArmorData(armor);
-        //    AllArmors.Add(armorData);
-        //}
 
         foreach (var armor in inventory.EquippedArmors)
         {
@@ -1052,19 +1083,6 @@ public class InitiativeQueueManagerData
 {
     public int PlayersAdvantage;
     public int EnemiesAdvantage;
-
-    public List<StatsData> UnitsStatsAffectedBySpell = new List<StatsData>();
-
-    public InitiativeQueueManagerData()
-    {
-        PlayersAdvantage = InitiativeQueueManager.Instance.PlayersAdvantage;
-        EnemiesAdvantage = InitiativeQueueManager.Instance.EnemiesAdvantage;
-
-        foreach (Stats stats in MagicManager.Instance.UnitsStatsAffectedBySpell)
-        {
-            UnitsStatsAffectedBySpell.Add(new StatsData(stats));
-        }
-    }
 }
 
 [System.Serializable]
