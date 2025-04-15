@@ -1739,7 +1739,7 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Critical wounds
-    private IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, string hitLocation, Weapon attackerWeapon, int rollOnAttack = 0)
+    public IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, string hitLocation, Weapon attackerWeapon = null, int rollOnAttack = 0)
     {
         //TA METODA JEST DO ROZBUDOWANIA. Można dodać konkretne dodatkowe efekty np. ogłuszenie, krwawienie itp. w zależności również od lokacji
 
@@ -1792,7 +1792,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Uwzględnienie cechy broni "Sieczna"
-        if (attackerWeapon.Slash > 0 && _isTrainedWeaponCategory)
+        if (attackerWeapon != null && attackerWeapon.Slash > 0 && _isTrainedWeaponCategory)
         {
             targetStats.GetComponent<Unit>().Bleeding++;
             Debug.Log($"<color=#FF7F50>Atak bronią sieczną powoduje krwawienie u {targetStats.Name}. Możesz wydać {attackerWeapon.Slash} punkt/y przewagi, aby zwiększyć o 1 poziom tego krwawienia.</color>");
@@ -2450,16 +2450,16 @@ public class CombatManager : MonoBehaviour
             // - Atakować (próba przejęcia kontroli nad celem, jeśli jeszcze go nie trzyma)
             // - Poprawić chwyt
             // - Uciec – opcja dostępna tylko, gdy attacker sam ma Entangled > 0
-            _improveGrappleButton.gameObject.SetActive(true);
-            _escapeGrappleButton.gameObject.SetActive(attacker.Entangled > 0);
+            _improveGrappleButton.interactable = true;
+            _escapeGrappleButton.interactable = attacker.Entangled > 0;
         }
         else if (isGrappled)
         {
             // Jako pochwycony, attacker może:
             // - Atakować (próbując odwrócić sytuację, czyli „pochwycić” osobę chwytającą)
             // - Uciekać (opcję escape pokazujemy zawsze)
-            _improveGrappleButton.gameObject.SetActive(false);
-            _escapeGrappleButton.gameObject.SetActive(true);
+            _improveGrappleButton.interactable = false;
+            _escapeGrappleButton.interactable = true;
         }
 
         // Wyświetlenie panelu akcji i oczekiwanie na wybór gracza

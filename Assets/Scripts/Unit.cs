@@ -1,7 +1,9 @@
 using NUnit.Framework;
 using System.Collections.Generic;
 using TMPro;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 public class Unit : MonoBehaviour
 {
@@ -134,7 +136,12 @@ public class Unit : MonoBehaviour
         else if (Input.GetMouseButtonUp(1) && SelectedUnit != null && MagicManager.IsTargetSelecting)
         {
             //StartCoroutine(MagicManager.Instance.CastSpell(this.gameObject));
-            MagicManager.Instance.Target = this.gameObject;
+            MagicManager.Instance.Targets.Add(this.gameObject);
+
+            if(SelectedUnit.GetComponent<Spell>() != null && MagicManager.Instance.Targets.Count < SelectedUnit.GetComponent<Spell>().Targets)
+            {
+                Debug.Log($"Wskaż kolejny cel. Musisz wybrać {SelectedUnit.GetComponent<Spell>().Targets} unikalnych celów. Wybrano {MagicManager.Instance.Targets.Count}.");
+            }
         }
     }
     public void SelectUnit()

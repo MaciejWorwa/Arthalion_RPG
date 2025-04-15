@@ -13,6 +13,7 @@ public class Spell : MonoBehaviour
     public int Strength; // si³a zaklêcia
     public int AreaSize; // obszar dzia³ania
     public int Duration; // czas trwania zaklêcia
+    public int Targets; // iloœæ celów
 
     public bool SaveTestRequiring; // okreœla, czy zaklêcie powoduje koniecznoœæ wykonania testu obronnego
     //public int AttributeValue; // okreœla o ile s¹ zmieniane cechy opisane w tabeli Attribute

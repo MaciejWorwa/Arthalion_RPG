@@ -946,6 +946,7 @@ public class SpellData
     public int Strength; // siła zaklęcia
     public int AreaSize; // obszar działania
     public int Duration; // czas trwania zaklęcia
+    public int Targets; // ilość celów
 
     public bool SaveTestRequiring; // określa, czy zaklęcie powoduje konieczność wykonania testu obronnego
     //public int AttributeValue; // określa o ile są zmieniane cechy opisane w tabeli Attribute
