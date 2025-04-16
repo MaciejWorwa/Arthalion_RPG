@@ -118,7 +118,7 @@ public class AnimationManager : MonoBehaviour
     }
 
     #region Unit actions animations
-    public IEnumerator PlayAnimation(String animationName, GameObject attacker = null, GameObject target = null, int damage = 0)
+    public IEnumerator PlayAnimation(string animationName, GameObject attacker = null, GameObject target = null, int damage = 0)
     {   
         if(GameManager.IsShowAnimationsMode == false) yield break;
 
@@ -151,7 +151,7 @@ public class AnimationManager : MonoBehaviour
                 animationObject.SetActive(false);
             }
         }
-        else if (animationName == "damage" && damage > 0 && target != null && target.GetComponent<Stats>().TempHealth >= 0)
+        else if (animationName == "damage" && damage > 0 && target != null)
         {
             animationObject = target.transform.Find("Animations/Damage_animation").gameObject;
             animationObject.SetActive(true);

@@ -4,6 +4,9 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using UnityEditor.Experimental.GraphView;
+using System.Linq;
 
 public class GridManager : MonoBehaviour
 {
@@ -256,10 +259,9 @@ public class GridManager : MonoBehaviour
     public void HighlightTilesInSpellArea(GameObject tileUnderCursor)
     {
         ResetColorOfTilesInMovementRange();
-
-        float areaSize = Unit.SelectedUnit.GetComponent<Spell>().AreaSize * (Unit.SelectedUnit.GetComponent<Stats>().SW / 10) / 2f;
+        Spell spell = Unit.SelectedUnit.GetComponent<Spell>();
+        float areaSize = spell.Type.Contains("constant-area-size") ? spell.AreaSize : spell.AreaSize * (Unit.SelectedUnit.GetComponent<Stats>().SW / 10) / 2f;
         Collider2D[] allColliders = Physics2D.OverlapCircleAll(tileUnderCursor.transform.position, areaSize);
-
         foreach (var collider in allColliders)
         {
             if (collider != null && collider.gameObject.CompareTag("Tile"))

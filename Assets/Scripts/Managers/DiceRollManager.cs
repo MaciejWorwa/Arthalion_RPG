@@ -215,10 +215,9 @@ public class DiceRollManager : MonoBehaviour
                 modifier -= encumbrancePenalty;
             }
         }
-
-        // Modyfikator za wyczerpanie
-        if (stats.GetComponent<Unit>().Fatiqued > 0) modifier -= stats.GetComponent<Unit>().Fatiqued * 10;
-        else if (stats.GetComponent<Unit>().Poison > 0) modifier -= 10;
+        
+        if (stats.GetComponent<Unit>().Fatiqued > 0) modifier -= stats.GetComponent<Unit>().Fatiqued * 10; // Modyfikator za wyczerpanie
+        else if (stats.GetComponent<Unit>().Poison > 0) modifier -= 10; // Modyfikator za truciznê
 
         // Modyfikator za dekoncentruj¹cego przeciwnika w pobli¿u
         foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)

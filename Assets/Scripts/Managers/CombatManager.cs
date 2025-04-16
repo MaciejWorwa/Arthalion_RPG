@@ -5,6 +5,7 @@ using System.Linq;
 using TMPro;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEditor;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class CombatManager : MonoBehaviour
@@ -636,7 +637,7 @@ public class CombatManager : MonoBehaviour
         else if(!opportunityAttack) // Zwykły atak bronią (w przypadku ataków okazyjnych nie można się bronić)
         {
             // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
-            canParry = (isMeleeAttack && target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("melee"))) || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2 || (attackerWeapon.Id == 0 && targetWeapon.Id == 0));
+            canParry = !targetStats.Bestial && (isMeleeAttack && target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("melee"))) || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2 || (attackerWeapon.Id == 0 && targetWeapon.Id == 0));
             canDodge = isMeleeAttack;
 
             if ((canParry || canDodge) && !target.Surprised)
@@ -744,19 +745,21 @@ public class CombatManager : MonoBehaviour
 
                 if (attackerStats.TempHealth < 0)
                 {
-                    if (attackerStats.Daemonic > 0)
-                    {
-                        Debug.Log($"<color=red>{attackerStats.Name} zostaje odesłany do domeny Chaosu.</color>");
-                    }
-                    else
-                    {
-                        StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, hitLocation, attackerWeapon, defenceRollResult));
-                    }
-
                     if (GameManager.IsAutoKillMode)
                     {
                         HandleDeath(attackerStats, attacker.gameObject, targetStats);
                     }
+                    else
+                    {
+                        if (attackerStats.Daemonic > 0)
+                        {
+                            Debug.Log($"<color=red>{attackerStats.Name} zostaje odesłany do domeny Chaosu.</color>");
+                        }
+                        else
+                        {
+                            StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, hitLocation, attackerWeapon, defenceRollResult));
+                        }
+                    }      
                 }
 
                 if (targetStats.RiposteAttacksLeft > 0) targetStats.RiposteAttacksLeft--;
@@ -909,18 +912,20 @@ public class CombatManager : MonoBehaviour
 
         if (targetStats.TempHealth < 0)
         {
-            if(targetStats.Daemonic > 0)
-            {
-                Debug.Log($"<color=red>{targetStats.Name} zostaje odesłany do domeny Chaosu.</color>");
-            }
-            else
-            {
-                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon));
-            }
-
             if (GameManager.IsAutoKillMode)
             {
                 HandleDeath(targetStats, target.gameObject, attackerStats);
+            }
+            else
+            {
+                if (targetStats.Daemonic > 0)
+                {
+                    Debug.Log($"<color=red>{targetStats.Name} zostaje odesłany do domeny Chaosu.</color>");
+                }
+                else
+                {
+                    StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon));
+                }
             }
         }
 
@@ -938,7 +943,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    public void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Stats targetStats, Unit target, Weapon attackerWeapon = null, bool ignoring_Wt = false)
+    public void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Stats targetStats, Unit target, Weapon attackerWeapon = null, bool ignoring_Wt = false, bool isCorrosiveBloodReaction = false)
     {
         int targetWt = ignoring_Wt ? 0 : targetStats.Wt / 10;
         int reducedDamage = armor + targetWt + targetStats.Robust;
@@ -957,7 +962,7 @@ public class CombatManager : MonoBehaviour
         else
         {
             // Jeśli atak nie przebił pancerza, ale broń NIE JEST tępa, to broń zadaje 1 obrażeń
-            if (attackerWeapon != null && !attackerWeapon.Undamaging)
+            if ((attackerWeapon != null && !attackerWeapon.Undamaging) || isCorrosiveBloodReaction)
             {
                 finalDamage = 1;
                 reducedDamage = damage - 1;
@@ -1023,7 +1028,7 @@ public class CombatManager : MonoBehaviour
             }
 
             // Resetuje splatanie magii
-            if(target.ChannelingModifier != 0)
+            if (target.ChannelingModifier != 0)
             {
                 Debug.Log($"Splatanie magii {targetStats.Name} zostało przerwane.");
 
@@ -1032,6 +1037,56 @@ public class CombatManager : MonoBehaviour
             }
 
             StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, target.gameObject, finalDamage));
+
+            // Uwzględnienie cechy "Jad"
+            if(attackerStats.Venom)
+            {
+                target.Poison++;
+                target.PoisonTestModifier = attackerStats.VenomModifier;
+
+                Debug.Log("target.PoisonTestModifier " + target.PoisonTestModifier);
+            }
+
+            // Uwzględnienie cechy "Kwasowa krew"
+            if (targetStats.CorrosiveBlood && !isCorrosiveBloodReaction)
+            {
+                Vector2 targetPos = targetStats.transform.position;
+                Vector2[] adjacentPositions = {
+                    targetPos + Vector2.right,
+                    targetPos + Vector2.left,
+                    targetPos + Vector2.up,
+                    targetPos + Vector2.down,
+                    targetPos + new Vector2(1, 1),
+                    targetPos + new Vector2(-1, -1),
+                    targetPos + new Vector2(-1, 1),
+                    targetPos + new Vector2(1, -1)
+                };
+
+                //Ustalamy miejsce trafienia
+                string hitLocation = DetermineHitLocation();
+
+                foreach (var pos in adjacentPositions)
+                {
+                    Collider2D collider = Physics2D.OverlapPoint(pos);
+                    if (collider != null)
+                    {
+                        Unit adjacentUnit = collider.GetComponent<Unit>();
+                        if (adjacentUnit != null && adjacentUnit != targetStats.GetComponent<Unit>())
+                        {
+                            int adjacentUnitArmor = CalculateArmor(targetStats, adjacentUnit.Stats, hitLocation, UnityEngine.Random.Range(1, 101));
+                            int acidDamage = UnityEngine.Random.Range(1, 11);
+                            Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {acidDamage} obrażeń spowodowanych kwasową krwią {targetStats.Name}.");
+
+                            ApplyDamageToTarget(acidDamage, adjacentUnitArmor, targetStats, adjacentUnit.Stats, adjacentUnit, null, false, true);
+
+                            if (adjacentUnit.Stats.TempHealth < 0 && GameManager.IsAutoKillMode)
+                            {
+                                HandleDeath(adjacentUnit.Stats, adjacentUnit.gameObject, targetStats);
+                            }
+                        }
+                    }
+                }
+            }
         }
         else
         {
@@ -1046,7 +1101,7 @@ public class CombatManager : MonoBehaviour
         if (targetStats.HighestDamageTaken < finalDamage) targetStats.HighestDamageTaken = finalDamage;
     }
 
-    public void HandleDeath(Stats targetStats, GameObject target, Stats attackerStats)
+    public void HandleDeath(Stats targetStats, GameObject target, Stats attackerStats = null)
     {
         // Zapobiega usunięciu postaci graczy, gdy statystyki przeciwników są ukryte
         if (GameManager.IsStatsHidingMode && targetStats.gameObject.CompareTag("PlayerUnit"))
@@ -1054,10 +1109,16 @@ public class CombatManager : MonoBehaviour
             return;
         }
 
-        StartCoroutine(AnimationManager.Instance.PlayAnimation("kill", attackerStats.gameObject, target));
-
         // Usuwanie jednostki
         UnitsManager.Instance.DestroyUnit(target);
+
+        if (attackerStats == null && Unit.SelectedUnit != null)
+        {
+            attackerStats = Unit.SelectedUnit.GetComponent<Stats>();
+        }
+        else if(attackerStats == null) return;
+
+        StartCoroutine(AnimationManager.Instance.PlayAnimation("kill", attackerStats.gameObject, target));
 
         // Aktualizacja podświetlenia pól w zasięgu ruchu atakującego
         GridManager.Instance.HighlightTilesInMovementRange(attackerStats);
@@ -2082,7 +2143,15 @@ public class CombatManager : MonoBehaviour
         // Wywołujemy logowanie
         Debug.Log($"Atak jest skierowany w {TranslateHitLocation(hitLocation)}.");
 
-        return hitLocation;
+        // Normalizujemy lokalizację trafienia
+        string normalizedHitLocation = hitLocation switch
+        {
+            "rightArm" or "leftArm" => "arms",
+            "rightLeg" or "leftLeg" => "legs",
+            _ => hitLocation
+        };
+
+        return normalizedHitLocation;
     }
 
     // Metoda do logowania trafienia po polsku
@@ -2104,15 +2173,7 @@ public class CombatManager : MonoBehaviour
 
     public int CalculateArmor(Stats attackerStats, Stats targetStats, string hitLocation, int attackRollResult, Weapon attackerWeapon = null)
     {
-        // Normalizujemy lokalizację trafienia
-        string normalizedHitLocation = hitLocation switch
-        {
-            "rightArm" or "leftArm" => "arms",
-            "rightLeg" or "leftLeg" => "legs",
-            _ => hitLocation
-        };
-
-        int armor = normalizedHitLocation switch
+        int armor = hitLocation switch
         {
             "head" => targetStats.Armor_head,
             "arms" => targetStats.Armor_arms,
@@ -2138,7 +2199,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Pobranie pancerza dla trafionej lokalizacji
-        List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(normalizedHitLocation) ? inventory.ArmorByLocation[normalizedHitLocation] : new List<Weapon>();
+        List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(hitLocation) ? inventory.ArmorByLocation[hitLocation] : new List<Weapon>();
 
         // Sprawdza, czy trafienie jest trafieniem krytycznym
         bool isCriticalHit = DiceRollManager.Instance.IsDoubleDigit(attackRollResult);

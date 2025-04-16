@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -334,7 +335,7 @@ public class MagicManager : MonoBehaviour
             }
 
             // Ustala obszar działania zaklęcia. Zwykle jest to mnożnik bonusu z Siły Woli
-            float areaSize = spell.AreaSize * (stats.SW / 10) / 2f;
+            float areaSize = spell.Type.Contains("constant-area-size") ? spell.AreaSize : spell.AreaSize * (stats.SW / 10) / 2f;
 
             // Pobiera wszystkie collidery w obszarze działania zaklęcia
             List<Collider2D> allTargets = Physics2D.OverlapCircleAll(target.transform.position, areaSize).ToList();
@@ -389,7 +390,7 @@ public class MagicManager : MonoBehaviour
                 bool canDodge = false;
 
                 // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
-                canParry = target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && (weapon.Type.Contains("melee") || weapon.Id == 0));
+                canParry = target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && !targetStats.Bestial && (weapon.Type.Contains("melee") || weapon.Id == 0));
                 canDodge = true;
                 Weapon targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target);
 
@@ -511,7 +512,7 @@ public class MagicManager : MonoBehaviour
         if (spell.Duration != 0 && spell.Type.Contains("buff"))
         {
             // Obliczenie czasu trwania efektu – przykładowo modyfikowany przez Siłę Woli (SW)
-            int effectDuration = spell.Duration * (spellcasterStats.SW / 10);
+            int effectDuration = spell.Type.Contains("constant-duration") ? spell.Duration : spell.Duration * (spellcasterStats.SW / 10);
 
             // Przygotowanie słownika modyfikacji – iterujemy po liście atrybutów, które zaklęcie ma zmieniać
             Dictionary<string, int> modifications = new Dictionary<string, int>();
@@ -524,7 +525,7 @@ public class MagicManager : MonoBehaviour
                 int baseModifier = spell.Attributes[i].Value;
 
                 // Jeśli to pierwszy atrybut i zaklęcie ma skalowanie przez SW
-                if (i == 0 && spell.Type.Contains("attribute-scaling-by-SW"))
+                if (i == 0 && spell.Type.Contains("scaling-by-SW"))
                 {
                     baseModifier *= spellcasterStats.SW / 10;
                 }
@@ -564,8 +565,15 @@ public class MagicManager : MonoBehaviour
                 saveRollResult = UnityEngine.Random.Range(1, 101);
             }
 
+            string skillName = null;
+            if(attributeName == "Dodge")
+            {
+                attributeName = "Zw";
+                skillName = "Dodge";
+            }
+
             // Test obronny przy użyciu TestSkill
-            int[] skillTestResults = DiceRollManager.Instance.TestSkill(attributeName, targetStats, null, 0, saveRollResult);
+            int[] skillTestResults = DiceRollManager.Instance.TestSkill(attributeName, targetStats, skillName, 0, saveRollResult);
 
             if (skillTestResults[0] < 0)
             {
@@ -580,14 +588,28 @@ public class MagicManager : MonoBehaviour
         else if (spell.Attributes != null && spell.Attributes.Count > 0)
         {
             // Konwersja listy Attributes do listy kluczy
-            var keys = spell.Attributes.Select(a => a.Key).ToList(); // Używamy LINQ, aby uzyskać listę kluczy
+            var keys = spell.Attributes.Select(a => a.Key).ToList();
+
             for (int i = 0; i < keys.Count; i++)
             {
                 string attributeName = keys[i];
-                int baseValue = spell.Attributes.First(a => a.Key == attributeName).Value; // Używamy First() zamiast bezpośredniego dostępu do słownika
+                int baseValue = spell.Attributes.First(a => a.Key == attributeName).Value;
 
                 Stats affectedStats = spell.Type.Contains("self-attribute") ? spellcasterStats : targetStats;
+                Unit affectedUnit = affectedStats.GetComponent<Unit>();
+
+                // Szukamy pola najpierw w Stats
                 FieldInfo field = affectedStats.GetType().GetField(attributeName);
+
+                object targetObject = affectedStats;
+
+                // Jeśli nie znaleziono w Stats, próbujemy znaleźć w Unit
+                if (field == null && affectedUnit != null)
+                {
+                    field = affectedUnit.GetType().GetField(attributeName);
+                    targetObject = affectedUnit;
+                }
+
                 if (field == null) continue;
 
                 int value = baseValue;
@@ -601,25 +623,26 @@ public class MagicManager : MonoBehaviour
                 if (field.FieldType == typeof(bool))
                 {
                     bool boolValue = value != 0;
-                    field.SetValue(affectedStats, boolValue);
+                    field.SetValue(targetObject, boolValue);
                     Debug.Log($"{affectedStats.Name} zyskuje cechę {attributeName}: {(boolValue ? "aktywna" : "nieaktywna")}.");
                 }
                 else if (field.FieldType == typeof(int))
                 {
-                    if (attributeName == "TempHealth")
+                    if (attributeName == "TempHealth" && targetObject is Stats)
                     {
                         int newValue = (int)field.GetValue(affectedStats) + value;
                         if (newValue <= affectedStats.MaxHealth)
                         {
                             field.SetValue(affectedStats, newValue);
-                            affectedStats.GetComponent<Unit>().DisplayUnitHealthPoints();
+                            affectedUnit.DisplayUnitHealthPoints();
                             UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
                             Debug.Log($"{affectedStats.Name} odzyskuje {value} punktów tymczasowej Żywotności.");
                         }
                     }
                     else
                     {
-                        field.SetValue(affectedStats, (int)field.GetValue(affectedStats) + value);
+                        int current = (int)field.GetValue(targetObject);
+                        field.SetValue(targetObject, current + value);
                         Debug.Log($"Zaklęcie {spell.Name} zmienia u {affectedStats.Name} cechę {attributeName} o {value}.");
                     }
 
@@ -672,19 +695,11 @@ public class MagicManager : MonoBehaviour
 
     private void DealMagicDamage(Stats spellcasterStats, Stats targetStats, Spell spell, int rollResult, int successLevel)
     {
-        int damage = successLevel + spell.Strength;
+        int damage = spell.Type.Contains("constant-strength") ? spell.Strength : successLevel + spell.Strength;
         Debug.Log($"Poziom sukcesu {spellcasterStats.Name}: {successLevel}. Siła zaklęcia: {spell.Strength}");
 
         //Ustalamy miejsce trafienia
         string hitLocation = !String.IsNullOrEmpty(CombatManager.Instance.HitLocation) ? CombatManager.Instance.HitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollResult) ? CombatManager.Instance.DetermineHitLocation() : CombatManager.Instance.DetermineHitLocation(rollResult));
-
-        // Normalizujemy lokalizację trafienia
-        string normalizedHitLocation = hitLocation switch
-        {
-            "rightArm" or "leftArm" => "arms",
-            "rightLeg" or "leftLeg" => "legs",
-            _ => hitLocation
-        };
 
         // Uwzględnienie zasad specjalnych Tradycji Światła lub Życia
         if ((_hyshToggle.isOn || _ghyranToggle.isOn) && (targetStats.Daemonic != 0 || targetStats.Undead) && targetStats != spellcasterStats)
@@ -722,7 +737,7 @@ public class MagicManager : MonoBehaviour
         int armor = CombatManager.Instance.CalculateArmor(spellcasterStats, targetStats, hitLocation, rollResult);
 
         // Pobranie pancerza dla trafionej lokalizacji
-        List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(normalizedHitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[normalizedHitLocation] : new List<Weapon>();
+        List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(hitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[hitLocation] : new List<Weapon>();
 
         // Sprawdzenie, czy żadna część pancerza nie jest metalowa
         bool hasMetalArmor = armorByLocation.Any(weapon => weapon.Category == "chain" || weapon.Category == "plate");
@@ -743,6 +758,25 @@ public class MagicManager : MonoBehaviour
 
         // Zadanie obrażeń 
         CombatManager.Instance.ApplyDamageToTarget(damage, armor, spellcasterStats, targetStats, targetStats.GetComponent<Unit>(), null, spell.WtIgnoring);
+
+        if (targetStats.TempHealth < 0)
+        {
+            if (GameManager.IsAutoKillMode)
+            {
+                CombatManager.Instance.HandleDeath(targetStats, targetStats.gameObject, null);
+            }
+            else
+            {
+                if (targetStats.Daemonic > 0)
+                {
+                    Debug.Log($"<color=red>{targetStats.Name} zostaje odesłany do domeny Chaosu.</color>");
+                }
+                else
+                {
+                    StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, hitLocation, null, rollResult));
+                }
+            }
+        }
 
         // Zastosowanie efektu Tradycji Niebios (obrażenia przeskakują na sąsiednie jednostki)
         if (_azyrToggle.isOn)
@@ -771,7 +805,7 @@ public class MagicManager : MonoBehaviour
                         int electricDamage = (spellcasterStats.SW / 10) + UnityEngine.Random.Range(1, 11);
                         Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {electricDamage} obrażeń spowodowanych ładunkiem elektrycznym zaklęcia z Tradycji Niebios.");
 
-                        CombatManager.Instance.ApplyDamageToTarget(electricDamage, adjacentUnitArmor, spellcasterStats, adjacentUnit.GetComponent<Stats>(), adjacentUnit, null, false);
+                        CombatManager.Instance.ApplyDamageToTarget(electricDamage, adjacentUnitArmor, spellcasterStats, adjacentUnit.GetComponent<Stats>(), adjacentUnit);
                     }
                 }
             }

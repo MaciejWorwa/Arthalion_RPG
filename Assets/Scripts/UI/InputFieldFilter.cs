@@ -6,6 +6,7 @@ public class InputFieldFilter : MonoBehaviour
 {
     [SerializeField] private TMP_InputField _inputField;
     [SerializeField] private bool _isAttributeInput;
+    [SerializeField] private bool _isTwoDigitNumber;
     [SerializeField] private bool _isMoneyInput;
     [SerializeField] private bool _isDiceRoll;
 
@@ -34,6 +35,28 @@ public class InputFieldFilter : MonoBehaviour
                 return addedChar;
             }
             return '\0';
+        }
+        else if (_isTwoDigitNumber)
+        {
+            // Pozwól na minus tylko jako pierwszy znak
+            if (addedChar == '-' && text.Length == 0)
+            {
+                return addedChar;
+            }
+
+            // Pozwól na cyfry
+            if (char.IsDigit(addedChar))
+            {
+                // Długość bez minusa
+                int digitCount = text.StartsWith("-") ? text.Length - 1 : text.Length;
+
+                if (digitCount < 2)
+                {
+                    return addedChar;
+                }
+            }
+
+            return '\0'; // Inne znaki są niedozwolone
         }
         else if (_isMoneyInput)
         {

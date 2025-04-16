@@ -31,6 +31,7 @@ public class Unit : MonoBehaviour
     public int Entangled; // Pochwycenie
     public int Fatiqued; // Wyczerpanie
     public int Poison; // Zatrucie
+    public int PoisonTestModifier; // Modyfikator do testów przeciw zatruciu (zależny od mocy trucizny)
     public bool Prone; // Powalenie
     public int Stunned; // Oszołomienie
     public bool Surprised; // Zaskoczenie
@@ -67,7 +68,7 @@ public class Unit : MonoBehaviour
 
     void Start()
     {
-        Stats = gameObject.GetComponent<Stats>();
+        Stats = GetComponent<Stats>();
 
         DisplayUnitName();
 

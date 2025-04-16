@@ -2,6 +2,7 @@ using System.Collections;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 public class StatesManager : MonoBehaviour
 {
@@ -84,9 +85,6 @@ public class StatesManager : MonoBehaviour
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "śmierć w wyniku krwawienia", result => rollResult = result));
                 if (rollResult == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "śmierć w wyniku krwawienia"));
-                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
             int rollDifficulty = unit.Bleeding * 10;
@@ -131,9 +129,6 @@ public class StatesManager : MonoBehaviour
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie", result => rollResult = result));
                 if (rollResult == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie"));
-                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
             int successLevel = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", stats.StoutHearted * 10, rollResult)[1];
@@ -173,12 +168,11 @@ public class StatesManager : MonoBehaviour
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność", result => rollResult = result));
                 if (rollResult == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność"));
-                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
-            int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
+            Debug.Log("unit.PoisonTestModifier " + unit.PoisonTestModifier);
+
+            int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", unit.PoisonTestModifier + 10, rollResult)[1];
             if (successLevel > 0)
             {
                 unit.Poison = Mathf.Max(0, unit.Poison - successLevel);
@@ -186,6 +180,7 @@ public class StatesManager : MonoBehaviour
 
             if (unit.Poison == 0)
             {
+                unit.PoisonTestModifier = 0;
                 unit.Fatiqued++; // Zwiększenie Wyczerpania
                 Debug.Log($"<color=#FF7F50>{stats.Name} udało się wygrać z zatruciem. Poziom wyczerpania wzrasta o 1.</color>");
                 yield break;
@@ -250,9 +245,6 @@ public class StatesManager : MonoBehaviour
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność", result => rollResult = result));
                 if (rollResult == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność"));
-                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
             int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];

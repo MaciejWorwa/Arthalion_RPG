@@ -334,7 +334,10 @@ public class MovementManager : MonoBehaviour
             return;
         }
 
-        StartCoroutine(UpdateMovementRange(2));
+        //Uwzględnia cechę Długi Krok
+        int modifier = Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Stats>().Stride ? 3 : 2;
+
+        StartCoroutine(UpdateMovementRange(modifier));
         Retreat(false); // Zresetowanie bezpiecznego odwrotu
     }
 
@@ -350,7 +353,7 @@ public class MovementManager : MonoBehaviour
         Stats stats = unit.GetComponent<Stats>();
 
         //Jeżeli postać już jest w trybie szarży lub biegu, resetuje je
-        if (isCharging && unit.IsCharging && modifier == 2 || unit.IsRunning && !isCharging && modifier == 2)
+        if ((isCharging && unit.IsCharging || unit.IsRunning && !isCharging) && modifier > 1)
         {
             modifier = 1;
         }
@@ -387,7 +390,7 @@ public class MovementManager : MonoBehaviour
 
         //Aktualizuje obecny tryb poruszania postaci
         unit.IsCharging = isCharging;
-        unit.IsRunning = modifier == 2 && !isCharging ? true : false;
+        unit.IsRunning = modifier > 1 && !isCharging ? true : false;
 
         if (unit.IsRunning)
         {
@@ -401,9 +404,6 @@ public class MovementManager : MonoBehaviour
             {
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "atletykę", result => rollResult = result));
                 if (rollResult == 0) yield break;
-
-                //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "atletykę"));
-                //rollResult = DiceRollManager.Instance.ManualRollResult;
             }
 
             //Oblicza obecną szybkość
@@ -417,6 +417,12 @@ public class MovementManager : MonoBehaviour
         {
             //Oblicza obecną szybkość
             stats.TempSz *= modifier;
+        }
+
+        // Uwzględnia cechę Skoczny
+        if((unit.IsRunning || unit.IsCharging) && stats.Bounce)
+        {
+            stats.TempSz *= 2;
         }
 
         // Uwzględnia ogłuszenie i powalenie
@@ -617,7 +623,6 @@ public class MovementManager : MonoBehaviour
     }
 
     #endregion
-
 
     #region Highlight path
     public void HighlightPath(GameObject unit, GameObject tile)

@@ -578,6 +578,7 @@ public class UnitData
     public int Entangled; // Pochwycenie
     public int Fatiqued; // Wyczerpanie
     public int Poison; // Zatrucie
+    public int PoisonTestModifier; // Modyfikator do testów przeciw zatruciu (zależny od mocy trucizny)
     public bool Prone; // Powalenie
     public int Stunned; // Oszołomienie
     public bool Surprised; // Zaskoczenie
@@ -678,7 +679,6 @@ public class StatsData
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
-    public int NaturalArmor;
 
     [Header("Talenty")]
     public int AethyricAttunement; // Zmysł Magii
@@ -721,15 +721,23 @@ public class StatsData
     public int Unshakable; // Niewzruszony
 
     [Header("Cechy stworzeń")]
+    public bool Bestial; // Zwierzęcy
+    public bool Bounce; // Skoczny
     public bool Champion; // Czempion
+    public bool CorrosiveBlood; // Kwasowa krew
     public int Daemonic; // Demoniczny
     public bool Distracting; // Dekoncentrujący
     public bool Ethereal; // Eteryczny
     public int Fear; // Strach
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
+    public int NaturalArmor;
     public bool Regeneration; // Regeneracja
+    public bool Stride; // Długi krok
     public int Terror; // Groza
     public bool Undead; // Ożywieniec
+    public bool Unstable; // Niestabilny
+    public bool Venom; // Jad
+    public int VenomModifier; // Siła jadu
     public int Ward; // Ochrona
 
     //STARE

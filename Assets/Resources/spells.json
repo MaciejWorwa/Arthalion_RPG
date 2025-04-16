@@ -1,6 +1,22 @@
 {
   "Spells": [
     {
+      "Name": "Assault of Stone",
+      "Arcane": "Tradycja Światła",
+      "Type": [ "offensive", "magic-missile", "constant-strength", "constant-area-size"],
+      "CastingNumber": 12,
+      "Range": 1,
+      "Targets": 1,
+      "AreaSize": 10,
+      "Strength": 20,
+      "SaveTestRequiring": true,
+      "Attributes": [
+        {
+          "Key": "Dodge"
+        }
+      ]
+    },
+    {
       "Name": "Błyskawica T'Essli",
       "Arcane": "Tradycja Niebios",
       "Type": [ "offensive", "magic-missile", "buff" ],
@@ -25,6 +41,22 @@
       ]
     },
     {
+      "Name": "Gejzer",
+      "Arcane": "Tradycja Życia",
+      "Type": [ "offensive", "magic-missile"],
+      "CastingNumber": 8,
+      "Range": 1,
+      "Targets": 1,
+      "AreaSize": 1,
+      "Strength": 4,
+      "Attributes": [
+        {
+          "Key": "Prone",
+          "Value": 1
+        }
+      ]
+    },
+    {
       "Name": "Magiczna ochrona",
       "Arcane": "Magia powszechna",
       "Type": [ "buff", "self-only" ],
@@ -36,6 +68,22 @@
         {
           "Key": "Ward",
           "Value": 9
+        }
+      ]
+    },
+    {
+      "Name": "Meteoric Ironclad",
+      "Arcane": "Tradycja Metalu",
+      "Type": [ "buff", "constant-duration" ],
+      "CastingNumber": 7,
+      "Range": 1,
+      "AreaSize": 1,
+      "Targets": 1,
+      "Duration": 1,
+      "Attributes": [
+        {
+          "Key": "Ward",
+          "Value": 4
         }
       ]
     },
@@ -137,7 +185,7 @@
     {
       "Name": "Purpurowy całun",
       "Arcane": "Tradycja Śmierci",
-      "Type": [ "buff", "self-only", "attribute-scaling-by-SW" ],
+      "Type": [ "buff", "self-only", "scaling-by-SW" ],
       "CastingNumber": 9,
       "Range": 1.5,
       "Targets": 1,
@@ -228,7 +276,7 @@
     {
       "Name": "Wybuch",
       "Arcane": "Magia powszechna",
-      "Type": [ "offensive", "magic-missile" ],
+      "Type": [ "offensive", "magic-missile"],
       "CastingNumber": 4,
       "Range": 1,
       "Targets": 1,
@@ -238,7 +286,7 @@
     {
       "Name": "Wybuch 3 cele",
       "Arcane": "Magia powszechna",
-      "Type": [ "offensive", "magic-missile" ],
+      "Type": [ "offensive", "magic-missile"],
       "CastingNumber": 4,
       "Range": 1,
       "Targets": 3,

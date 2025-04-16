@@ -120,7 +120,10 @@ public class Stats : MonoBehaviour
     public int Unshakable; // Niewzruszony
 
     [Header("Cechy stworzeń")]
+    public bool Bestial; // Zwierzęcy
+    public bool Bounce; // Skoczny
     public bool Champion; // Czempion
+    public bool CorrosiveBlood; // Kwasowa krew
     public int Daemonic; // Demoniczny
     public bool Distracting; // Dekoncentrujący
     public bool Ethereal; // Eteryczny
@@ -128,8 +131,12 @@ public class Stats : MonoBehaviour
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int NaturalArmor;
     public bool Regeneration; // Regeneracja
+    public bool Stride; // Długi krok
     public int Terror; // Groza
     public bool Undead; // Ożywieniec
+    public bool Unstable; // Niestabilny
+    public bool Venom; // Jad
+    public int VenomModifier; // Siła jadu
     public int Ward; // Ochrona
 
     //STARE
@@ -460,7 +467,7 @@ public class Stats : MonoBehaviour
                     }
 
                 }
-                Debug.Log($"Efekt zaklęcia {effect.SpellName} oddziałujący na {Name} wygasł.");
+                Debug.Log($"Efekt zaklęcia {effect.SpellName} oddziałujący na {Name} zakończył się.");
                 ActiveSpellEffects.RemoveAt(i);
             }
         }
