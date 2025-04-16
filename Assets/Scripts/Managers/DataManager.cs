@@ -766,6 +766,8 @@ public class StatsData
     public int FortunateEvents; // Ilość "Szczęść"
     public int UnfortunateEvents; // Ilość "Pechów"
 
+    public string Notebook; // Notatka
+
     // lista efektów zaklęcia
     public List<SpellEffectData> ActiveSpellEffects = new List<SpellEffectData>();
 

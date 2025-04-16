@@ -157,6 +157,8 @@ public class Stats : MonoBehaviour
     public int FortunateEvents; // Ilość "Szczęść"
     public int UnfortunateEvents; // Ilość "Pechów"
 
+    public string Notebook; // Notatka
+
     public List<SpellEffect> ActiveSpellEffects = new List<SpellEffect>();
 
     private void Awake()
