@@ -98,6 +98,7 @@ public class Stats : MonoBehaviour
     public int Implacable; // Nieubłagany
     public int InstinctiveDiction; // Precyzyjne inkantowanie
     public int IronJaw; // Żelazna szczęka
+    public int MagicResistance; // Odporność na magię
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający
     public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
@@ -118,6 +119,8 @@ public class Stats : MonoBehaviour
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
     public int Unshakable; // Niewzruszony
+    public int Vaulting; // Woltyżerka ---------------------------- MECHANIKA DO WPPROWADZENIA: jeśli jednostka jest na koniu to może wykonać ruch na początku rundy zamiast w swojej turze
+    public bool WarWizard; // Mag bitewny
 
     [Header("Cechy stworzeń")]
     public bool Bestial; // Zwierzęcy

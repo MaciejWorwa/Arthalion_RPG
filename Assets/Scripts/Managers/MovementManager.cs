@@ -80,7 +80,7 @@ public class MovementManager : MonoBehaviour
             return;
         }
 
-        // Sprawdza zasięg ruchu postaci
+        // Sprawdza zasięg ruchu postaci lub wierzchowca
         int movementRange = unit.GetComponent<Stats>().TempSz;
 
         // Pozycja postaci przed zaczęciem wykonywania ruchu
@@ -374,6 +374,12 @@ public class MovementManager : MonoBehaviour
         else
         {
             stats.TempSz = stats.Sz;
+        }
+
+        // Uwzględnienie szybkości wierzchowca
+        if(unit.IsMounted && unit.Mount != null)
+        {
+            stats.TempSz = unit.Mount.GetComponent<Stats>().Sz;
         }
 
         //Sprawdza, czy jednostka może wykonać bieg lub szarże

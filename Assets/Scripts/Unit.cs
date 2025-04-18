@@ -1,9 +1,7 @@
 using NUnit.Framework;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
 
 public class Unit : MonoBehaviour
 {
@@ -65,6 +63,11 @@ public class Unit : MonoBehaviour
     public TMP_Text HealthDisplay;
 
     public Stats LastAttackerStats; // Ostatni przeciwnik, który zadał obrażenia tej jednostce (jest to niezbędne do aktualizowania osiągnięcia "Najsilniejszy pokonany przeciwnik" poza trybem automatycznej śmierci)
+
+    public int MountId;
+    public Unit Mount; // Wierzchowiec
+    public bool IsMounted; // Zmienna określająca, czy jednostka w danej chwili dosiada wierzchowca, czy nie
+    public bool HasRider; // Zmienna określająca, czy jednostka w danej chwili jest przez kogoś dosiadana
 
     void Start()
     {
@@ -147,6 +150,8 @@ public class Unit : MonoBehaviour
     }
     public void SelectUnit()
     {
+        if (!gameObject.activeSelf) return;
+
         if (SelectedUnit == null)
         {
             SelectedUnit = this.gameObject;
@@ -193,6 +198,19 @@ public class Unit : MonoBehaviour
         }
         IsSelected = !IsSelected;
         ChangeUnitColor(this.gameObject);
+
+        //// Jeżeli MountId nie jest puste, ale Mount tak, znajduje wierzchowca na podstawie Id
+        //if (MountId != 0 && Mount == null)
+        //{
+        //    Mount = MountsManager.Instance.FindMountById(MountId);
+        //}
+
+        // Aktualizuje szybkość, jeśli jednostka dosiada wierzchowca
+        if (IsMounted && Mount != null)
+        {
+            Stats.TempSz = Mount.GetComponent<Stats>().TempSz;
+        }
+
         GridManager.Instance.HighlightTilesInMovementRange(Stats);
 
         //Wczytuje osiągnięcia jednostki
@@ -204,6 +222,8 @@ public class Unit : MonoBehaviour
 
         //Zaznacza lub odznacza jednostkę na kolejce inicjatywy
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
+
+        MountsManager.Instance.UpdateMountButtonColor();
 
         if (Broken > 0)
         {

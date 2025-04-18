@@ -753,6 +753,7 @@ MonoBehaviour:
   Entangled: 0
   Fatiqued: 0
   Poison: 0
+  PoisonTestModifier: 0
   Prone: 0
   Stunned: 0
   Surprised: 0
@@ -762,21 +763,21 @@ MonoBehaviour:
   IsFearTestPassed: 0
   IsTerrorTestPassed: 0
   FearLevel: 0
-  HelplessDuration: 0
   SpellDuration: 0
-  StunDuration: 0
-  Trapped: 0
   AimingBonus: 0
-  CastingNumberBonus: 0
+  ChannelingModifier: 0
   DefensiveBonus: 0
   FeintModifier: 0
   CanMove: 1
   CanDoAction: 1
   CanCastSpell: 0
+  CanDispell: 0
   Stats: {fileID: 0}
   NameDisplay: {fileID: 5344260523014033116}
   HealthDisplay: {fileID: 1306580773643467112}
   LastAttackerStats: {fileID: 0}
+  Mount: {fileID: 0}
+  IsMounted: 0
 --- !u!114 &-2754630250583481522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -831,24 +832,25 @@ MonoBehaviour:
   Dodge: 0
   Endurance: 0
   MagicLanguage: 0
+  AethyricAttunement: 0
   AccurateShot: 0
   Ambidextrous: 0
-  Champion: 0
   CombatMaster: 0
   CombatReflexes: 0
   DirtyFighting: 0
   Disarm: 0
   DualWielder: 0
-  Fear: 0
+  FastHands: 0
   Feint: 0
   Frenzy: 0
   FrenzyAttacksLeft: 0
   FuriousAssault: 0
   Gunner: 0
   Hardy: 0
-  ImmunityToPsychology: 0
   Implacable: 0
+  InstinctiveDiction: 0
   IronJaw: 0
+  MagicResistance: 0
   RapidReload: 0
   ReactionStrike: 0
   ReactionStrikesLeft: 0
@@ -868,12 +870,27 @@ MonoBehaviour:
   StrongBack: 0
   Sturdy: 0
   SureShot: 0
-  Terror: 0
   Unshakable: 0
-  ArmouredCasting: 0
-  DaemonicAura: 0
+  WarWizard: 0
+  Bestial: 0
+  Bounce: 0
+  Champion: 0
+  CorrosiveBlood: 0
+  Daemonic: 0
+  Distracting: 0
   Ethereal: 0
-  FastHands: 0
+  Fear: 0
+  ImmunityToPsychology: 0
+  NaturalArmor: 0
+  Regeneration: 0
+  Stride: 0
+  Terror: 0
+  Undead: 0
+  Unstable: 0
+  Venom: 0
+  VenomModifier: 0
+  Ward: 0
+  ArmouredCasting: 0
   MagicSense: 0
   MightyMissile: 0
   WillOfIron: 0
@@ -887,6 +904,7 @@ MonoBehaviour:
   RoundsPlayed: 0
   FortunateEvents: 0
   UnfortunateEvents: 0
+  Notebook: 
 --- !u!114 &8447459666408192081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1569,7 +1587,7 @@ GameObject:
   - component: {fileID: 5691349322658720333}
   - component: {fileID: 6093203127764454880}
   m_Layer: 6
-  m_Name: mount_image
+  m_Name: Mount_image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

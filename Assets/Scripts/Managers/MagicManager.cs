@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -173,12 +172,6 @@ public class MagicManager : MonoBehaviour
             return;
         }
 
-        if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction)
-        {
-            Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
-            return;
-        }
-
         if (!Unit.SelectedUnit.GetComponent<Unit>().CanCastSpell && RoundsManager.RoundNumber != 0)
         {
             Debug.Log("Wybrana jednostka nie może w tej rundzie rzucić więcej zaklęć.");
@@ -191,11 +184,20 @@ public class MagicManager : MonoBehaviour
             return;
         }
 
-        RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
-
         Targets.Clear();
         string selectedSpellName = _spellbookDropdown.SelectedButton.GetComponentInChildren<TextMeshProUGUI>().text;
         DataManager.Instance.LoadAndUpdateSpells(selectedSpellName);
+
+        if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction && (!Unit.SelectedUnit.GetComponent<Stats>().WarWizard || Unit.SelectedUnit.GetComponent<Spell>().CastingNumber > 5))
+        {
+            Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
+            return;
+        }
+
+        if (!Unit.SelectedUnit.GetComponent<Stats>().WarWizard || Unit.SelectedUnit.GetComponent<Spell>().CastingNumber > 5)
+        {
+            RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
+        }
 
         StartCoroutine(CastSpell());
     }
@@ -451,21 +453,21 @@ public class MagicManager : MonoBehaviour
                 }
             }
 
-            int finalSuccessLevel = 0;
+            int successLevelAfterDispell = 0;
 
             // Próba rozproszenia zaklęcia
             if (dispeller != null && !_dispellDone && _criticalCastingString != "anti_dispell")
             {
                 StartCoroutine(Dispell(dispeller, spell, castingTest[1], result =>
                 {
-                    finalSuccessLevel = result;
+                    successLevelAfterDispell = result;
                 }));
 
                 _dispellDone = true;
             }
             else
             {
-                finalSuccessLevel = castingTest[1];
+                successLevelAfterDispell = castingTest[1];
             }
 
             while (_dispellPanel.activeSelf)
@@ -473,17 +475,35 @@ public class MagicManager : MonoBehaviour
                 yield return null;
             }
 
-            if (finalSuccessLevel < 0 || (finalSuccessLevel == 0 && dispeller.MagicLanguage + dispeller.Int > stats.MagicLanguage + stats.Int))
+            if (successLevelAfterDispell < 0 || (successLevelAfterDispell == 0 && dispeller.MagicLanguage + dispeller.Int > stats.MagicLanguage + stats.Int))
             {
                 Debug.Log($"{dispeller.Name} rozproszył zaklęcie rzucane przez {stats.Name}.");
                 ResetSpellCasting();
                 yield break;
             }
 
+            int finalSuccessLevel = successLevelAfterDispell;
+
             // Wywołanie efektu zaklęcia
             foreach (var collider in allTargets)
             {
-                StartCoroutine(HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell, rollResult, finalSuccessLevel));
+                // Uwzględnienie talentu Odporność na magię
+                if(collider.GetComponent<Stats>().MagicResistance != 0)
+                {
+                    finalSuccessLevel -= collider.GetComponent<Stats>().MagicResistance * 2;
+                    Debug.Log($"{collider.GetComponent<Stats>().Name} posiada talent \"Odporność na magię\" o wartości {collider.GetComponent<Stats>().MagicResistance}. PS zaklęcia został pomniejszony o {collider.GetComponent<Stats>().MagicResistance * 2}.");
+                    if (finalSuccessLevel < 0 && _criticalCastingString != "force_cast")
+                    {
+                        Debug.Log($"Zaklęcie nie wywołuje wpływu na {collider.GetComponent<Stats>().Name}.");
+                        continue;
+                    }
+
+                    StartCoroutine(HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell, rollResult, finalSuccessLevel));
+                }
+                else
+                {
+                    StartCoroutine(HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell, rollResult, successLevelAfterDispell));
+                }
             }
         }  
 

@@ -60,7 +60,7 @@ public class InitiativeQueueManager : MonoBehaviour
     {
         //Nie dodaje do kolejki inicjatywy jednostek, które są ukryte
         Collider2D collider = Physics2D.OverlapPoint(unit.gameObject.transform.position);
-        if (collider.CompareTag("TileCover")) return;
+        if (collider.CompareTag("TileCover") || InitiativeQueue.ContainsKey(unit)) return;
 
         InitiativeQueue.Add(unit, unit.GetComponent<Stats>().Initiative);
 
@@ -72,6 +72,8 @@ public class InitiativeQueueManager : MonoBehaviour
 
     public void RemoveUnitFromInitiativeQueue(Unit unit)
     {
+        if (!InitiativeQueue.ContainsKey(unit)) return;
+
         InitiativeQueue.Remove(unit);
 
         //Aktualizuje pasek przewagi w bitwie
@@ -125,6 +127,9 @@ public class InitiativeQueueManager : MonoBehaviour
                 SetOptionColor(playersOptionObj, _defaultColor);
             }
         }
+
+        // Aktualiuje listę dostępnych do wyboru wierzchowców
+        MountsManager.Instance.DisplayMountsList();
     }
 
     private void ResetScrollViewContent(Transform scrollViewContent)
@@ -229,8 +234,8 @@ public class InitiativeQueueManager : MonoBehaviour
     public void CalculateAdvantageBasedOnDominance()
     {
         //TYMCZASOWE WYŁĄCZENIE TEJ FUNKCJONALNOŚCI, BO NIE JESTEM PEWNY, CZY JĄ CHCĘ
-        return;
 
+        /*
         float dominanceThreshold = DominanceBar.maxValue * 0.10f; // 10% maksymalnej wartości
         float difference = Mathf.Abs(DominanceBar.value - (DominanceBar.maxValue / 2));
 
@@ -249,6 +254,7 @@ public class InitiativeQueueManager : MonoBehaviour
                 Debug.Log($"Przewaga sojuszników została zwiększona, a przeciwników zmniejszona o 1.");
             }
         }
+        */
     }
 
     public void CalculateAdvantage(string unitTag, int value)
@@ -301,46 +307,6 @@ public class InitiativeQueueManager : MonoBehaviour
         _enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
         _playersView_playersAdvantageInput.text = PlayersAdvantage.ToString();
         _playersView_enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
-
-        //MagicManager.Instance.UnitsStatsAffectedBySpell.Clear(); // Czyścimy starą listę
-
-        //// Odtwarzamy listę na podstawie zapisanych danych
-        //foreach (StatsData statsData in data.UnitsStatsAffectedBySpell)
-        //{
-        //    // Szukamy istniejącej jednostki po nazwie
-        //    Unit existingUnit = UnitsManager.Instance.AllUnits.FirstOrDefault(u => u.GetComponent<Stats>().Name == statsData.Name);
-
-        //    if (existingUnit != null)
-        //    {
-        //        // Tworzymy kopię aktualnych Stats
-        //        Stats clonedStats = existingUnit.GetComponent<Stats>().Clone();
-
-        //        // Nadpisujemy wartości z StatsData
-        //        FieldInfo[] fields = typeof(StatsData).GetFields(BindingFlags.Instance | BindingFlags.Public);
-        //        foreach (var field in fields)
-        //        {
-        //            if (field.Name == "Name") continue;
-
-        //            var targetField = typeof(Stats).GetField(field.Name, BindingFlags.Instance | BindingFlags.Public);
-        //            targetField?.SetValue(clonedStats, field.GetValue(statsData));
-        //        }
-
-        //        // Odtworzenie słowników
-        //        clonedStats.Melee = statsData.MeleeSerialized
-        //            .Where(x => EnumConverter.ParseEnum<MeleeCategory>(x.Key).HasValue)
-        //            .ToDictionary(x => EnumConverter.ParseEnum<MeleeCategory>(x.Key).Value, x => x.Value);
-
-        //        clonedStats.Ranged = statsData.RangedSerialized
-        //            .Where(x => EnumConverter.ParseEnum<RangedCategory>(x.Key).HasValue)
-        //            .ToDictionary(x => EnumConverter.ParseEnum<RangedCategory>(x.Key).Value, x => x.Value);
-
-        //        MagicManager.Instance.UnitsStatsAffectedBySpell.Add(clonedStats);
-        //    }
-        //    else
-        //    {
-        //        Debug.LogWarning($"Nie znaleziono jednostki {statsData.Name}, nie można przywrócić efektu zaklęcia.");
-        //    }
-        //}
     }
 
 }

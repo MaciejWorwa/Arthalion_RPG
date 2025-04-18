@@ -3,9 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEditor;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class CombatManager : MonoBehaviour
@@ -1090,7 +1088,7 @@ public class CombatManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Atak nie przebił pancerza i nie zadał obrażeń.");
+            Debug.Log($"Atak nie przebił pancerza {targetStats.Name} i nie zadał obrażeń.");
             StartCoroutine(AnimationManager.Instance.PlayAnimation("parry", null, target.gameObject));
         }
 
@@ -1183,6 +1181,9 @@ public class CombatManager : MonoBehaviour
 
         if (target.Prone) modifier -= 20;
         if (attackerWeapon != null && attackerWeapon.Slow) modifier += 10;
+
+        if (target.IsMounted && targetStats.Vaulting == 0) modifier -= 20; // Modyfikator za dosiadanie wierzchowca bez talentu woltyżerka
+        else if (target.IsMounted) modifier += targetStats.Vaulting * 10; // Modyfikator za talent Woltyżerka
 
         //Modyfikator za przeciążenie
         int encumbrancePenalty = 0;
@@ -1550,8 +1551,21 @@ public class CombatManager : MonoBehaviour
                 attackModifier += attackerStats.FuriousAssault * 10;
                 Debug.Log("Uwzględniono modyfikator za Wściekły Atak. Łączny modyfikator: " + attackModifier);
             }
-        }
 
+            // Modyfikator za różnicę rozmiarów dzięki wierzchowcowi atakującego
+            if (attackerUnit.IsMounted && attackerUnit.Mount.GetComponent<Stats>().Size > targetStats.Size)
+            {
+                attackModifier += 20;
+                Debug.Log($"Uwzględniono modyfikator +20 za przewagę rozmiaru wierzchowca dosiadanego przez atakującego. Łączny modyfikator: " + attackModifier);
+            }
+
+            // Modyfikator za różnicę rozmiarów dzięki wierzchowcowi celu
+            if (targetUnit.IsMounted && targetUnit.Mount.GetComponent<Stats>().Size > attackerStats.Size && attackerWeapon.AttackRange == 1.5f)
+            {
+                attackModifier -= 10;
+                Debug.Log($"Uwzględniono modyfikator -10 za przewagę rozmiaru wierzchowca dosiadanego przez cel. Łączny modyfikator: " + attackModifier);
+            }
+        }
 
         if (attackerWeapon.Type.Contains("ranged"))
         {
@@ -1731,10 +1745,11 @@ public class CombatManager : MonoBehaviour
     #region Calculating damage
     int CalculateDamage(int attackRoll, int successLevel, Stats attackerStats, Stats targetStats, Weapon attackerWeapon)
     {
+        Unit attackerUnit = attackerStats.GetComponent<Unit>();
         int damage;
 
         // Uwzględnienie cechy broni "Przebijająca"
-        if (!attackerWeapon.Undamaging && (attackerWeapon.Damaging || attackerStats.Size - targetStats.Size >= 1) && successLevel < attackRoll % 10 && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) && _isTrainedWeaponCategory)
+        if (!attackerWeapon.Undamaging && (attackerWeapon.Damaging || attackerStats.Size > targetStats.Size || (attackerUnit.IsCharging && attackerUnit.IsMounted && attackerUnit.Mount.GetComponent<Stats>().Size > targetStats.Size)) && successLevel < attackRoll % 10 && (!attackerWeapon.Tiring || attackerUnit.IsCharging) && _isTrainedWeaponCategory)
         {
             Debug.Log($"Używamy cechy Przebijająca i zamieniamy PS z {successLevel} na {attackRoll % 10}");
             successLevel = attackRoll % 10;
@@ -1742,8 +1757,19 @@ public class CombatManager : MonoBehaviour
 
         if (attackerWeapon.Type.Contains("melee") || attackerWeapon.Type.Contains("strength-based")) //Oblicza łączne obrażenia dla ataku w zwarciu
         {
-            Debug.Log($"Łączny poziom sukcesu {attackerStats.Name}: {successLevel}. Bonus z siły: {attackerStats.S / 10}. Siła broni: {Math.Max(0, attackerWeapon.S - attackerWeapon.Damage)}");
-            damage = successLevel + attackerStats.S / 10 + Math.Max(0, attackerWeapon.S - attackerWeapon.Damage);
+            int strengthModifier = attackerStats.S / 10;
+
+            if (attackerUnit.IsCharging && attackerUnit.IsMounted)
+            {
+                // Wykorzystanie siły wierzchowca w szarży
+                if(attackerUnit.Mount.GetComponent<Stats>().S > attackerStats.S)
+                {
+                    strengthModifier = attackerUnit.Mount.GetComponent<Stats>().S / 10;
+                }
+            }
+
+            Debug.Log($"Łączny poziom sukcesu {attackerStats.Name}: {successLevel}. Bonus z siły: {strengthModifier}. Siła broni: {Math.Max(0, attackerWeapon.S - attackerWeapon.Damage)}");
+            damage = successLevel + strengthModifier + Math.Max(0, attackerWeapon.S - attackerWeapon.Damage);
         }
         else //Oblicza łączne obrażenia dla ataku dystansowego
         {
@@ -1760,7 +1786,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Uwzględnia cechę Druzgoczący
-        if (attackerWeapon.Impact && !attackerWeapon.Undamaging && (!attackerWeapon.Tiring || attackerStats.GetComponent<Unit>().IsCharging) || attackerStats.Size - targetStats.Size >= 2 && _isTrainedWeaponCategory)
+        if (attackerWeapon.Impact && !attackerWeapon.Undamaging && (!attackerWeapon.Tiring || attackerUnit.IsCharging) || attackerStats.Size - targetStats.Size >= 2 || (attackerUnit.IsCharging && attackerUnit.IsMounted && attackerUnit.Mount.GetComponent<Stats>().Size - targetStats.Size >= 2) && _isTrainedWeaponCategory)
         {
             damage += attackRoll % 10; // Dodaje liczbę jedności z rzutu na atak
             Debug.Log($"Dodatkowe obrażenia za cechę Druzgoczący: {attackRoll % 10}");
@@ -1771,6 +1797,13 @@ public class CombatManager : MonoBehaviour
         {
             damage *= attackerStats.Size - targetStats.Size;
             Debug.Log($"Modyfikator obrażeń za rozmiar. Rozmiar atakującego: {attackerStats.Size}. Rozmiar celu: {targetStats.Size}. Obrażenia zostały pomnożone x{attackerStats.Size - targetStats.Size}.");
+        }
+
+        // Modyfikator za rozmiar wierzchowca podczas szarży
+        if (attackerUnit.IsCharging && attackerUnit.IsMounted && attackerUnit.Mount.GetComponent<Stats>().Size - targetStats.Size >= 2)
+        {
+            damage *= attackerUnit.Mount.GetComponent<Stats>().Size - targetStats.Size;
+            Debug.Log($"Modyfikator obrażeń w trakcie szarży za rozmiar wierzchowca. Rozmiar wierzchowca: {attackerUnit.Mount.GetComponent<Stats>().Size}. Rozmiar celu: {targetStats.Size}. Obrażenia zostały pomnożone x{attackerUnit.Mount.GetComponent<Stats>().Size - targetStats.Size}.");
         }
 
         // Uwzględnienie talentu Nieugięty
@@ -1787,7 +1820,7 @@ public class CombatManager : MonoBehaviour
             Debug.Log($"Dodatkowe obrażenia za talent Silny Cios: {attackerStats.StrikeMightyBlow}");
         }
 
-        if (attackerStats.GetComponent<Unit>().IsFrenzy)
+        if (attackerUnit.IsFrenzy)
         {
             damage++;
             Debug.Log($"Dodatkowe obrażenia za Szał Bojowy: 1");
@@ -2265,8 +2298,6 @@ public class CombatManager : MonoBehaviour
         {
             if (selectedArmor != null)
             {
-                Debug.Log(selectedArmor.Name);
-
                 if (selectedArmor.Durable == 0) // Uwzględnienie cechy Wytrzymały
                 {
                     selectedArmor.Damage++;

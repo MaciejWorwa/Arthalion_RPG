@@ -605,6 +605,10 @@ public class UnitData
     public bool CanCastSpell;
     public bool CanDispell;
 
+    public int MountId;
+    public bool IsMounted; // Zmienna określająca, czy jednostka w danej chwili dosiada wierzchowca, czy nie
+    public bool HasRider; // Zmienna określająca, czy jednostka w danej chwili jest przez kogoś dosiadana
+
     public UnitData(Unit unit)
     {
         // Pobiera wszystkie pola (zmienne) z klasy Stats
@@ -699,6 +703,7 @@ public class StatsData
     public int Implacable; // Nieubłagany
     public int InstinctiveDiction; // Precyzyjne inkantowanie
     public int IronJaw; // Żelazna szczęka
+    public int MagicResistance; // Odporność na magię
     public int RapidReload; // Szybkie przeładowanie
     public int ReactionStrike; // Atak wyprzedzający
     public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
@@ -719,6 +724,8 @@ public class StatsData
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
     public int Unshakable; // Niewzruszony
+    public int Vaulting; // Woltyżerka
+    public bool WarWizard; // Mag bitewny
 
     [Header("Cechy stworzeń")]
     public bool Bestial; // Zwierzęcy

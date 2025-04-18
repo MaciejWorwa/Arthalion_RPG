@@ -653,7 +653,17 @@ public class SaveAndLoadManager : MonoBehaviour
                     .Select(id => UnitsManager.Instance.AllUnits.FirstOrDefault(u => u.UnitId == id))
                     .Where(u => u != null)
             );
+
+            MountsManager.Instance.GetOnMount(unit, true);
+
+            //Ponowne ustalenie pozycji jednostki, bo przez to, że jest ona na wierzchowcu to pojawia się w losowym miejscu, żeby nie duplikować tego samego pola
+            if (unit.IsMounted)
+            {
+                unit.transform.position = new Vector3(unitData.position[0], unitData.position[1], unitData.position[2]);
+            }
         }
+
+        GridManager.Instance.CheckTileOccupancy();
 
         if (saveFolderPath != Path.Combine(Application.persistentDataPath, "temp"))
         {
@@ -664,6 +674,7 @@ public class SaveAndLoadManager : MonoBehaviour
         Unit.SelectedUnit = null;
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
         GridManager.Instance.ResetColorOfTilesInMovementRange();
+        MountsManager.Instance.DisplayAllMountIcons();
 
         IsLoading = false;
 
