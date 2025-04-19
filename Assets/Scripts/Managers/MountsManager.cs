@@ -1,21 +1,13 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using TMPro;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using static UnityEditor.PlayerSettings;
-using static UnityEngine.GraphicsBuffer;
+
 
 public class MountsManager : MonoBehaviour
 {
-    // Prywatne statyczne pole przechowuj¹ce instancjê
+    // Prywatne statyczne pole przechowujÄ…ce instancjÄ™
     private static MountsManager instance;
 
-    // Publiczny dostêp do instancji
+    // Publiczny dostÄ™p do instancji
     public static MountsManager Instance
     {
         get { return instance; }
@@ -30,7 +22,7 @@ public class MountsManager : MonoBehaviour
         }
         else if (instance != this)
         {
-            // Jeœli instancja ju¿ istnieje, a próbujemy utworzyæ kolejn¹, niszczymy nadmiarow¹
+            // JeÅ›li instancja juÅ¼ istnieje, a prÃ³bujemy utworzyÄ‡ kolejnÄ…, niszczymy nadmiarowÄ…
             Destroy(gameObject);
         }
     }
@@ -38,11 +30,11 @@ public class MountsManager : MonoBehaviour
     public static Unit SelectedMount;
     public Unit ActiveMount;
     public Transform MountsScrollViewContent;
-    [SerializeField] private GameObject _mountOptionPrefab; // Prefab odpowiadaj¹cy ka¿dej jednostce na liœcie wierzchowców
-    private Color _defaultColor = new Color(0f, 0f, 0f, 0f); // Domyœlny kolor przycisku
+    [SerializeField] private GameObject _mountOptionPrefab; // Prefab odpowiadajÄ…cy kaÅ¼dej jednostce na liÅ›cie wierzchowcÃ³w
+    private Color _defaultColor = new Color(0f, 0f, 0f, 0f); // DomyÅ›lny kolor przycisku
     private Color _selectedColor = new Color(0f, 0f, 0f, 0.5f); // Kolor wybranego przycisku (zaznaczonej jednostki)
     private Color _activeColor = new Color(0.15f, 1f, 0.45f, 0.2f); // Kolor aktywnego przycisku (aktualnie dosiadany wierzchowiec)
-    private Color _selectedActiveColor = new Color(0.08f, 0.5f, 0.22f, 0.5f); // Kolor wybranego przycisku, gdy jednoczeœnie jest to obecnie dosiadany wierzchowiec
+    private Color _selectedActiveColor = new Color(0.08f, 0.5f, 0.22f, 0.5f); // Kolor wybranego przycisku, gdy jednoczeÅ›nie jest to obecnie dosiadany wierzchowiec
 
     [SerializeField] private UnityEngine.UI.Button _mountButton;
     [SerializeField] private GameObject _mountsPanel; // Panel do wyboru wierzchowca
@@ -51,27 +43,29 @@ public class MountsManager : MonoBehaviour
     {
         if (Unit.SelectedUnit == null) return;
 
-        // Resetuje wyœwietlan¹ kolejkê, usuwaj¹c wszystkie obiekty "dzieci"
+        // Resetuje wyÅ›wietlanÄ… kolejkÄ™, usuwajÄ…c wszystkie obiekty "dzieci"
         ResetScrollViewContent(MountsScrollViewContent);
 
         ActiveMount = null;
 
-        // Ustala wyœwietlan¹ kolejkê inicjatywy
+        // Ustala wyÅ›wietlanÄ… kolejkÄ™ inicjatywy
         foreach (Unit unit in UnitsManager.Instance.AllUnits)
         {
+            if(unit == null) continue;
+
             if(unit.CompareTag(Unit.SelectedUnit.tag) && unit != Unit.SelectedUnit.GetComponent<Unit>() && Vector2.Distance(unit.transform.position, Unit.SelectedUnit.transform.position) < 1.5f && unit.GetComponent<Stats>().Size > Unit.SelectedUnit.GetComponent<Stats>().Size && !unit.HasRider)
             {
-                // Dodaje jednostkê do g³ównej kolejki ScrollViewContent
+                // Dodaje jednostkÄ™ do gÅ‚Ã³wnej kolejki ScrollViewContent
                 GameObject optionObj = CreateOption(unit, MountsScrollViewContent);
 
-                // Sprawdza, czy jest to obecnie dosiadany mount przez aktywn¹ jednostkê
+                // Sprawdza, czy jest to obecnie dosiadany mount przez aktywnÄ… jednostkÄ™
                 if (Unit.SelectedUnit.GetComponent<Unit>().Mount == unit && Unit.SelectedUnit.GetComponent<Unit>().IsMounted)
                 {
                     ActiveMount = unit;
                     SetOptionColor(optionObj, _activeColor);
                 }
 
-                // Wyró¿nia zaznaczon¹ jednostkê
+                // WyrÃ³Å¼nia zaznaczonÄ… jednostkÄ™
                 if (SelectedMount != null && unit == SelectedMount)
                 {
                     Color selectedColor = unit == ActiveMount ? _selectedActiveColor : _selectedColor;
@@ -164,12 +158,12 @@ public class MountsManager : MonoBehaviour
             return;
         }
 
-        // Jeœli nie znalaz³o, otwiera panel do wyboru wierzchowca
+        // JeÅ›li nie znalazÅ‚o, otwiera panel do wyboru wierzchowca
         if (unit.Mount == null)
         {
             if (MountsScrollViewContent.childCount == 0)
             {
-                Debug.Log($"Musisz staæ obok potencjalnego wierzchowca, aby móc go dosi¹œæ.");
+                Debug.Log($"Musisz staÄ‡ obok potencjalnego wierzchowca, aby mÃ³c go dosiÄ…Å›Ä‡.");
             }
             else _mountsPanel.SetActive(true);
 
@@ -188,7 +182,7 @@ public class MountsManager : MonoBehaviour
 
             unit.Stats.TempSz = unit.Mount.GetComponent<Stats>().Sz;
 
-            Debug.Log($"{unit.Stats.Name} dosiad³/a {unit.Mount.GetComponent<Stats>().Name}.");
+            Debug.Log($"{unit.Stats.Name} dosiadÅ‚/a {unit.Mount.GetComponent<Stats>().Name}.");
         }
         else
         {
@@ -225,7 +219,7 @@ public class MountsManager : MonoBehaviour
             unit.Mount.gameObject.SetActive(true);
 
             unit.Stats.TempSz = unit.Stats.Sz;
-            Debug.Log($"{unit.Stats.Name} zsiad³/a z {unit.Mount.GetComponent<Stats>().Name}.");
+            Debug.Log($"{unit.Stats.Name} zsiadÅ‚/a z {unit.Mount.GetComponent<Stats>().Name}.");
             unit.Mount = null;
             unit.MountId = 0;
         }
@@ -271,14 +265,14 @@ public class MountsManager : MonoBehaviour
         {
             _mountButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.green;
 
-            //Wyœwietla ikonkê wierzchowca przy tokenie jednostki
+            //WyÅ›wietla ikonkÄ™ wierzchowca przy tokenie jednostki
             Unit.SelectedUnit.transform.Find("Canvas/Mount_image").gameObject.SetActive(true);
         }
         else
         {
             _mountButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.white;
 
-            //Ukrywa ikonkê wierzchowca przy tokenie jednostki
+            //Ukrywa ikonkÄ™ wierzchowca przy tokenie jednostki
             Unit.SelectedUnit.transform.Find("Canvas/Mount_image").gameObject.SetActive(false);
         }
     }

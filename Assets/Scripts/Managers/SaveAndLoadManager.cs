@@ -38,6 +38,7 @@ public class SaveAndLoadManager : MonoBehaviour
     [SerializeField] private GameObject _buttonPrefab; // Przycisk odpowiadający każdemu zapisowi na liście
     [SerializeField] private GameObject _loadGamePanel;
     [SerializeField] private GameObject _saveGamePanel;
+    [SerializeField] private GameObject _removeSaveFilePanel;
     [SerializeField] private UnityEngine.UI.Toggle _sortByDateToggle;
 
     public bool IsLoading;
@@ -487,12 +488,12 @@ public class SaveAndLoadManager : MonoBehaviour
 
             // Sprawdzamy, czy istnieje już jednostka o tej nazwie
             bool unitExist = UnitsManager.Instance.AllUnits.Any(
-                unit => unit.GetComponent<Stats>().Name == statsData.Name
+                unit => unit != null && unit.GetComponent<Stats>().Name == statsData.Name
             );
 
             // Sprawdzenie, czy istnieje już jednostka będąca kopią
             bool copyExist = UnitsManager.Instance.AllUnits.Any(
-                unit => unit.GetComponent<Stats>().Name == statsData.Name + " (kopia)"
+                unit => unit != null && unit.GetComponent<Stats>().Name == statsData.Name + " (kopia)"
             );
 
             // Jeśli istnieje kopia, pomijamy tworzenie nowej jednostki
@@ -621,7 +622,7 @@ public class SaveAndLoadManager : MonoBehaviour
                 for (int i = 0; i < UnitsManager.Instance.AllUnits.Count; i++)
                 {
                     Unit unit = UnitsManager.Instance.AllUnits[i];
-                    if (unitExist && unit.gameObject != unitGameObject)
+                    if (unit != null && unitExist && unit.gameObject != unitGameObject)
                     {
                         // Sprawdzamy, czy nazwa już zawiera "(kopia)"
                         if (!unitGameObject.GetComponent<Stats>().Name.Contains("(kopia)"))
@@ -629,6 +630,10 @@ public class SaveAndLoadManager : MonoBehaviour
                             unitGameObject.GetComponent<Stats>().Name += " (kopia)";
                             unitGameObject.name += " (kopia)";
                             unitGameObject.GetComponent<Unit>().DisplayUnitName();
+
+                            // Nie kopiujemy wierzchowców
+                            unitGameObject.GetComponent<Unit>().MountId = 0;
+                            unitGameObject.GetComponent<Unit>().IsMounted = false;
                         }
                     }
                 }
@@ -639,37 +644,38 @@ public class SaveAndLoadManager : MonoBehaviour
             //Aktualizuje pasek przewagi w bitwie
             unitGameObject.GetComponent<Stats>().Overall = unitGameObject.GetComponent<Stats>().CalculateOverall();
             InitiativeQueueManager.Instance.CalculateDominance();
-        }
-
-        // Teraz, gdy wszystkie jednostki są już na mapie, możemy ustawić FearedUnits
-        foreach (var unit in UnitsManager.Instance.AllUnits)
-        {
-            UnitData unitData = JsonUtility.FromJson<UnitData>(
-                File.ReadAllText(Path.Combine(saveFolderPath, unit.GetComponent<Stats>().Name + "_unit.json"))
-            );
-
-            unit.FearedUnits = new HashSet<Unit>(
-                unitData.FearedUnitIds
-                    .Select(id => UnitsManager.Instance.AllUnits.FirstOrDefault(u => u.UnitId == id))
-                    .Where(u => u != null)
-            );
-
-            MountsManager.Instance.GetOnMount(unit, true);
-
-            //Ponowne ustalenie pozycji jednostki, bo przez to, że jest ona na wierzchowcu to pojawia się w losowym miejscu, żeby nie duplikować tego samego pola
-            if (unit.IsMounted)
-            {
-                unit.transform.position = new Vector3(unitData.position[0], unitData.position[1], unitData.position[2]);
-            }
-        }
-
-        GridManager.Instance.CheckTileOccupancy();
+        } 
 
         if (saveFolderPath != Path.Combine(Application.persistentDataPath, "temp"))
         {
+            // Teraz, gdy wszystkie jednostki są już na mapie, możemy ustawić FearedUnits
+            foreach (var unit in UnitsManager.Instance.AllUnits)
+            {
+                if (unit == null) continue;
+                UnitData unitData = JsonUtility.FromJson<UnitData>(
+                    File.ReadAllText(Path.Combine(saveFolderPath, unit.GetComponent<Stats>().Name + "_unit.json"))
+                );
+
+                unit.FearedUnits = new HashSet<Unit>(
+                    unitData.FearedUnitIds
+                        .Select(id => UnitsManager.Instance.AllUnits.FirstOrDefault(u => u.UnitId == id))
+                        .Where(u => u != null)
+                );
+
+                MountsManager.Instance.GetOnMount(unit, true);
+
+                //Ponowne ustalenie pozycji jednostki, bo przez to, że jest ona na wierzchowcu to pojawia się w losowym miejscu, żeby nie duplikować tego samego pola
+                if (unit.IsMounted)
+                {
+                    unit.transform.position = new Vector3(unitData.position[0], unitData.position[1], unitData.position[2]);
+                }
+            }
+
             LoadRoundsManager(saveFolderPath);
             LoadInitiativeQueueManager(saveFolderPath);
         }
+
+        GridManager.Instance.CheckTileOccupancy();
 
         Unit.SelectedUnit = null;
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
@@ -880,6 +886,19 @@ public class SaveAndLoadManager : MonoBehaviour
                 dropdown.SetSelectedIndex(currentIndex); // Wybiera element i aktualizuje jego wygląd
             });
         }
+    }
+
+    public void OpenRemoveSaveFilePanel()
+    {
+        CustomDropdown dropdown = _savesScrollViewContent.GetComponent<CustomDropdown>();
+        if (dropdown == null || dropdown.SelectedButton == null)
+        {
+            Debug.Log($"<color=red>Aby usunąć zapis musisz wybrać plik z listy.</color>");
+            return;
+        }
+
+        _removeSaveFilePanel.SetActive(true);
+        _loadGamePanel.SetActive(false);
     }
 
     public void RemoveSaveFile()

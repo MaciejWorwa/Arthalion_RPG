@@ -2,11 +2,11 @@ using System.Collections.Generic;
 
 public class SpellEffect
 {
-    // Nazwa zaklêcia, z którego pochodzi dany efekt (przydatne przy logowaniu)
+    // Nazwa zaklÄ™cia, z ktÃ³rego pochodzi dany efekt (przydatne przy logowaniu)
     public string SpellName;
-    // Liczba rund, przez które efekt bêdzie aktywny
+    // Liczba rund, przez ktÃ³re efekt bÄ™dzie aktywny
     public int RemainingRounds;
-    // S³ownik zawieraj¹cy modyfikacje (klucz: nazwa statystyki, wartoœæ: modyfikator)
+    // SÅ‚ownik zawierajÄ…cy modyfikacje (klucz: nazwa statystyki, wartoÅ›Ä‡: modyfikator)
     public Dictionary<string, int> StatModifiers;
 
     public SpellEffect(string spellName, int remainingRounds, Dictionary<string, int> statModifiers)

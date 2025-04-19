@@ -5,10 +5,10 @@ using UnityEngine;
 
 public class DiceRollManager : MonoBehaviour
 {
-    // Prywatne statyczne pole przechowuj¹ce instancjê
+    // Prywatne statyczne pole przechowujÄ…ce instancjÄ™
     private static DiceRollManager instance;
 
-    // Publiczny dostêp do instancji
+    // Publiczny dostÄ™p do instancji
     public static DiceRollManager Instance
     {
         get { return instance; }
@@ -23,7 +23,7 @@ public class DiceRollManager : MonoBehaviour
         }
         else if (instance != this)
         {
-            // Jeœli instancja ju¿ istnieje, a próbujemy utworzyæ kolejn¹, niszczymy nadmiarow¹
+            // JeÅ›li instancja juÅ¼ istnieje, a prÃ³bujemy utworzyÄ‡ kolejnÄ…, niszczymy nadmiarowÄ…
             Destroy(gameObject);
         }
     }
@@ -51,7 +51,7 @@ public class DiceRollManager : MonoBehaviour
 
     public IEnumerator WaitForRollValue(Stats stats, string rollContext, Action<int> callback)
     {
-        // Czekaj, a¿ inne rzuty siê zakoñcz¹
+        // Czekaj, aÅ¼ inne rzuty siÄ™ zakoÅ„czÄ…
         while (_applyRollResultPanel.activeSelf)
         {
             yield return null;
@@ -89,22 +89,22 @@ public class DiceRollManager : MonoBehaviour
         {
             ManualRollResult = result;
             IsWaitingForRoll = false; // Przerywamy oczekiwanie
-            _rollInputField.text = ""; // Czyœcimy pole
+            _rollInputField.text = ""; // CzyÅ›cimy pole
         }
     }
 
-    // Funkcja sprawdzaj¹ca, czy liczba ma dwie identyczne cyfry
+    // Funkcja sprawdzajÄ…ca, czy liczba ma dwie identyczne cyfry
     public bool IsDoubleDigit(int number)
     {
-        // Jeœli wynik to dok³adnie 100, równie¿ spe³nia warunek
+        // JeÅ›li wynik to dokÅ‚adnie 100, rÃ³wnieÅ¼ speÅ‚nia warunek
         if (number == 100) return true;
 
         // Sprawdzenie dla liczb dwucyfrowych
         if (number >= 10 && number <= 99)
         {
-            int tens = number / 10;  // Cyfra dziesi¹tek
-            int ones = number % 10; // Cyfra jednoœci
-            return tens == ones;    // Sprawdzenie, czy cyfry s¹ takie same
+            int tens = number / 10;  // Cyfra dziesiÄ…tek
+            int ones = number % 10; // Cyfra jednoÅ›ci
+            return tens == ones;    // Sprawdzenie, czy cyfry sÄ… takie same
         }
 
         return false;
@@ -117,7 +117,7 @@ public class DiceRollManager : MonoBehaviour
 
         if (gameObject.GetComponent<UnityEngine.UI.Slider>() != null)
         {
-            int roundedValue = Mathf.RoundToInt(_modifierSlider.value) * 10; // Mno¿enie wartoœci slidera x10
+            int roundedValue = Mathf.RoundToInt(_modifierSlider.value) * 10; // MnoÅ¼enie wartoÅ›ci slidera x10
             _modifierInputField.text = roundedValue.ToString();
             RollModifier = roundedValue;
         }
@@ -126,7 +126,7 @@ public class DiceRollManager : MonoBehaviour
             if (int.TryParse(_modifierInputField.text, out int value))
             {
                 value = Mathf.Clamp(value, -30, 60);
-                _modifierSlider.SetValueWithoutNotify(Mathf.RoundToInt(value / 10f)); // Dopasowanie wartoœci slidera bez wywo³ania eventu
+                _modifierSlider.SetValueWithoutNotify(Mathf.RoundToInt(value / 10f)); // Dopasowanie wartoÅ›ci slidera bez wywoÅ‚ania eventu
                 RollModifier = value;
             }
             else
@@ -155,17 +155,17 @@ public class DiceRollManager : MonoBehaviour
             rollResult = UnityEngine.Random.Range(1, 101);
         }
 
-        // Uwzglêdnienie modyfikatora z panelu jednostki
+        // UwzglÄ™dnienie modyfikatora z panelu jednostki
         if (RollModifier != 0)
         {
             modifier += RollModifier;
         }
 
-        // Pobieranie wartoœci umiejêtnoœci na podstawie nazwy
+        // Pobieranie wartoÅ›ci umiejÄ™tnoÅ›ci na podstawie nazwy
         int skillValue = 0;
         if (skillName != null)
         {
-            // Jeœli skillName dotyczy broni bia³ej lub dystansowej, pobierz go ze s³ownika
+            // JeÅ›li skillName dotyczy broni biaÅ‚ej lub dystansowej, pobierz go ze sÅ‚ownika
             if (Enum.TryParse(skillName, out MeleeCategory meleeCategory) && stats.Melee.ContainsKey(meleeCategory))
             {
                 skillValue = stats.GetSkillModifier(stats.Melee, meleeCategory);
@@ -184,14 +184,14 @@ public class DiceRollManager : MonoBehaviour
             }
         }
 
-        // Pobieranie wartoœci atrybutu na podstawie nazwy
+        // Pobieranie wartoÅ›ci atrybutu na podstawie nazwy
         int attributeValue = 0;
         var attributeField = typeof(Stats).GetField(attributeName);
         if (attributeField != null)
         {
             attributeValue = (int)attributeField.GetValue(stats);
 
-            // Modyfikator za przeci¹¿enie
+            // Modyfikator za przeciÄ…Å¼enie
             if (attributeName == "Zw")
             {
                 Debug.Log($"max obciazenie {stats.MaxEncumbrance}, currentEncumbrance {stats.CurrentEncumbrance}");
@@ -206,7 +206,7 @@ public class DiceRollManager : MonoBehaviour
                     encumbrancePenalty = 20;
                 }
 
-                // Sprawdzamy, czy Zw nie spadnie poni¿ej 10
+                // Sprawdzamy, czy Zw nie spadnie poniÅ¼ej 10
                 if (attributeValue - encumbrancePenalty < 10)
                 {
                     encumbrancePenalty = attributeValue - 10;
@@ -217,9 +217,9 @@ public class DiceRollManager : MonoBehaviour
         }
         
         if (stats.GetComponent<Unit>().Fatiqued > 0) modifier -= stats.GetComponent<Unit>().Fatiqued * 10; // Modyfikator za wyczerpanie
-        else if (stats.GetComponent<Unit>().Poison > 0) modifier -= 10; // Modyfikator za truciznê
+        else if (stats.GetComponent<Unit>().Poison > 0) modifier -= 10; // Modyfikator za truciznÄ™
 
-        // Modyfikator za dekoncentruj¹cego przeciwnika w pobli¿u
+        // Modyfikator za dekoncentrujÄ…cego przeciwnika w pobliÅ¼u
         foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
         {
             Unit unit = entry.Key;
@@ -233,48 +233,48 @@ public class DiceRollManager : MonoBehaviour
                 {
                     modifier -= 20;
                     Debug.Log($"{stats.Name} jest zdekoncentrowany przez {distractingStats.Name}.");
-                    break; // tylko raz -20, nawet jeœli wiêcej jednostek dekoncentruje
+                    break; // tylko raz -20, nawet jeÅ›li wiÄ™cej jednostek dekoncentruje
                 }
             }
         }
 
-        if (modifier > 60) modifier = 60; // Górny limit modyfikatora
+        if (modifier > 60) modifier = 60; // GÃ³rny limit modyfikatora
         if (modifier < -30) modifier = -30; // Dolny limit modyfikatora
 
         int successValue = skillValue + attributeValue + modifier - rollResult;
         int successLevel = (skillValue + attributeValue + modifier) / 10 - rollResult / 10;
 
-        // Okreœlenie koloru na podstawie poziomu sukcesu
+        // OkreÅ›lenie koloru na podstawie poziomu sukcesu
         string successLevelColor = successValue >= 0 ? "green" : "red";
 
         // Tworzenie stringa dla modyfikatora
         string modifierString = modifier != 0 ? $" Modyfikator: {modifier}," : "";
 
-        // Wyœwietlenie wyniku
+        // WyÅ›wietlenie wyniku
         if (skillName != null)
         {
-            Debug.Log($"{stats.Name} rzuca na {skillName}: {rollResult}. Wartoœæ umiejêtnoœci: {skillValue + attributeValue}.{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>.");
+            Debug.Log($"{stats.Name} rzuca na {skillName}: {rollResult}. WartoÅ›Ä‡ umiejÄ™tnoÅ›ci: {skillValue + attributeValue}.{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>.");
         }
         else
         {
-            Debug.Log($"{stats.Name} rzuca na {attributeName}: {rollResult}. Wartoœæ cechy: {attributeValue}.{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>.");
+            Debug.Log($"{stats.Name} rzuca na {attributeName}: {rollResult}. WartoÅ›Ä‡ cechy: {attributeValue}.{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>.");
         }
 
-        //Pech i szczêœcie
+        //Pech i szczÄ™Å›cie
         if (IsDoubleDigit(rollResult))
         {
             if (successValue >= 0)
             {
-                Debug.Log($"{stats.Name} wyrzuci³ <color=green>FUKSA</color>!");
+                Debug.Log($"{stats.Name} wyrzuciÅ‚ <color=green>FUKSA</color>!");
 
-                //Aktualizuje osi¹gniêcia
+                //Aktualizuje osiÄ…gniÄ™cia
                 stats.FortunateEvents++;
             }
             else
             {
-                Debug.Log($"{stats.Name} wyrzuci³ <color=red>PECHA</color>!");
+                Debug.Log($"{stats.Name} wyrzuciÅ‚ <color=red>PECHA</color>!");
 
-                //Aktualizuje osi¹gniêcia
+                //Aktualizuje osiÄ…gniÄ™cia
                 stats.UnfortunateEvents++;
             }
         }
