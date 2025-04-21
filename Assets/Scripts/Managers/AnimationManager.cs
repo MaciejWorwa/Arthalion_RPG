@@ -3,6 +3,7 @@ using UnityEngine;
 using System;
 using System.Collections;
 using TMPro;
+using System.Linq;
 
 public class AnimationManager : MonoBehaviour
 {
@@ -121,6 +122,18 @@ public class AnimationManager : MonoBehaviour
     public IEnumerator PlayAnimation(string animationName, GameObject attacker = null, GameObject target = null, int damage = 0)
     {   
         if(GameManager.IsShowAnimationsMode == false) yield break;
+
+        if (attacker != null && !attacker.activeSelf && attacker.GetComponent<Unit>().HasRider)
+        {
+            Unit rider = UnitsManager.Instance.AllUnits.FirstOrDefault(u => u != null && u.Mount == attacker.GetComponent<Unit>());
+            attacker = rider.gameObject;
+        }
+
+        if (target != null && !target.activeSelf && target.GetComponent<Unit>().HasRider)
+        {
+            Unit rider = UnitsManager.Instance.AllUnits.FirstOrDefault(u => u != null && u.Mount == target.GetComponent<Unit>());
+            target = rider.gameObject;
+        }
 
         Animator animator;
         GameObject animationObject;

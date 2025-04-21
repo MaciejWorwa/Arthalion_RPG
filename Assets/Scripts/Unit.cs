@@ -132,6 +132,10 @@ public class Unit : MonoBehaviour
             {
                 CombatManager.Instance.Grappling(SelectedUnit.GetComponent<Unit>(), this);
             }
+            else if (IsMounted && Mount != null)
+            {
+                StartCoroutine(CombatManager.Instance.SelectRiderOrMount(this));
+            }
             else // Atak
             {
                 CombatManager.Instance.Attack(SelectedUnit.GetComponent<Unit>(), this, false);

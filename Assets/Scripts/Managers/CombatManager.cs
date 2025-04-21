@@ -3,8 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 public class CombatManager : MonoBehaviour
 {
@@ -35,10 +37,10 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _standardAttackButton;
     [SerializeField] private UnityEngine.UI.Button _chargeButton;
     [SerializeField] private UnityEngine.UI.Button _frenzyButton;
-    [SerializeField] private UnityEngine.UI.Button _guardedAttackButton;
+    [SerializeField] private UnityEngine.UI.Button _mountAttackButton;
     [SerializeField] private UnityEngine.UI.Button _grapplingButton;
     [SerializeField] private UnityEngine.UI.Button _feintButton;
-    [SerializeField] private UnityEngine.UI.Button _stunButton;
+    //[SerializeField] private UnityEngine.UI.Button _stunButton;
     [SerializeField] private UnityEngine.UI.Button _disarmButton;
     public Dictionary<string, bool> AttackTypes = new Dictionary<string, bool>();
 
@@ -61,6 +63,10 @@ public class CombatManager : MonoBehaviour
 
     public string HitLocation = null;    // Zmienna do przechowywania wyboru lokacji
     [SerializeField] private GameObject _selectHitLocationPanel;
+    [SerializeField] private GameObject _riderOrMountPanel;
+    private string _riderOrMount;
+    [SerializeField] private UnityEngine.UI.Button _riderButton;
+    [SerializeField] private UnityEngine.UI.Button _mountButton;
 
     private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
     private bool _opportunityAttack; // Zmienna potrzebna do tego, żeby test opanowania przy ataku okazyjnym był wywoływany raz, a nie za każdego przeciwnika
@@ -76,6 +82,9 @@ public class CombatManager : MonoBehaviour
         _dodgeButton.onClick.AddListener(() => ParryOrDodgeButtonClick("dodge"));
         _parryButton.onClick.AddListener(() => ParryOrDodgeButtonClick("parry"));
 
+        _riderButton.onClick.AddListener(() => RiderOrMountButtonClick("rider"));
+        _mountButton.onClick.AddListener(() => RiderOrMountButtonClick("mount"));
+
         _grapplingAttackButton.onClick.AddListener(() => GrapplingActionButtonClick("attack"));
         _improveGrappleButton.onClick.AddListener(() => GrapplingActionButtonClick("improve"));
         _escapeGrappleButton.onClick.AddListener(() => GrapplingActionButtonClick("escape"));
@@ -87,6 +96,11 @@ public class CombatManager : MonoBehaviour
         {
             ParryOrDodgeButtonClick("");
         }
+
+        if (Input.GetKeyDown(KeyCode.Escape) && _riderOrMountPanel.activeSelf)
+        {
+            RiderOrMountButtonClick("");
+        }
     }
 
     #region Attack types
@@ -96,7 +110,7 @@ public class CombatManager : MonoBehaviour
         AttackTypes.Add("StandardAttack", true);
         AttackTypes.Add("Charge", false);
         //AttackTypes.Add("Frenzy", false);  // Szał bojowy
-        AttackTypes.Add("GuardedAttack", false);  // Ostrożny atak
+        AttackTypes.Add("MountAttack", false);  // Ostrożny atak
         AttackTypes.Add("Grappling", false);  // Zapasy
         AttackTypes.Add("Feint", false);  // Finta
         AttackTypes.Add("Stun", false);  // Ogłuszanie
@@ -244,7 +258,7 @@ public class CombatManager : MonoBehaviour
         _standardAttackButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["StandardAttack"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _chargeButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Charge"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         //_frenzyButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Frenzy"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
-        //_guardedAttackButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["GuardedAttack"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
+        _mountAttackButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["MountAttack"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _grapplingButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Grappling"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _feintButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Feint"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         //_stunButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Stun"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
@@ -260,6 +274,8 @@ public class CombatManager : MonoBehaviour
         _feintButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Feint > 0;
         _frenzyButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Frenzy;
         _reloadButton.interactable = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.ReloadLeft > 0);
+        _grapplingButton.gameObject.SetActive(!Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
+        _mountAttackButton.gameObject.SetActive(Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
     }
 
     #endregion
@@ -272,6 +288,11 @@ public class CombatManager : MonoBehaviour
         {
             Debug.Log("Gra została wstrzymana. Aby ją wznowić musisz wyłączyć okno znajdujące się na polu gry.");
             return;
+        }
+
+        if (AttackTypes["MountAttack"]) // Atak wierzchowca
+        {
+            attacker = attacker.Mount;
         }
 
         bool furiousAssault = (attacker.GetComponent<Stats>().FuriousAssault > 0 && target.LastAttackerStats == attacker.GetComponent<Stats>() && attacker.CanMove && !attacker.CanDoAction);
@@ -2333,6 +2354,30 @@ public class CombatManager : MonoBehaviour
 
         return armor;
     }
+
+    public IEnumerator SelectRiderOrMount(Unit unit)
+    {
+        _riderOrMountPanel.SetActive(true);
+
+        // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
+        yield return new WaitUntil(() => !_riderOrMountPanel.activeSelf);
+
+        if (Unit.SelectedUnit == null) yield break;
+
+        if (_riderOrMount == "rider")
+        {
+            Attack(Unit.SelectedUnit.GetComponent<Unit>(), unit, false);
+        }
+        else if (_riderOrMount == "mount")
+        {
+            Attack(Unit.SelectedUnit.GetComponent<Unit>(), unit.Mount, false);
+        }
+    }
+
+    private void RiderOrMountButtonClick(string riderOrmount)
+    {
+        _riderOrMount = riderOrmount;
+    }
     #endregion
 
     #region Charge
@@ -3251,7 +3296,7 @@ public class CombatManager : MonoBehaviour
         int successValue = DiceRollManager.Instance.TestSkill("SW", stats, null, 0, rollResult)[0];
         if (successValue >= 0)
         {
-            Debug.Log($"<color=#FF7F50>{stats.Name} wprowadza się w szał bojowy. Staje się niewrażliwa na strach i grozę.</color>");
+            Debug.Log($"<color=#FF7F50>{stats.Name} wprowadza się w szał bojowy. Staje się niewrażliwy/a na strach i grozę.</color>");
             unit.IsFrenzy = true;
 
             // Jednostka w szale bojowym nie odczuwa strachu

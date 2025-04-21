@@ -228,6 +228,8 @@ public class MountsManager : MonoBehaviour
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
         GridManager.Instance.CheckTileOccupancy();
         GridManager.Instance.HighlightTilesInMovementRange(unit.Stats);
+        CombatManager.Instance.SetActionsButtonsInteractable();
+        CombatManager.Instance.ChangeAttackType();
     }
 
     public void LoadMountedUnits()
