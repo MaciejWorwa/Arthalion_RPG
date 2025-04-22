@@ -14,4 +14,9 @@ public class UIButtonTooltip : MonoBehaviour, IPointerEnterHandler, IPointerExit
     {
         TooltipManager.Instance.HideTooltip();
     }
+
+    public void ChangeTooltipText(string text)
+    {
+        _tooltipText = text;
+    }
 }

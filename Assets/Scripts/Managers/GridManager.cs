@@ -69,6 +69,7 @@ public class GridManager : MonoBehaviour
         }
 
         CheckTileOccupancy();
+        UpdateGridColorButton();
     }
 
     public void GenerateGrid()
@@ -324,13 +325,19 @@ public class GridManager : MonoBehaviour
         GridColor = data.GridColor;
 
         //Zaktualizowanie koloru przycisku odpowiadającemu za zmianę koloru siatki
-        if(SceneManager.GetActiveScene().buildIndex == 0 && MapEditor.Instance != null)
+        if(MapEditor.Instance != null)
         {
-            Color newColor = GridColor == "white" ? Color.white : Color.black;
-            _gridColorbutton.GetComponent<Image>().color = newColor;
+            UpdateGridColorButton();
         }
 
         CameraManager.ChangeCameraRange(Width, Height);
+    }
+
+    //Zaktualizowanie koloru przycisku odpowiadającemu za zmianę koloru siatki
+    public void UpdateGridColorButton()
+    {
+        Color newColor = GridColor == "white" ? Color.white : Color.black;
+        _gridColorbutton.GetComponent<Image>().color = newColor;
     }
 
     #region Uncovering map and removing MapEditor (this methods are useful only in BattleScene)

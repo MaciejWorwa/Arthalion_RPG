@@ -1,3 +1,4 @@
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -269,6 +270,7 @@ public class MountsManager : MonoBehaviour
 
             //Wyświetla ikonkę wierzchowca przy tokenie jednostki
             Unit.SelectedUnit.transform.Find("Canvas/Mount_image").gameObject.SetActive(true);
+            Unit.SelectedUnit.transform.Find("Canvas/Mount_image").GetComponent<UIButtonTooltip>().ChangeTooltipText(unit.Mount.GetComponent<Stats>().Name);
         }
         else
         {
@@ -286,6 +288,7 @@ public class MountsManager : MonoBehaviour
             if (pair.Key.IsMounted)
             {
                 pair.Key.transform.Find("Canvas/Mount_image").gameObject.SetActive(true);
+                pair.Key.transform.Find("Canvas/Mount_image").GetComponent<UIButtonTooltip>().ChangeTooltipText(pair.Key.Mount.GetComponent<Stats>().Name);
             }
         }
     }

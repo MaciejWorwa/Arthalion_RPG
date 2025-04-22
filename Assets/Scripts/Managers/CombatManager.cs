@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using Unity.VisualScripting;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEditor;
 using UnityEngine;
 using static UnityEngine.GraphicsBuffer;
@@ -1066,6 +1067,19 @@ public class CombatManager : MonoBehaviour
                 Debug.Log("target.PoisonTestModifier " + target.PoisonTestModifier);
             }
 
+            // Uwzględnienie cechy "Wampiryczny"
+            if (attackerStats.Vampiric)
+            {
+                int healedAmount = Mathf.Min(finalDamage, attackerStats.MaxHealth - attackerStats.TempHealth);
+                attackerStats.TempHealth += healedAmount;
+                attackerStats.GetComponent<Unit>().DisplayUnitHealthPoints();
+
+                if(healedAmount > 0)
+                {
+                    Debug.Log($"{attackerStats.Name} zregenerował {healedAmount} obrażeń.");
+                }
+            }
+
             // Uwzględnienie cechy "Kwasowa krew"
             if (targetStats.CorrosiveBlood && !isCorrosiveBloodReaction)
             {
@@ -1191,6 +1205,24 @@ public class CombatManager : MonoBehaviour
         if (targetStats.Shieldsman > 0 && target.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Shield > 0)) modifier += targetStats.Shieldsman * 10; // Modyfikator za talent Tarczownik
         if (targetStats.Riposte > 0) modifier += targetStats.Riposte * 10; // Modyfikator za talent Riposta
 
+        // Modyfikator za dekoncentrującego przeciwnika w pobliżu
+        foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
+        {
+            Unit unit = entry.Key;
+            Stats distractingStats = unit.GetComponent<Stats>();
+            if (distractingStats.Distracting && !ReferenceEquals(distractingStats, targetStats) && !unit.CompareTag(targetStats.tag))
+            {
+                float radius = (distractingStats.Wt / 10) / 2f;
+                float distance = Vector2.Distance(unit.transform.position, targetStats.transform.position);
+
+                if (distance <= radius)
+                {
+                    modifier -= 20;
+                    break; // tylko raz -20, nawet jeśli więcej jednostek dekoncentruje
+                }
+            }
+        }
+
         return modifier;
     }
 
@@ -1205,6 +1237,24 @@ public class CombatManager : MonoBehaviour
 
         if (target.IsMounted && targetStats.Vaulting == 0) modifier -= 20; // Modyfikator za dosiadanie wierzchowca bez talentu woltyżerka
         else if (target.IsMounted) modifier += targetStats.Vaulting * 10; // Modyfikator za talent Woltyżerka
+
+        // Modyfikator za dekoncentrującego przeciwnika w pobliżu
+        foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
+        {
+            Unit unit = entry.Key;
+            Stats distractingStats = unit.GetComponent<Stats>();
+            if (distractingStats.Distracting && !ReferenceEquals(distractingStats, targetStats) && !unit.CompareTag(targetStats.tag))
+            {
+                float radius = (distractingStats.Wt / 10) / 2f;
+                float distance = Vector2.Distance(unit.transform.position, targetStats.transform.position);
+
+                if (distance <= radius)
+                {
+                    modifier -= 20;
+                    break; // tylko raz -20, nawet jeśli więcej jednostek dekoncentruje
+                }
+            }
+        }
 
         //Modyfikator za przeciążenie
         int encumbrancePenalty = 0;
@@ -1537,6 +1587,25 @@ public class CombatManager : MonoBehaviour
         }
 
         Debug.Log($"Uwzględniono modyfikatory za stany celu. Łączny modyfikator: " + attackModifier);
+
+        // Modyfikator za dekoncentrującego przeciwnika w pobliżu
+        foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
+        {
+            Unit unit = entry.Key;
+            Stats distractingStats = unit.GetComponent<Stats>();
+            if (distractingStats.Distracting && !ReferenceEquals(distractingStats, attackerStats) && !unit.CompareTag(attackerStats.tag))
+            {
+                float radius = (distractingStats.Wt / 10) / 2f;
+                float distance = Vector2.Distance(unit.transform.position, attackerStats.transform.position);
+
+                if (distance <= radius)
+                {
+                    attackModifier -= 20;
+                    Debug.Log($"{attackerStats.Name} jest zdekoncentrowany przez {distractingStats.Name}. Uwzględniono modyfikator -20.");
+                    break; // tylko raz -20, nawet jeśli więcej jednostek dekoncentruje
+                }
+            }
+        }
 
         // Modyfikator za wyczerpanie
         if (attackerUnit.Fatiqued > 0) attackModifier -= attackerUnit.Fatiqued * 10;
@@ -2197,6 +2266,11 @@ public class CombatManager : MonoBehaviour
         // Wywołujemy logowanie
         Debug.Log($"Atak jest skierowany w {TranslateHitLocation(hitLocation)}.");
 
+        return hitLocation;
+    }
+
+    public string NormalizeHitLocation(string hitLocation)
+    {
         // Normalizujemy lokalizację trafienia
         string normalizedHitLocation = hitLocation switch
         {
@@ -2431,7 +2505,7 @@ public class CombatManager : MonoBehaviour
                 //Uwzględnienie talentu Atak wyprzedzający
                 if (targetStats.ReactionStrikesLeft > 0)
                 {
-                    Debug.Log($"REACTION STRIKES LEFT: {targetStats.ReactionStrikesLeft}");
+                    Debug.Log($"Pozostałe Ataki Wyprzedzające: {targetStats.ReactionStrikesLeft}");
 
                     int initiativeRoll = 0;
                     if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))

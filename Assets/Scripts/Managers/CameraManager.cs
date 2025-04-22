@@ -44,7 +44,7 @@ public class CameraManager : MonoBehaviour
         _camera.orthographicSize = zoomSize;
 
         // Dynamicznie dostosowuje prędkość ruchu w zależności od zoomu
-        _moveSpeed = _camera.orthographicSize / MinZoom;
+        _moveSpeed = (_camera.orthographicSize / MinZoom) * 1.5f;
 
         float horizontalInput = 0f;
         float verticalInput = 0f;

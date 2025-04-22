@@ -131,6 +131,7 @@ public class Stats : MonoBehaviour
     public bool Distracting; // Dekoncentrujący
     public bool Ethereal; // Eteryczny
     public int Fear; // Strach
+    public bool Hungry; // Żarłoczny ---------------------------- MECHANIKA DO WPPROWADZENIA
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int NaturalArmor;
     public bool Regeneration; // Regeneracja
@@ -138,6 +139,7 @@ public class Stats : MonoBehaviour
     public int Terror; // Groza
     public bool Undead; // Ożywieniec
     public bool Unstable; // Niestabilny
+    public bool Vampiric; // Wampiryczny ---------------------------- MECHANIKA DO WPPROWADZENIA
     public bool Venom; // Jad
     public int VenomModifier; // Siła jadu
     public int Ward; // Ochrona

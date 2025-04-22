@@ -718,7 +718,8 @@ public class MagicManager : MonoBehaviour
         Debug.Log($"Poziom sukcesu {spellcasterStats.Name}: {successLevel}. Siła zaklęcia: {spell.Strength}");
 
         //Ustalamy miejsce trafienia
-        string hitLocation = !String.IsNullOrEmpty(CombatManager.Instance.HitLocation) ? CombatManager.Instance.HitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollResult) ? CombatManager.Instance.DetermineHitLocation() : CombatManager.Instance.DetermineHitLocation(rollResult));
+        string unnormalizedHitLocation = !String.IsNullOrEmpty(CombatManager.Instance.HitLocation) ? CombatManager.Instance.HitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollResult) ? CombatManager.Instance.DetermineHitLocation() : CombatManager.Instance.DetermineHitLocation(rollResult));
+        string hitLocation = CombatManager.Instance.NormalizeHitLocation(unnormalizedHitLocation);
 
         // Uwzględnienie zasad specjalnych Tradycji Światła lub Życia
         if ((_hyshToggle.isOn || _ghyranToggle.isOn) && (targetStats.Daemonic != 0 || targetStats.Undead) && targetStats != spellcasterStats)
@@ -936,11 +937,6 @@ public class MagicManager : MonoBehaviour
             _extraRangeButton.interactable = spell.Range != 1.5f;
             _extraAreaSizeButton.interactable = spell.AreaSize != 0;
             _extraDurationButton.interactable = spell.Duration != 0;
-
-            foreach(var type in spell.Type)
-            {
-                Debug.Log(type);
-            }
 
             _overcastingPanel.SetActive(true);
 

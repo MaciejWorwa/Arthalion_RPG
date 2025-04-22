@@ -776,8 +776,10 @@ MonoBehaviour:
   NameDisplay: {fileID: 5344260523014033116}
   HealthDisplay: {fileID: 1306580773643467112}
   LastAttackerStats: {fileID: 0}
+  MountId: 0
   Mount: {fileID: 0}
   IsMounted: 0
+  HasRider: 0
 --- !u!114 &-2754630250583481522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -871,6 +873,7 @@ MonoBehaviour:
   Sturdy: 0
   SureShot: 0
   Unshakable: 0
+  Vaulting: 0
   WarWizard: 0
   Bestial: 0
   Bounce: 0
@@ -1586,6 +1589,7 @@ GameObject:
   - component: {fileID: 8909326420627387961}
   - component: {fileID: 5691349322658720333}
   - component: {fileID: 6093203127764454880}
+  - component: {fileID: 1006444240811086130}
   m_Layer: 6
   m_Name: Mount_image
   m_TagString: Untagged
@@ -1650,6 +1654,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1006444240811086130
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6594263883780136064}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4ff3129ab0598740bcb046be06186f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _tooltipText: "Ko\u0144"
 --- !u!1 &7022358155697320939
 GameObject:
   m_ObjectHideFlags: 0

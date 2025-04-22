@@ -83,6 +83,27 @@
       "ExtraPoints": 3
     },
     {
+      "Race": "Demonetka Slaanesha",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 60,
+      "US": 50,
+      "S": 40,
+      "Wt": 30,
+      "I": 65,
+      "Zw": 60,
+      "Zr": 35,
+      "Int": 30,
+      "SW": 70,
+      "Ogd": 45,
+      "Sz": 4,
+      "Champion": true,
+      "Daemonic": 8,
+      "Unstable": true,
+      "Fear": 2,
+      "Distracting": true
+    },
+    {
       "Race": "Duch",
       "Size": 3,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -98,7 +119,9 @@
       "Ogd": 0,
       "Sz": 6,
       "Fear": 2,
-      "Ethereal": true
+      "Ethereal": true,
+      "Undead": true,
+      "Unstable": true
     },
     {
       "Race": "Dzik",
@@ -115,7 +138,25 @@
       "SW": 10,
       "Ogd": 0,
       "Sz": 7,
-      "NaturalArmor": 1
+      "NaturalArmor": 1,
+      "Bestial": true,
+      "Stride": true
+    },
+    {
+      "Race": "Ghul",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Bułat", "Młot jednoręczny", "Buzdygan", "Pałka", "Miecz", "Topór" ],
+      "WW": 30,
+      "US": 0,
+      "S": 35,
+      "Wt": 30,
+      "I": 30,
+      "Zw": 35,
+      "Zr": 25,
+      "Int": 20,
+      "SW": 20,
+      "Ogd": 5,
+      "Sz": 4
     },
     {
       "Race": "Goblin",
@@ -198,7 +239,8 @@
       "SW": 40,
       "Ogd": 0,
       "Sz": 6,
-      "NaturalArmor": 1
+      "NaturalArmor": 1,      
+      "Bestial": true
     },
     {
       "Race": "Hipogryf",
@@ -214,7 +256,9 @@
       "Int": 5,
       "SW": 35,
       "Ogd": 0,
-      "Sz": 7
+      "Sz": 7,      
+      "Bestial": true,
+      "Stride": true
     },
     {
       "Race": "Klanbrat",
@@ -259,7 +303,31 @@
       "Int": 10,
       "SW": 10,
       "Ogd": 10,
-      "Sz": 7
+      "Sz": 7,
+      "Bestial": true,
+      "Stride": true
+    },
+    {
+      "Race": "Krwiopuszcz Khorna",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Miecz", "Topór", "Miecz dwuręczny", "Wielki topór" ],
+      "WW": 55,
+      "US": 35,
+      "S": 45,
+      "Wt": 35,
+      "I": 60,
+      "Zw": 40,
+      "Zr": 30,
+      "Int": 25,
+      "SW": 70,
+      "Ogd": 15,
+      "Sz": 5,
+      "Champion": true,
+      "Daemonic": 8,
+      "Unstable": true,
+      "NaturalArmor": 5,
+      "Fear": 3,
+      "Frenzy": true
     },
     {
       "Race": "Minotaur",
@@ -276,6 +344,7 @@
       "SW": 30,
       "Ogd": 15,
       "Sz": 6,
+      "Hungry": true,
       "MeleeSerialized": [
         {
           "Key": "TwoHanded",
@@ -320,7 +389,9 @@
       "SW": 15,
       "Ogd": 0,
       "Sz": 4,
-      "NaturalArmor": 1
+      "NaturalArmor": 1,
+      "Bestial": true,
+      "Stride": true
     },
     {
       "Race": "Ogr",
@@ -338,6 +409,7 @@
       "Ogd": 20,
       "Sz": 6,
       "NaturalArmor": 1,
+      "Hungry": true,
       "MeleeSerialized": [
         {
           "Key": "TwoHanded",
@@ -392,7 +464,9 @@
       "Int": 15,
       "SW": 15,
       "Ogd": 0,
-      "Sz": 4
+      "Sz": 4,
+      "Bestial": true,
+      "Stride": true
     },
     {
       "Race": "Pies",
@@ -408,7 +482,9 @@
       "Int": 15,
       "SW": 10,
       "Ogd": 15,
-      "Sz": 4
+      "Sz": 4,
+      "Bestial": true,
+      "Stride": true
     },
     {
       "Race": "Półgryf",
@@ -425,7 +501,9 @@
       "SW": 25,
       "Ogd": 0,
       "Sz": 7,
-      "NaturalArmor": 1
+      "NaturalArmor": 1,
+      "Bestial": true,
+      "Stride": true
     },
     {
       "Race": "Smok",
@@ -478,6 +556,8 @@
       "Sz": 4,
       "NaturalArmor": 2,
       "Fear": 2,
+      "Undead": true,
+      "Unstable": true,
       "MeleeSerialized": [
         {
           "Key": "TwoHanded",
@@ -579,6 +659,29 @@
       ]
     },
     {
+      "Race": "Varghulf",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 55,
+      "US": 0,
+      "S": 55,
+      "Wt": 55,
+      "I":30,
+      "Zw": 50,
+      "Zr": 20,
+      "Int": 10,
+      "SW": 60,
+      "Ogd": 0,
+      "Sz": 8,
+      "Terror": 3,
+      "NaturalArmor": 1,
+      "Undead": true,
+      "Regeneration": true,
+      "Bestial": true,
+      "Vampiric": true,
+      "Hungry": true
+    },
+    {
       "Race": "Widmo z kurhanu",
       "Size": 3,
       "PrimaryWeaponNames": [ "Wielki topór", "Miecz dwuręczny" ],
@@ -586,7 +689,7 @@
       "US": 0,
       "S": 35,
       "Wt": 30,
-      "I": 105,
+      "I": 15,
       "Zw": 30,
       "Zr": 25,
       "Int": 25,
@@ -594,7 +697,9 @@
       "Ogd": 15,
       "Sz": 6,
       "Terror": 3,
-      "Ethereal": true
+      "Ethereal": true,
+      "Undead": true,
+      "Unstable": true
     },
     {
       "Race": "Wilk",
@@ -611,7 +716,9 @@
       "SW": 15,
       "Ogd": 0,
       "Sz": 4,
-      "NaturalArmor": 1
+      "NaturalArmor": 1,
+      "Bestial": true,
+      "Stride": true
     },
     {
       "Race": "Zombie",
@@ -628,7 +735,9 @@
       "SW": 0,
       "Ogd": 0,
       "Sz": 4,
-      "Fear": 2
+      "Fear": 2,
+      "Undead": true,
+      "Unstable": true
     }
   ]
 }

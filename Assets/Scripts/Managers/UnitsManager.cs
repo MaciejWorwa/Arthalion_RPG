@@ -5,7 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using TMPro;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 public class UnitsManager : MonoBehaviour
 {
@@ -451,12 +453,39 @@ public class UnitsManager : MonoBehaviour
                 unit.LastAttackerStats.StrongestDefeatedOpponentOverall = stats.Overall;
                 unit.LastAttackerStats.StrongestDefeatedOpponent = stats.Name;
             }
+
+            // Uwzględnia cechę Żarłoczny
+            if (unit.LastAttackerStats.Hungry)
+            {
+                StartCoroutine(HungryTrait(unit.LastAttackerStats, stats));
+            }
         }
 
         Destroy(unitObject);
 
         //Resetuje kolor przycisku usuwania jednostek
         _removeUnitButton.GetComponent<UnityEngine.UI.Image>().color = Color.white;
+    }
+
+    private IEnumerator HungryTrait(Stats stats, Stats deadBodyStats)
+    {
+        int rollResult = 0;
+        // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
+        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli", result => rollResult = result));
+            if (rollResult == 0) yield break;
+        }
+        else
+        {
+            rollResult = UnityEngine.Random.Range(1, 101);
+        }
+
+        int[] rollResults = DiceRollManager.Instance.TestSkill("SW", stats, null, 20, rollResult);
+        if (rollResults[0] < 0)
+        {
+            Debug.Log($"<color=red>{stats.Name} traci następną turę, ucztując na martwym ciele {deadBodyStats.Name}. Pamiętaj, aby to uwzględnić.</color>");
+        }
     }
 
     public void RemoveUnitFromList(GameObject confirmPanel)
