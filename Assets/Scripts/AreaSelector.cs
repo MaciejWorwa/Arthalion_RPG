@@ -145,23 +145,34 @@ public class AreaSelector : MonoBehaviour
                 continue;
             }
 
-            //Usuwa wszystkie jednostki w zaznaczonym obszarze
+            //Dodaje wszystkie jednostki w zaznaczonym obszarze do listy wybranych jednostek
             if(collider.GetComponent<Unit>())
             {
                 collidersContainsUnit = true;
-
-                if(UnitsManager.IsUnitRemoving)
-                {
-                    UnitsManager.Instance.DestroyUnit(collider.gameObject);
-                }
-                else
-                {
-                    SelectedUnits.Add(collider.GetComponent<Unit>());
-                }
+                SelectedUnits.Add(collider.GetComponent<Unit>());
             }
         }
 
-        if(SelectedUnits.Count > 1)
+        //Usuwa wszystkie jednostki w zaznaczonym obszarze
+        if (UnitsManager.IsUnitRemoving)
+        {
+            for (int i = SelectedUnits.Count - 1; i >= 0; i--)
+            {
+                Unit unit = SelectedUnits[i];
+
+                //Usuwa też wierzchowce
+                if (unit.Mount != null && unit.IsMounted)
+                {
+                    UnitsManager.Instance.DestroyUnit(unit.Mount.gameObject);
+                }
+
+                UnitsManager.Instance.DestroyUnit(unit.gameObject);
+            }
+            SelectedUnits.Clear();
+
+        }
+
+        if (SelectedUnits.Count > 1)
         {
             //Gdy zaznaczamy więcej jednostek, to odznaczamy (w standardowy sposób) tą, która już była wybrana
             if(Unit.SelectedUnit != null)

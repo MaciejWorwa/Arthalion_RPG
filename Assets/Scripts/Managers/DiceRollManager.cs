@@ -194,8 +194,6 @@ public class DiceRollManager : MonoBehaviour
             // Modyfikator za przeciążenie
             if (attributeName == "Zw")
             {
-                Debug.Log($"max obciazenie {stats.MaxEncumbrance}, currentEncumbrance {stats.CurrentEncumbrance}");
-
                 int encumbrancePenalty = 0;
                 if (stats.MaxEncumbrance - stats.CurrentEncumbrance < 0 && stats.CurrentEncumbrance < stats.MaxEncumbrance * 2)
                 {
@@ -213,6 +211,11 @@ public class DiceRollManager : MonoBehaviour
                 }
 
                 modifier -= encumbrancePenalty;
+
+                if(encumbrancePenalty != 0)
+                {
+                    Debug.Log($"Modyfikator do Zwinności {stats.Name} za przeciążenie: {encumbrancePenalty}.");
+                }
             }
         }
         

@@ -6,6 +6,7 @@ using TMPro;
 using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEditor;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using static UnityEngine.GraphicsBuffer;
 
@@ -70,7 +71,6 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _mountButton;
 
     private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
-    private bool _opportunityAttack; // Zmienna potrzebna do tego, żeby test opanowania przy ataku okazyjnym był wywoływany raz, a nie za każdego przeciwnika
 
     public bool IsManualPlayerAttack;
 
@@ -657,7 +657,12 @@ public class CombatManager : MonoBehaviour
         else if(!opportunityAttack) // Zwykły atak bronią (w przypadku ataków okazyjnych nie można się bronić)
         {
             // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
-            canParry = !targetStats.Bestial && (isMeleeAttack && target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("melee"))) || target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2 || (attackerWeapon.Id == 0 && targetWeapon.Id == 0));
+            Inventory inventory = target.GetComponent<Inventory>();
+            bool hasMeleeWeapon = inventory.EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("melee"));
+            bool hasShield = inventory.EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2);
+            bool bothUnarmed = attackerWeapon.Id == 0 && targetWeapon.Id == 0;
+
+            canParry = !targetStats.Bestial && ((isMeleeAttack && (hasMeleeWeapon || bothUnarmed)) ||  (!isMeleeAttack && hasShield));
             canDodge = isMeleeAttack;
 
             if ((canParry || canDodge) && !target.Surprised)
@@ -797,10 +802,10 @@ public class CombatManager : MonoBehaviour
             StartCoroutine(Stun(attackerStats, targetStats));
         }
 
-        // W przypadku ataku okazyjnego, cel jest zmuszony do testu opanowania ------------------------------- DODAĆ TAKĄ MECHANIKĘ, ŻE JAK JEDNOSTKA WYBIERZE OPCJĘ UNIKU TO PRZY NIEZDANYM TEŚCIE PRZECIWSTAWNYM ZOSTAJE W MIEJSCU. WTEDY NIE MA RZUTU NA OPANOWANIE, ONO JEST JAK NIE UNIKA. USUNĄĆ OPCJĘ PAROWANIA ATAKÓW OKAZYJNYCH
-        if (_opportunityAttack)
+        // W przypadku ataku okazyjnego, cel jest zmuszony do testu opanowania
+        if (opportunityAttack)
         {
-            _opportunityAttack = false;
+            opportunityAttack = false;
 
             int rollResult = 0;
             if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
@@ -1005,7 +1010,11 @@ public class CombatManager : MonoBehaviour
 
             Debug.Log($"{targetStats.Name} wykonuje rzut obronny w związku z cechą \"{defenseName}\". Wynik rzutu: {rollResult}. {rollMessage}");
 
-            if (ignoredDamage) return;
+            if (ignoredDamage)
+            {
+                StartCoroutine(AnimationManager.Instance.PlayAnimation("miss", null, target.gameObject));
+                return;
+            }
         }
 
         if (finalDamage > 0)
@@ -1480,14 +1489,14 @@ public class CombatManager : MonoBehaviour
         // Sprawdza, czy broń jest naładowana
         if (attackerWeapon.ReloadLeft != 0)
         {
-            Debug.Log($"Broń wymaga przeładowania.");
+            Debug.Log($"Broń {attacker.GetComponent<Stats>().Name} wymaga przeładowania.");
             return false;
         }
 
         // Sprawdza, czy cel nie znajduje się zbyt blisko
         if (attackDistance <= 1.5f && !attackerWeapon.Pistol)
         {
-            Debug.Log($"Jednostka stoi zbyt blisko celu, aby wykonać atak dystansowy.");
+            Debug.Log($"{attacker.GetComponent<Stats>().Name} stoi zbyt blisko celu, aby wykonać atak dystansowy.");
 
             return false;
         }
@@ -1505,7 +1514,7 @@ public class CombatManager : MonoBehaviour
             {
                 if (mapElement.IsHighObstacle)
                 {
-                    Debug.Log("Na linii strzału znajduje się przeszkoda, przez którą strzał jest niemożliwy.");
+                    Debug.Log($"Na linii strzału {attacker.GetComponent<Stats>().Name} znajduje się przeszkoda, przez którą strzał jest niemożliwy.");
                     return false;
                 }
             }
@@ -1705,6 +1714,31 @@ public class CombatManager : MonoBehaviour
             {
                 attackModifier -= 20;
                 Debug.Log("Uwzględniono modyfikator za to, że cel jest zaangażowany w walkę w zwarciu. Łączny modyfikator: " + attackModifier);
+            }
+
+            // Sprawdza, czy na linii strzału znajduje się przeszkoda
+            RaycastHit2D[] raycastHits = Physics2D.RaycastAll(attackerUnit.transform.position, targetUnit.transform.position - attackerUnit.transform.position, attackDistance);
+
+            foreach (var raycastHit in raycastHits)
+            {
+                if (raycastHit.collider == null) continue;
+
+                var mapElement = raycastHit.collider.GetComponent<MapElement>();
+                var unit = raycastHit.collider.GetComponent<Unit>();
+
+                if (mapElement != null && mapElement.IsLowObstacle)
+                {
+                    attackModifier -= 20;
+                    Debug.Log($"Strzał jest wykonywany w jednostkę znajdującą się za przeszkodą. Zastosowano modyfikator -20 do trafienia. Łączny modyfikator: " + attackModifier);
+                    break; // Żeby modyfikator nie kumulował się za każdą przeszkodę
+                }
+
+                if (unit != null && unit != targetUnit && unit != attackerUnit)
+                {
+                    attackModifier -= 20;
+                    Debug.Log("Na linii strzału znajduje się inna jednostka. Zastosowano modyfikator -20 do trafienia. Łączny modyfikator: " + attackModifier);
+                    break; // Żeby modyfikator nie kumulował się za każdą postać
+                }
             }
         }
 
@@ -2301,7 +2335,7 @@ public class CombatManager : MonoBehaviour
 
     public int CalculateArmor(Stats attackerStats, Stats targetStats, string hitLocation, int attackRollResult, Weapon attackerWeapon = null)
     {
-        int armor = hitLocation switch
+        int armor = NormalizeHitLocation(hitLocation) switch
         {
             "head" => targetStats.Armor_head,
             "arms" => targetStats.Armor_arms,
@@ -3053,8 +3087,6 @@ public class CombatManager : MonoBehaviour
         List<Unit> adjacentOpponents = AdjacentOpponents(movingUnit.transform.position, movingUnit.tag);
 
         if (adjacentOpponents.Count == 0) return;
-
-        _opportunityAttack = true;
 
         // Atak okazyjny wywolywany dla kazdego wroga bedacego w zwarciu z bohaterem gracza
         foreach (Unit unit in adjacentOpponents)

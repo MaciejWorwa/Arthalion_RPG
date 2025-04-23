@@ -626,8 +626,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
-  - {fileID: 1135006344981783300}
   - {fileID: 4431166025300685952}
+  - {fileID: 1135006344981783300}
   - {fileID: 8107482887940087979}
   - {fileID: 2587328892285057255}
   m_Father: {fileID: 0}
@@ -883,6 +883,7 @@ MonoBehaviour:
   Distracting: 0
   Ethereal: 0
   Fear: 0
+  Hungry: 0
   ImmunityToPsychology: 0
   NaturalArmor: 0
   Regeneration: 0
@@ -890,6 +891,7 @@ MonoBehaviour:
   Terror: 0
   Undead: 0
   Unstable: 0
+  Vampiric: 0
   Venom: 0
   VenomModifier: 0
   Ward: 0

@@ -94,7 +94,15 @@ public class UnitsManager : MonoBehaviour
                 {
                     for (int i = AreaSelector.Instance.SelectedUnits.Count - 1; i >= 0; i--)
                     {
-                        DestroyUnit(AreaSelector.Instance.SelectedUnits[i].gameObject);
+                        Unit unit = AreaSelector.Instance.SelectedUnits[i];
+
+                        //Usuwa też wierzchowce
+                        if (unit.Mount != null && unit.IsMounted)
+                        {
+                            DestroyUnit(unit.Mount.gameObject);
+                        }
+
+                        DestroyUnit(unit.gameObject);
                     }
                     AreaSelector.Instance.SelectedUnits.Clear();
                 }
@@ -423,8 +431,6 @@ public class UnitsManager : MonoBehaviour
 
         //Usunięcie jednostki z kolejki inicjatywy
         InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(unit);
-        //Aktualizuje kolejkę inicjatywy
-        InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
         //Uwolnienie jednostki uwięzionej przez jednostkę, która umiera
         if (unit.EntangledUnitId != 0)
@@ -437,6 +443,17 @@ public class UnitsManager : MonoBehaviour
                 }
             }
         }
+
+        if(unit.IsMounted && unit.Mount != null && !SaveAndLoadManager.Instance.IsLoading && (AreaSelector.Instance.SelectedUnits == null || !AreaSelector.Instance.SelectedUnits.Contains(unit)))
+        {
+            unit.Mount.transform.SetParent(GameObject.Find("----------Units-------------------").transform);
+            InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit.Mount);
+            unit.Mount.gameObject.SetActive(true);
+            unit.Mount.HasRider = false;
+        }
+
+        //Aktualizuje kolejkę inicjatywy
+        InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
         //Usuwa jednostkę z listy wszystkich jednostek
         AllUnits.Remove(unit);

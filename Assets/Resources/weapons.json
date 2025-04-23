@@ -24,8 +24,18 @@
       "Entangle": true
     },
     {
+      "Name": "Bomba",
+      "Category": "explosives",
+      "Type": [ "ranged", "throwing" ],
+      "AttackRange": 1,
+      "S": 12,
+      "Impact": true,
+      "Dangerous": true,
+      "Blast": 5
+    },
+    {
       "Name": "Bomba żużlowa",
-      "Category": "throwing",
+      "Category": "explosives",
       "Type": [ "ranged", "throwing" ],
       "AttackRange": 1,
       "S": 14,
@@ -385,7 +395,7 @@
     {
       "Name": "Nóż do rzucania",
       "Category": "throwing",
-      "Type": [ "melee" ],
+      "Type": [ "melee", "throwing" ],
       "AttackRange": 2,
       "S": 2
     },

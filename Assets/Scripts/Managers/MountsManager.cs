@@ -147,6 +147,7 @@ public class MountsManager : MonoBehaviour
         {
             if (!unit.IsMounted) return;
             unit.Mount = FindMountById(unit.MountId);
+            if (unit.Mount == null) return;
             unit.Mount.HasRider = true;
 
             unit.Mount.transform.position = unit.transform.position;
@@ -215,7 +216,7 @@ public class MountsManager : MonoBehaviour
             }
             unit.Mount.transform.position = newMountPosition;
 
-            unit.Mount.transform.SetParent(null);
+            unit.Mount.transform.SetParent(GameObject.Find("----------Units-------------------").transform);
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit.Mount);
             unit.Mount.gameObject.SetActive(true);
 
@@ -264,7 +265,7 @@ public class MountsManager : MonoBehaviour
         if (Unit.SelectedUnit == null) return;
         Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
 
-        if (unit.IsMounted)
+        if (unit.IsMounted && unit.Mount != null)
         {
             _mountButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.green;
 
@@ -285,7 +286,7 @@ public class MountsManager : MonoBehaviour
     {
         foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
         {
-            if (pair.Key.IsMounted)
+            if (pair.Key.IsMounted && pair.Key.Mount != null)
             {
                 pair.Key.transform.Find("Canvas/Mount_image").gameObject.SetActive(true);
                 pair.Key.transform.Find("Canvas/Mount_image").GetComponent<UIButtonTooltip>().ChangeTooltipText(pair.Key.Mount.GetComponent<Stats>().Name);

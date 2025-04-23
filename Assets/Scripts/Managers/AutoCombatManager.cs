@@ -3,7 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
+using static UnityEngine.UI.CanvasScaler;
 
 public class AutoCombatManager : MonoBehaviour
 {
@@ -35,23 +38,32 @@ public class AutoCombatManager : MonoBehaviour
     public void Act(Unit unit)
     {
         Weapon weapon = InventoryManager.Instance.ChooseWeaponToAttack(unit.gameObject);
+        bool isRangedAttack = !weapon.Type.Contains("melee");
 
-        bool closestOpponentInDistanceRangeNeeded = !weapon.Type.Contains("melee");
-
-        GameObject closestOpponent = GetClosestOpponent(unit.gameObject, closestOpponentInDistanceRangeNeeded);
+        var (closestOpponent, distance) = GetClosestOpponent(unit.gameObject, isRangedAttack);
 
         //Jeżeli jednostka walczy bronią dystansową ale nie ma żadnego przeciwnika do którego może strzelać to obiera za cel przeciwnika w zwarciu. Będzie się to wiązało z próbą dobycia broni typu "melee"
-        if (closestOpponent == null && closestOpponentInDistanceRangeNeeded)
+        if (closestOpponent == null && isRangedAttack)
         {
-            closestOpponentInDistanceRangeNeeded = false;
-            closestOpponent = GetClosestOpponent(unit.gameObject, closestOpponentInDistanceRangeNeeded);
+            isRangedAttack = false;
+            (closestOpponent, distance) = GetClosestOpponent(unit.gameObject, isRangedAttack);
         }
         if (closestOpponent == null || !unit.CanDoAction) return;
 
-        float distance = Vector2.Distance(closestOpponent.transform.position, unit.transform.position);
+        float effectiveAttackRange = weapon.Type.Contains("ranged") && weapon.Category != "entangling" ? weapon.AttackRange * 3 : weapon.AttackRange;
+        if (weapon.Type.Contains("throwing")) // Oblicza właściwy zasięg ataku, uwzględniając broń miotaną
+        {
+            effectiveAttackRange *= unit.GetComponent<Stats>().S / 10;
+        }
+
+        if (unit.Broken > 0)
+        {
+            MoveAwayFromOpponent(unit, closestOpponent);
+            return;
+        }
 
         // Jeśli rywal jest w zasięgu ataku to wykonuje atak
-        if ((distance <= weapon.AttackRange || distance <= weapon.AttackRange * 2) && weapon.Type.Contains("ranged") && !weapon.Type.Contains("short-range-only"))
+        if (distance <= effectiveAttackRange)
         {
             if (weapon.Type.Contains("ranged"))
             {
@@ -75,35 +87,14 @@ public class AutoCombatManager : MonoBehaviour
     {
         if (distance > 1.5f) //atak dystansowy
         {
-            // Jeśli broń nie wymaga naladowania to wykonuje atak, w przeciwnym razie wykonuje ładowanie
+            // Jeśli broń nie wymaga naladowania to wykonuje atak, w przeciwnym razie wykonuje przeładowanie
             if (weapon.ReloadLeft == 0)
             {
-                CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>(), false);
-
-                if (unit.CanDoAction || unit.GetComponent<Stats>().RapidReload > 0)
-                {
-                    CombatManager.Instance.Reload();
-                }
+                CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>());
             }
-            else if (weapon.ReloadLeft == 1)
+            else
             {
                 CombatManager.Instance.Reload();
-
-                if (unit.CanDoAction)
-                {
-                    CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>(), false);
-                }
-                return;
-            }
-            else if (weapon.ReloadLeft > 1)
-            {
-                CombatManager.Instance.Reload();
-
-                if (unit.CanDoAction || unit.GetComponent<Stats>().RapidReload > 0)
-                {
-                    CombatManager.Instance.Reload();
-                }
-                return;
             }
         }
         else //atak w zwarciu
@@ -129,32 +120,14 @@ public class AutoCombatManager : MonoBehaviour
 
                         selectedIndex++;
                     }
-
-                    // Zużywa akcję na dobycie broni dopiero po dobyciu odpowiedniej z nich w wyniku powyższej pętli
-                    RoundsManager.Instance.DoAction(unit.GetComponent<Unit>());
                 }
-                else // Upuszcza broń, żeby walczyć przy użyciu pięści
+                else // Oddala się od przeciwnika
                 {
-                    InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().SetSelectedIndex(1);
-                    InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().SelectedButton = InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons[0];
-                    InventoryManager.Instance.RemoveWeaponFromInventory();
+                    MoveAwayFromOpponent(unit, closestOpponent);
                 }
             }
 
-            var equippedWeapons = unit.GetComponent<Inventory>().EquippedWeapons;
-            bool isFirstWeaponShield = equippedWeapons[0] != null && equippedWeapons[0].Type.Contains("shield");
-            bool hasTwoOneHandedWeaponsOrShield = (equippedWeapons[0] != null && equippedWeapons[1] != null && equippedWeapons[0].Name != equippedWeapons[1].Name) || isFirstWeaponShield;
-
-            if (unit.CanDoAction)
-            {
-                CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>(), false);
-            }
-
-            if (unit.CanDoAction)
-            {
-                //Kończy turę, żeby zostawić sobie akcję na parowanie
-                RoundsManager.Instance.FinishTurn();
-            }
+            CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>());
         }
     }
 
@@ -170,40 +143,46 @@ public class AutoCombatManager : MonoBehaviour
         }
         else
         {
-            Debug.Log($"{unit.GetComponent<Stats>().Name} nie jest w stanie podejść do {closestOpponent.GetComponent<Stats>().Name}.");
+            Debug.Log($"<color=#4dd2ff>{unit.GetComponent<Stats>().Name} nie jest w stanie podejść do {closestOpponent.GetComponent<Stats>().Name}.</color>");
             WaitForMovementOrAttackOpportunity(unit);
-
             return;
         }
 
         //Ścieżka ruchu atakującego
         List<Vector2> path = MovementManager.Instance.FindPath(unit.transform.position, targetTilePosition);
 
-        if ((!weapon.Type.Contains("ranged")) && path.Count <= unit.GetComponent<Stats>().TempSz * 2 && path.Count >= unit.GetComponent<Stats>().Sz / 2 && unit.CanDoAction && unit.CanMove) // Jeśli rywal jest w zasięgu szarży to wykonuje szarżę
-        {
-            Debug.Log($"{unit.GetComponent<Stats>().Name} szarżuje na {closestOpponent.GetComponent<Stats>().Name}.");
+        int movementRange = unit.IsMounted && unit.Mount != null ? unit.Mount.GetComponent<Stats>().TempSz : unit.Stats.TempSz;
 
-            StartCoroutine(MovementManager.Instance.UpdateMovementRange(2));
+        if ((!weapon.Type.Contains("ranged")) && path.Count <= movementRange * 2 && path.Count >= movementRange / 2 && unit.CanDoAction && unit.CanMove && !unit.Prone) // Jeśli rywal jest w zasięgu szarży to wykonuje szarżę
+        {
+            Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} szarżuje na {closestOpponent.GetComponent<Stats>().Name}.</color>");
+
+            StartCoroutine(MovementManager.Instance.UpdateMovementRange(2, null, true));
             CombatManager.Instance.ChangeAttackType("Charge");
 
-            CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>(), false);
+            CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>());
         }
-        else if (path.Count < unit.GetComponent<Stats>().Sz / 2 && path.Count > 0 && unit.CanDoAction && unit.CanMove) //Wykonuje ruch w kierunku przeciwnika, a następnie atak
+        else if (path.Count < movementRange / 2 && path.Count > 0 && unit.CanDoAction && unit.CanMove) //Wykonuje ruch w kierunku przeciwnika, a następnie atak
         {
             // Uruchomia korutynę odpowiedzialną za ruch i atak
             StartCoroutine(MoveAndAttack(unit, targetTile, closestOpponent.GetComponent<Unit>(), weapon));
         }
-        else if (path.Count > 0 && unit.CanMove) //Wykonuje ruch w kierunku przeciwnika
+        else if (path.Count > 0) //Wykonuje ruch w kierunku przeciwnika
         {
-            if (unit.CanDoAction) //Wykonuje bieg
+            if (unit.CanDoAction && !unit.Prone) //Wykonuje bieg
             {
-                StartCoroutine(MovementManager.Instance.UpdateMovementRange(2));
-                Debug.Log($"{unit.GetComponent<Stats>().Name} biegnie w stronę {closestOpponent.GetComponent<Stats>().Name}.");
+                MovementManager.Instance.Run();
+                Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} biegnie w stronę {closestOpponent.GetComponent<Stats>().Name}.</color>");
+            }
+            else if (unit.CanMove)
+            {
+                StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
+                Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} idzie w stronę {closestOpponent.GetComponent<Stats>().Name}.</color>");
             }
             else
             {
-                StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
-                Debug.Log($"{unit.GetComponent<Stats>().Name} idzie w stronę {closestOpponent.GetComponent<Stats>().Name}.");
+                WaitForMovementOrAttackOpportunity(unit);
+                return;
             }
 
             MovementManager.Instance.MoveSelectedUnit(targetTile, unit.gameObject);
@@ -219,7 +198,7 @@ public class AutoCombatManager : MonoBehaviour
 
     IEnumerator MoveAndAttack(Unit unit, GameObject targetTile, Unit closestOpponent, Weapon weapon)
     {
-        Debug.Log($"{unit.GetComponent<Stats>().Name} podchodzi do {closestOpponent.GetComponent<Stats>().Name} i atakuje.");
+        Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} podchodzi do {closestOpponent.GetComponent<Stats>().Name} i atakuje.</color>");
 
         //Przywraca standardową szybkość
         StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
@@ -234,6 +213,31 @@ public class AutoCombatManager : MonoBehaviour
         ExecuteAttack(unit, closestOpponent.gameObject, weapon, 1f);
     }
 
+    private void MoveAwayFromOpponent(Unit unit, GameObject closestOpponent)
+    {
+        StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
+        GameObject tile = GetTileAwayFromTarget(unit.gameObject, closestOpponent);
+
+        if(tile != null)
+        {
+            if (unit.Broken > 0)
+            {
+                Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} ucieka od {closestOpponent.GetComponent<Stats>().Name} z powodu paniki.</color>");
+            }
+            else
+            {
+                Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} wycofuje się od {closestOpponent.GetComponent<Stats>().Name}.</color>");
+            }
+
+            MovementManager.Instance.MoveSelectedUnit(tile, unit.gameObject);
+        }
+        else
+        {
+            Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} nie ma dokąd uciec.</color>");
+            WaitForMovementOrAttackOpportunity(unit);
+        }
+    }
+
     public void WaitForMovementOrAttackOpportunity(Unit unit)
     {
         //Resetuje szybkość jednostki
@@ -244,17 +248,9 @@ public class AutoCombatManager : MonoBehaviour
             //Przyjmuje pozycję obronną
             CombatManager.Instance.DefensiveStance();
         }
-        else if (unit.CanDoAction)
+        else
         {
-            var equippedWeapons = unit.GetComponent<Inventory>().EquippedWeapons;
-            bool isFirstWeaponShield = equippedWeapons[0] != null && equippedWeapons[0].Type.Contains("shield");
-            bool hasTwoOneHandedWeaponsOrShield = (equippedWeapons[0] != null && equippedWeapons[1] != null && equippedWeapons[0].Name != equippedWeapons[1].Name) || isFirstWeaponShield;
-
-            if (hasTwoOneHandedWeaponsOrShield != true)
-            {
-                //Kończy turę, żeby zostawić sobie akcję na parowanie
-                RoundsManager.Instance.FinishTurn();
-            }
+            RoundsManager.Instance.FinishTurn();
         }
     }
 
@@ -278,28 +274,74 @@ public class AutoCombatManager : MonoBehaviour
         }
         TargetTile = null;
     }
-
-
-    public GameObject GetClosestOpponent(GameObject attacker, bool closestOpponentInDistanceRangeNeeded)
+    public (GameObject opponent, float distance) GetClosestOpponent(GameObject attacker, bool isRangedAttack)
     {
         GameObject closestOpponent = null;
         float minDistance = Mathf.Infinity;
 
-        foreach (Unit unit in UnitsManager.Instance.AllUnits)
+        foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
         {
-            if (unit.gameObject == attacker || unit.CompareTag(attacker.tag) == true) continue;
+            if (pair.Key == null) continue;
+            if (pair.Key.gameObject == attacker || pair.Key.CompareTag(attacker.tag)) continue;
 
-            float distance = Vector2.Distance(unit.transform.position, attacker.transform.position);
+            float distance = Vector2.Distance(pair.Key.transform.position, attacker.transform.position);
 
-            if (closestOpponentInDistanceRangeNeeded == true && distance < 1.5f) continue;
+            if (isRangedAttack && distance < 1.5f) continue;
 
             if (distance < minDistance)
             {
-                closestOpponent = unit.gameObject;
+                closestOpponent = pair.Key.gameObject;
                 minDistance = distance;
+
+                if (!isRangedAttack && distance < 1.5f)
+                {
+                    break;
+                }
             }
         }
 
-        return closestOpponent;
+        return (closestOpponent, minDistance);
+    }
+
+    public GameObject GetTileAwayFromTarget(GameObject attacker, GameObject target)
+    {
+        if (attacker == null || target == null) return null;
+
+        Vector2 attackerPos = attacker.transform.position;
+        int moveRange = attacker.GetComponent<Unit>().IsMounted && attacker.GetComponent<Unit>().Mount != null ? attacker.GetComponent<Unit>().Mount.GetComponent<Stats>().TempSz : attacker.GetComponent<Stats>().TempSz;
+
+        GameObject bestTile = null;
+        int bestPathLength = -1; // początkowo -1, bo chcemy maksymalne path.Count <= Sz
+
+        // Przeszukujemy pola w promieniu `Sz` od jednostki
+        for (int x = -moveRange; x <= moveRange; x++)
+        {
+            for (int y = -moveRange; y <= moveRange; y++)
+            {
+                Vector2 pos = attackerPos + new Vector2(x, y);
+
+                GameObject tile = GameObject.Find($"Tile {pos.x - GridManager.Instance.transform.position.x} {pos.y - GridManager.Instance.transform.position.y}");
+
+                if (tile == null || tile.GetComponent<Tile>().IsOccupied) continue;
+
+                List<Vector2> path = MovementManager.Instance.FindPath(attackerPos, pos);
+
+                if (path.Count == 0 || path.Count > moveRange) continue;
+
+                // Preferuj dokładnie równe `Sz`, ale jeśli nie ma – weź największe mniejsze
+                if (path.Count == moveRange)
+                {
+                    return tile; // priorytet – idealna odległość
+                }
+
+                if (path.Count > bestPathLength)
+                {
+                    bestPathLength = path.Count;
+                    bestTile = tile;
+                }
+            }
+        }
+
+        return bestTile; // jeśli nie znaleziono idealnego, zwraca najlepszy możliwy
     }
 }

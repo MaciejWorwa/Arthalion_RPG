@@ -99,10 +99,10 @@ public class InitiativeQueueManager : MonoBehaviour
         foreach (var pair in InitiativeQueue)
         {
             // Dodaje jednostkę do głównej kolejki ScrollViewContent
-            GameObject optionObj = CreateInitiativeOption(pair, InitiativeScrollViewContent, false);
+            GameObject optionObj = CreateInitiativeOption(pair, InitiativeScrollViewContent);
 
             // Dodaje jednostkę do Players kolejki ScrollViewContent
-            GameObject playersOptionObj = CreateInitiativeOption(pair, PlayersCamera_InitiativeScrollViewContent, true);
+            GameObject playersOptionObj = CreateInitiativeOption(pair, PlayersCamera_InitiativeScrollViewContent);
 
             // Sprawdza, czy jest aktywna tura dla tej jednostki
             if ((pair.Key.CanDoAction || pair.Key.CanMove) && ActiveUnit == null && pair.Key.IsTurnFinished != true)
@@ -139,7 +139,7 @@ public class InitiativeQueueManager : MonoBehaviour
         }
     }
 
-    private GameObject CreateInitiativeOption(KeyValuePair<Unit, int> pair, Transform scrollViewContent, bool IsPlayersCamera_InitiativeQueue)
+    private GameObject CreateInitiativeOption(KeyValuePair<Unit, int> pair, Transform scrollViewContent)
     {
         GameObject optionObj = Instantiate(_initiativeOptionPrefab, scrollViewContent);
 

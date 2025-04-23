@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using static UnityEngine.GraphicsBuffer;
@@ -53,7 +54,7 @@ public class RoundsManager : MonoBehaviour
         _roundNumberDisplay.text = "Runda: " + RoundNumber;
         _playersRoundNumberDisplay.text = "Runda: " + RoundNumber;
 
-        if( RoundNumber > 0 )
+        if (RoundNumber > 0)
         {
             NextRoundButton.transform.GetChild(0).GetComponent<TMP_Text>().text = "Następna runda";
         }
@@ -79,7 +80,7 @@ public class RoundsManager : MonoBehaviour
             //Stosuje zdolności specjalne różnych jednostek (np. regeneracja żywotności trolla)
             stats.CheckForSpecialRaceAbilities();
 
-            if(stats.Unstable) unstableUnits.Add(unit);
+            if (stats.Unstable) unstableUnits.Add(unit);
 
             unit.IsTurnFinished = false;
             unit.CanDoAction = true;
@@ -116,7 +117,7 @@ public class RoundsManager : MonoBehaviour
             //    }
             //}
 
-            if(stats.ActiveSpellEffects != null && stats.ActiveSpellEffects.Count != 0)
+            if (stats.ActiveSpellEffects != null && stats.ActiveSpellEffects.Count != 0)
             {
                 stats.UpdateSpellEffects();
             }
@@ -153,7 +154,7 @@ public class RoundsManager : MonoBehaviour
 
             // Dla jednostek z talentem Riposta resetujemy pulę ataków
             if (stats.Riposte > 0)
-            {   
+            {
                 stats.RiposteAttacksLeft = stats.Riposte;
             }
 
@@ -196,7 +197,7 @@ public class RoundsManager : MonoBehaviour
 
                 Debug.Log($"<color=#FF7F50>{unstableStats.Name} otrzymuje {damage} obrażeń w związku z cechą \"Niestabilny\".</color>");
 
-                if(unstableStats.TempHealth <= 0)
+                if (unstableStats.TempHealth <= 0)
                 {
                     if (GameManager.IsAutoKillMode)
                     {
@@ -207,7 +208,7 @@ public class RoundsManager : MonoBehaviour
                     {
                         Debug.Log($"<color=red>Żywotność {unstableStats.Name} spadła poniżej 0.</color>");
                     }
-                }  
+                }
             }
         }
 
@@ -245,7 +246,11 @@ public class RoundsManager : MonoBehaviour
 
         for (int i = 0; i < UnitsManager.Instance.AllUnits.Count; i++)
         {
-            if (UnitsManager.Instance.AllUnits[i] == null) continue;
+            //Debug.Log($"<color=white>KOLEJKA NR {i}/{UnitsManager.Instance.AllUnits.Count}.</color>");
+
+            if (UnitsManager.Instance.AllUnits[i] == null || !InitiativeQueueManager.Instance.InitiativeQueue.ContainsKey(UnitsManager.Instance.AllUnits[i])) continue;
+
+            //Debug.Log($"<color=white>KOLEJKA NR {i}. Długość kolejki inicjatywy: {InitiativeQueueManager.Instance.InitiativeQueue.Count}. Lecimy z tematem</color>");
 
             InitiativeQueueManager.Instance.SelectUnitByQueue();
             yield return new WaitForSeconds(0.1f);
@@ -254,6 +259,7 @@ public class RoundsManager : MonoBehaviour
             if (Unit.SelectedUnit != null)
             {
                 unit = Unit.SelectedUnit.GetComponent<Unit>();
+                //Debug.Log($"<color=white>TERAZ AKCJA {unit.Stats.Name}</color>");
             }
             else continue;
 
@@ -262,21 +268,69 @@ public class RoundsManager : MonoBehaviour
             {
                 // Czeka aż jednostka zakończy swoją turę (UnitsWithActionsLeft[unit] == 0 lub unit.IsTurnFinished)
                 yield return new WaitUntil(() => (unit.CanDoAction == false && unit.CanMove == false) || unit.IsTurnFinished);
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(0.6f);
             }
             else // Jednostki wrogów lub wszystkie jednostki, jeśli nie ukrywamy ich statystyk
             {
                 AutoCombatManager.Instance.Act(unit);
 
-                // Czeka, aż jednostka zakończy ruch, zanim wybierze kolejną jednostkę
+                // Czeka, aż jednostka zakończy ruch
                 yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(0.6f);
+
+                if (!unit.IsTurnFinished && (unit.CanDoAction || unit.CanMove))
+                {
+                    FinishTurn();
+                }
             }
         }
 
         NextRoundButton.gameObject.SetActive(true);
         _useFortunePointsButton.SetActive(true);
     }
+
+    //private IEnumerator AutoCombat()
+    //{
+    //    NextRoundButton.gameObject.SetActive(false);
+    //    _useFortunePointsButton.SetActive(false);
+
+    //    foreach (Unit u in InitiativeQueueManager.Instance.InitiativeQueue.Keys.ToList())
+    //    {
+    //        Unit unit = u;
+    //        if (unit == null) continue;
+
+    //        InitiativeQueueManager.Instance.SelectUnitByQueue();
+
+    //        if (Unit.SelectedUnit != null)
+    //        {
+    //            unit = Unit.SelectedUnit.GetComponent<Unit>();
+    //        }
+    //        else continue;
+
+    //        // Jeśli jednostka to PlayerUnit i gramy w trybie ukrywania statystyk wrogów
+    //        if (unit.CompareTag("PlayerUnit") && GameManager.IsStatsHidingMode)
+    //        {
+    //            // Czeka aż jednostka zakończy swoją turę
+    //            yield return new WaitUntil(() => (unit.CanDoAction == false && unit.CanMove == false) || unit.IsTurnFinished);
+    //        }
+    //        else
+    //        {
+    //            AutoCombatManager.Instance.Act(unit);
+
+    //            // Czeka, aż jednostka zakończy ruch
+    //            yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
+    //            yield return new WaitForSeconds(0.5f);
+
+    //            if (!unit.IsTurnFinished && (unit.CanDoAction || unit.CanMove))
+    //            {
+    //                FinishTurn();
+    //            }
+    //        }
+    //    }
+
+    //    NextRoundButton.gameObject.SetActive(true);
+    //    _useFortunePointsButton.SetActive(true);
+    //}
 
     #region Units actions
     public void DoAction(Unit unit)
@@ -384,6 +438,11 @@ public class RoundsManager : MonoBehaviour
 
         // Bierze pod uwagę efekty ewentualnych stanów postaci
         StatesManager.Instance.UpdateUnitStates(unit);
+
+        if (unit.CanMove || unit.CanDoAction)
+        {
+            Debug.Log($"<color=green>{unit.Stats.Name} kończy swoją turę.</color>");
+        }
 
         InitiativeQueueManager.Instance.SelectUnitByQueue();
     }
