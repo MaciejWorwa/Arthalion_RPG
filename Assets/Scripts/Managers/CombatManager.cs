@@ -1176,7 +1176,7 @@ public class CombatManager : MonoBehaviour
         }
         else
         {
-            yield return StartCoroutine(AutoDefense(target, targetStats, attackerStats, targetWeapon, parryValue, dodgeValue, parryModifier, dodgeModifier, targetMeleeSkill));
+            yield return StartCoroutine(AutoDefense(target, targetStats, attackerStats, targetWeapon, parryValue, dodgeValue, parryModifier, dodgeModifier, targetMeleeSkill, canParry, canDodge));
         }
 
         yield return null;
@@ -1308,13 +1308,13 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator AutoDefense(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier, MeleeCategory targetMeleeSkill)
+    private IEnumerator AutoDefense(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier, MeleeCategory targetMeleeSkill, bool canParry, bool canDodge)
     {
-        if (parryValue >= dodgeValue)
+        if (parryValue >= dodgeValue && canParry)
         {
             yield return StartCoroutine(Parry(target, targetStats, attackerStats, targetWeapon, parryValue, parryModifier, targetMeleeSkill));
         }
-        else
+        else if (canDodge)
         {
             yield return StartCoroutine(Dodge(target, targetStats, dodgeValue, dodgeModifier));
         }
@@ -1659,7 +1659,7 @@ public class CombatManager : MonoBehaviour
             }
 
             // Modyfikator za różnicę rozmiarów dzięki wierzchowcowi celu
-            if (targetUnit.IsMounted && targetUnit.Mount.GetComponent<Stats>().Size > attackerStats.Size && attackerWeapon.AttackRange == 1.5f)
+            if (targetUnit.IsMounted && targetUnit.Mount != null && targetUnit.Mount.GetComponent<Stats>().Size > attackerStats.Size && attackerWeapon.AttackRange == 1.5f)
             {
                 attackModifier -= 10;
                 Debug.Log($"Uwzględniono modyfikator -10 za przewagę rozmiaru wierzchowca dosiadanego przez cel. Łączny modyfikator: " + attackModifier);

@@ -40,8 +40,8 @@ public class ConsoleView : MonoBehaviour
         // Dodaj log do listy
         _myLogs.Add(logString);
 
-        // Ogranicz do 100 wiadomości, usuń najstarsze
-        if (_myLogs.Count > 100)
+        // Ogranicz do 200 wiadomości, usuń najstarsze
+        if (_myLogs.Count > 200)
         {
             _myLogs.RemoveAt(0);
         }

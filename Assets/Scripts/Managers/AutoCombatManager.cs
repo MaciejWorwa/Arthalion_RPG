@@ -70,30 +70,61 @@ public class AutoCombatManager : MonoBehaviour
                 //Sprawdza konieczne warunki do wykonania ataku dystansowego
                 if (CombatManager.Instance.ValidateRangedAttack(unit, closestOpponent.GetComponent<Unit>(), weapon, distance) == false)
                 {
-                    AttemptToChangeDistanceAndAttack(unit, closestOpponent, weapon);
-                    return;
+                    if(distance < 1.5f)
+                    {
+                        // Jeśli broń nie wymaga naladowania to wykonuje atak, w przeciwnym razie wykonuje przeładowanie
+                        if (weapon.ReloadLeft == 0)
+                        {
+                            Debug.Log($"<color=#4dd2ff>{unit.GetComponent<Stats>().Name} atakuje {closestOpponent.GetComponent<Stats>().Name}.</color>");
+                            StartCoroutine(ExecuteAttack(unit, closestOpponent, weapon, distance));
+                        }
+                        else
+                        {
+                            Debug.Log($"<color=#4dd2ff>{unit.GetComponent<Stats>().Name} przeładowuje broń.</color>");
+                            CombatManager.Instance.Reload();
+                        }
+                     
+                        return;
+                    }
+                    else
+                    {
+                        // Jeśli broń nie wymaga naladowania to wykonuje atak, w przeciwnym razie wykonuje przeładowanie
+                        if (weapon.ReloadLeft == 0)
+                        {
+                            StartCoroutine(AttemptToChangeDistanceAndAttack(unit, closestOpponent, weapon));
+                        }
+                        else
+                        {
+                            Debug.Log($"<color=#4dd2ff>{unit.GetComponent<Stats>().Name} przeładowuje broń.</color>");
+                            CombatManager.Instance.Reload();
+                        }
+
+                        return;
+                    }
                 }
             }
 
-            ExecuteAttack(unit, closestOpponent, weapon, distance);
+            StartCoroutine(ExecuteAttack(unit, closestOpponent, weapon, distance));
         }
         else
         {
-            AttemptToChangeDistanceAndAttack(unit, closestOpponent, weapon);
+            StartCoroutine(AttemptToChangeDistanceAndAttack(unit, closestOpponent, weapon));
         }
     }
 
-    private void ExecuteAttack(Unit unit, GameObject closestOpponent, Weapon weapon, float distance)
+    private IEnumerator ExecuteAttack(Unit unit, GameObject closestOpponent, Weapon weapon, float distance)
     {
         if (distance > 1.5f) //atak dystansowy
         {
             // Jeśli broń nie wymaga naladowania to wykonuje atak, w przeciwnym razie wykonuje przeładowanie
             if (weapon.ReloadLeft == 0)
             {
+                Debug.Log($"<color=#4dd2ff>{unit.GetComponent<Stats>().Name} atakuje {closestOpponent.GetComponent<Stats>().Name}.</color>");
                 CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>());
             }
             else
             {
+                Debug.Log($"<color=#4dd2ff>{unit.GetComponent<Stats>().Name} przeładowuje broń.</color>");
                 CombatManager.Instance.Reload();
             }
         }
@@ -124,14 +155,21 @@ public class AutoCombatManager : MonoBehaviour
                 else // Oddala się od przeciwnika
                 {
                     MoveAwayFromOpponent(unit, closestOpponent);
+
+                    // Czeka aż ruch się zakończy
+                    yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
+
+                    //Ponownie sprawdza, czy można wykonać atak dystansowy
+                    if (CombatManager.Instance.ValidateRangedAttack(unit, closestOpponent.GetComponent<Unit>(), weapon, distance) == false) yield break;
                 }
             }
 
+            Debug.Log($"<color=#4dd2ff>{unit.GetComponent<Stats>().Name} atakuje {closestOpponent.GetComponent<Stats>().Name}.</color>");
             CombatManager.Instance.Attack(unit, closestOpponent.GetComponent<Unit>());
         }
     }
 
-    private void AttemptToChangeDistanceAndAttack(Unit unit, GameObject closestOpponent, Weapon weapon)
+    private IEnumerator AttemptToChangeDistanceAndAttack(Unit unit, GameObject closestOpponent, Weapon weapon)
     {
         // Szuka wolnej pozycji obok celu, do której droga postaci jest najkrótsza
         GameObject targetTile = CombatManager.Instance.GetTileAdjacentToTarget(unit.gameObject, closestOpponent);
@@ -145,7 +183,7 @@ public class AutoCombatManager : MonoBehaviour
         {
             Debug.Log($"<color=#4dd2ff>{unit.GetComponent<Stats>().Name} nie jest w stanie podejść do {closestOpponent.GetComponent<Stats>().Name}.</color>");
             WaitForMovementOrAttackOpportunity(unit);
-            return;
+            yield break;
         }
 
         //Ścieżka ruchu atakującego
@@ -167,26 +205,36 @@ public class AutoCombatManager : MonoBehaviour
             // Uruchomia korutynę odpowiedzialną za ruch i atak
             StartCoroutine(MoveAndAttack(unit, targetTile, closestOpponent.GetComponent<Unit>(), weapon));
         }
-        else if (path.Count > 0) //Wykonuje ruch w kierunku przeciwnika
+        else if (path.Count > 0) // Wykonuje ruch w kierunku przeciwnika
         {
-            if (unit.CanDoAction && !unit.Prone) //Wykonuje bieg
-            {
-                MovementManager.Instance.Run();
-                Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} biegnie w stronę {closestOpponent.GetComponent<Stats>().Name}.</color>");
-            }
-            else if (unit.CanMove)
+            bool moved = false;
+
+            if (unit.CanMove) // Marsz
             {
                 StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
+                MovementManager.Instance.MoveSelectedUnit(targetTile, unit.gameObject);
                 Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} idzie w stronę {closestOpponent.GetComponent<Stats>().Name}.</color>");
-            }
-            else
-            {
-                WaitForMovementOrAttackOpportunity(unit);
-                return;
+                moved = true;
             }
 
-            MovementManager.Instance.MoveSelectedUnit(targetTile, unit.gameObject);
+            // Czeka aż ruch się zakończy
+            yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
+
+            if (unit.CanDoAction && !unit.Prone) // Bieg (dodatkowo)
+            {
+                MovementManager.Instance.Run();
+                MovementManager.Instance.MoveSelectedUnit(targetTile, unit.gameObject);
+                Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} biegnie w stronę {closestOpponent.GetComponent<Stats>().Name}.</color>");
+                moved = true;
+            }
+
+            if (!moved) // Nie ruszył się
+            {
+                WaitForMovementOrAttackOpportunity(unit);
+                yield break;
+            }
         }
+
         else //Gdy nie jest w stanie podejść do najbliższego przeciwnika, a stoi on poza zasięgiem jego ataku
         {
             WaitForMovementOrAttackOpportunity(unit);
@@ -210,7 +258,7 @@ public class AutoCombatManager : MonoBehaviour
         yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
 
         // Atak
-        ExecuteAttack(unit, closestOpponent.gameObject, weapon, 1f);
+        StartCoroutine(ExecuteAttack(unit, closestOpponent.gameObject, weapon, 1f));
     }
 
     private void MoveAwayFromOpponent(Unit unit, GameObject closestOpponent)

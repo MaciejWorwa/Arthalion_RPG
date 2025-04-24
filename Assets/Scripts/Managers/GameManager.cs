@@ -360,7 +360,7 @@ public class GameManager : MonoBehaviour
     #region Game modes
     public void SetAutoCombatMode()
     {
-        if(!RoundsManager.Instance.NextRoundButton.gameObject.activeSelf)
+        if(RoundsManager.Instance.NextRoundButton != null && !RoundsManager.Instance.NextRoundButton.gameObject.activeSelf)
         {
             Debug.Log("Nie możesz teraz zmienić trybu. Poczekaj aż wszystkie jednostki skończą swoje akcje.");
             return;
