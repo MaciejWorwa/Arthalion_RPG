@@ -39,16 +39,35 @@ public class AreaSelector : MonoBehaviour
     {
         if (Input.GetMouseButton(0) && SelectedUnits != null && SelectedUnits.Count > 1)
         {
-            //Odznacza wizualnie zaznaczone jednostki
-            for (int i = SelectedUnits.Count - 1; i >= 0; i--) 
+            // Odznacza wizualnie zaznaczone jednostki
+            for (int i = SelectedUnits.Count - 1; i >= 0; i--)
             {
-                SelectedUnits[i].GetComponent<Renderer>().material.color = SelectedUnits[i].DefaultColor;
-                //Aktualizuje kolor tokena, jeśli nie jest wgrany żaden obraz
-                if (SelectedUnits[i].TokenFilePath.Length < 1)
+                Unit unit = SelectedUnits[i];
+                Material mat = unit.GetComponent<Renderer>().material;
+
+                // Wyłączenie emisji
+                mat.SetColor("_EmissionColor", Color.black);
+
+                // Aktualizuje kolor tokena, jeśli nie jest wgrany żaden obraz
+                if (unit.TokenFilePath.Length < 1)
                 {
-                    SelectedUnits[i].transform.Find("Token").GetComponent<SpriteRenderer>().material.color = SelectedUnits[i].DefaultColor;
+                    SpriteRenderer tokenRenderer = unit.transform.Find("Token").GetComponent<SpriteRenderer>();
+                    tokenRenderer.material = mat;
+
+                    tokenRenderer.material.SetColor("_EmissionColor", Color.black);
                 }
             }
+
+            ////Odznacza wizualnie zaznaczone jednostki
+            //for (int i = SelectedUnits.Count - 1; i >= 0; i--) 
+            //{
+            //    SelectedUnits[i].GetComponent<Renderer>().material.color = SelectedUnits[i].DefaultColor;
+            //    //Aktualizuje kolor tokena, jeśli nie jest wgrany żaden obraz
+            //    if (SelectedUnits[i].TokenFilePath.Length < 1)
+            //    {
+            //        SelectedUnits[i].transform.Find("Token").GetComponent<SpriteRenderer>().material.color = SelectedUnits[i].DefaultColor;
+            //    }
+            //}
             SelectedUnits.Clear();
         }
 
@@ -180,16 +199,35 @@ public class AreaSelector : MonoBehaviour
                 Unit.SelectedUnit.GetComponent<Unit>().SelectUnit();
             }
 
-            //Wyróżnia zaznaczone jednostki innym kolorem
-            for (int i = SelectedUnits.Count - 1; i >= 0; i--) 
+            // Wyróżnia zaznaczone jednostki emisyjnym światłem
+            for (int i = SelectedUnits.Count - 1; i >= 0; i--)
             {
-                SelectedUnits[i].GetComponent<Renderer>().material.color = SelectedUnits[i].HighlightColor;
-                //Aktualizuje kolor tokena, jeśli nie jest wgrany żaden obraz
-                if (SelectedUnits[i].TokenFilePath.Length < 1)
+                Unit unit = SelectedUnits[i];
+                Material mat = unit.GetComponent<Renderer>().material;
+
+                // Podświetlenie przez emisję
+                mat.SetColor("_EmissionColor", unit.DefaultColor * 1f);
+
+                // Aktualizuje kolor tokena, jeśli nie jest wgrany żaden obraz
+                if (unit.TokenFilePath.Length < 1)
                 {
-                    SelectedUnits[i].transform.Find("Token").GetComponent<SpriteRenderer>().material.color = SelectedUnits[i].HighlightColor;
+                    SpriteRenderer tokenRenderer = unit.transform.Find("Token").GetComponent<SpriteRenderer>();
+                    tokenRenderer.material = mat;
+
+                    tokenRenderer.material.SetColor("_EmissionColor", unit.DefaultColor * 0.8f);
                 }
             }
+
+            ////Wyróżnia zaznaczone jednostki innym kolorem
+            //for (int i = SelectedUnits.Count - 1; i >= 0; i--) 
+            //{
+            //    SelectedUnits[i].GetComponent<Renderer>().material.color = SelectedUnits[i].HighlightColor;
+            //    //Aktualizuje kolor tokena, jeśli nie jest wgrany żaden obraz
+            //    if (SelectedUnits[i].TokenFilePath.Length < 1)
+            //    {
+            //        SelectedUnits[i].transform.Find("Token").GetComponent<SpriteRenderer>().material.color = SelectedUnits[i].HighlightColor;
+            //    }
+            //}
         }
         else if(SelectedUnits.Count == 1)
         {

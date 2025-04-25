@@ -88,6 +88,7 @@ public class TokensManager : MonoBehaviour
             {
                 //Ustawienie koloru na biały, żeby nie było overlaya koloru na tokenie
                 imageRenderer.material.color = Color.white;
+                imageRenderer.material.SetColor("_EmissionColor", Color.black);
 
                 // Obliczanie nowego Rect, aby zachować proporcje 1:1
                 int minSize = Mathf.Min(texture.width, texture.height);

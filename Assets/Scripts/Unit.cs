@@ -238,19 +238,42 @@ public class Unit : MonoBehaviour
         MagicManager.Instance.ResetSpellCasting();
     }
 
+    //public void ChangeUnitColor(GameObject unit)
+    //{
+    //    Renderer renderer = unit.GetComponent<Renderer>();
+
+    //    //Ustawia wartość HighlightColor na jaśniejszą wersję DefaultColor. Trzeci parametr określa ilość koloru białego w całości.
+    //    HighlightColor = Color.Lerp(DefaultColor, Color.yellow, 0.3f);
+
+    //    renderer.material.color = IsSelected ? unit.GetComponent<Unit>().HighlightColor : unit.GetComponent<Unit>().DefaultColor;
+
+    //    //Aktualizuje kolor tokena, jeśli nie jest wgrany żaden obraz
+    //    if (unit.GetComponent<Unit>().TokenFilePath.Length < 1)
+    //    {
+    //        unit.transform.Find("Token").GetComponent<SpriteRenderer>().material.color = IsSelected ? unit.GetComponent<Unit>().HighlightColor : unit.GetComponent<Unit>().DefaultColor;
+    //    }
+    //}
+
     public void ChangeUnitColor(GameObject unit)
     {
-        Renderer renderer = unit.GetComponent<Renderer>();
+        Material mat = unit.GetComponent<Renderer>().material;
+        Unit unitComponent = unit.GetComponent<Unit>();
 
-        //Ustawia wartość HighlightColor na jaśniejszą wersję DefaultColor. Trzeci parametr określa ilość koloru białego w całości.
-        HighlightColor = Color.Lerp(DefaultColor, Color.yellow, 0.3f);
+        // Ustawia kolor główny (diffuse)
+        mat.SetColor("_Color", unitComponent.DefaultColor);
 
-        renderer.material.color = IsSelected ? unit.GetComponent<Unit>().HighlightColor : unit.GetComponent<Unit>().DefaultColor;
+        // Włącza emisję przy zaznaczeniu
+        Color emission = IsSelected ? unitComponent.DefaultColor * 1f : Color.black;
+        mat.SetColor("_EmissionColor", emission);
 
-        //Aktualizuje kolor tokena, jeśli nie jest wgrany żaden obraz
-        if (unit.GetComponent<Unit>().TokenFilePath.Length < 1)
+        // Jeśli nie ma obrazka tokena, ustaw też jego kolor i emisję
+        if (unitComponent.TokenFilePath.Length < 1)
         {
-            unit.transform.Find("Token").GetComponent<SpriteRenderer>().material.color = IsSelected ? unit.GetComponent<Unit>().HighlightColor : unit.GetComponent<Unit>().DefaultColor;
+            SpriteRenderer tokenRenderer = unit.transform.Find("Token").GetComponent<SpriteRenderer>();
+            tokenRenderer.material = mat; ;
+
+            tokenRenderer.material.SetColor("_Color", unitComponent.DefaultColor);
+            tokenRenderer.material.SetColor("_EmissionColor", emission * 0.8f);
         }
     }
 

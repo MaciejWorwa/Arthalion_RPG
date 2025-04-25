@@ -48,6 +48,7 @@ public class UnitsManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Toggle _unitTagToggle;
     [SerializeField] private UnityEngine.UI.Button _createUnitButton; // Przycisk do tworzenia jednostek na losowych pozycjach
     [SerializeField] private UnityEngine.UI.Button _removeUnitButton;
+    public UnityEngine.UI.Toggle SortSavedUnitsByDateToggle;
     [SerializeField] private UnityEngine.UI.Button _selectUnitsButton; // Przycisk do zaznaczania wielu jednostek
     [SerializeField] private UnityEngine.UI.Button _removeSavedUnitFromListButton; // Przycisk do usuwania zapisanych jednostek z listy
     [SerializeField] private UnityEngine.UI.Button _updateUnitButton;
@@ -372,6 +373,7 @@ public class UnitsManager : MonoBehaviour
     public void SetSavedUnitsManaging(bool value)
     {
         IsSavedUnitsManaging = value;
+        IsTileSelecting = false;
 
         if (IsSavedUnitsManaging)
         {
@@ -379,6 +381,7 @@ public class UnitsManager : MonoBehaviour
 
             _createUnitButton.gameObject.SetActive(false);
             _removeUnitButton.gameObject.SetActive(false);
+            SortSavedUnitsByDateToggle.gameObject.SetActive(true);
             _selectUnitsButton.gameObject.SetActive(false);
             _updateUnitButton.gameObject.SetActive(false);
             _removeSavedUnitFromListButton.gameObject.SetActive(true);
@@ -386,6 +389,7 @@ public class UnitsManager : MonoBehaviour
         else
         {
             _removeSavedUnitFromListButton.gameObject.SetActive(false);
+            SortSavedUnitsByDateToggle.gameObject.SetActive(false);
             EditUnitModeOff();
         }
     }

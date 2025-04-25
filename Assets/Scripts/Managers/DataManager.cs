@@ -43,6 +43,8 @@ public class DataManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Toggle _weaponToggle;
     [SerializeField] private UnityEngine.UI.Toggle _armorToggle;
 
+
+
     public List<string> TokensPaths = new List<string>();
 
     #region Loading units stats
@@ -123,6 +125,17 @@ public class DataManager : MonoBehaviour
             }
 
             string[] statsFiles = Directory.GetFiles(savedUnitsFolder, "*_stats.json");
+
+            // Sortowanie zapisów w zależności od stanu Toggle
+            if (UnitsManager.Instance.SortSavedUnitsByDateToggle.isOn)
+            {
+                statsFiles = statsFiles.OrderByDescending(folder => Directory.GetLastWriteTime(folder)).ToArray(); // Sortowanie według daty modyfikacji
+            }
+            else
+            {
+                statsFiles = statsFiles.OrderBy(folder => folder).ToArray(); // Sortowanie alfabetyczne
+            }
+
             foreach (string statsFile in statsFiles)
             {
                 string jsonContent = File.ReadAllText(statsFile);
