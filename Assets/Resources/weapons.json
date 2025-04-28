@@ -88,7 +88,8 @@
       "AttackRange": 50,
       "S": 4,
       "Encumbrance": 3,
-      "Damaging": true
+      "Damaging": true,
+      "AmmoType": "Strzała"
     },
     {
       "Name": "Elfi łuk",
@@ -99,7 +100,8 @@
       "S": 4,
       "Encumbrance": 2,
       "Damaging": true,
-      "Precise": true
+      "Precise": true,
+      "AmmoType": "Strzała"
     },
     {
       "Name": "Flamberg",
@@ -137,7 +139,8 @@
       "ReloadTime": 2,
       "Blackpowder": true,
       "Blast": 3,
-      "Damaging": true
+      "Damaging": true,
+      "AmmoType": "Śrut i proch"
     },
     {
       "Name": "Glewia",
@@ -212,7 +215,8 @@
       "Encumbrance": 3,
       "ReloadTime": 2,
       "Precise": true,
-      "Damaging": true
+      "Damaging": true,
+      "AmmoType": "Bełt"
     },
     {
       "Name": "Krasnoludzka rusznica",
@@ -224,7 +228,8 @@
       "ReloadTime": 3,
       "Damaging": true,
       "Blackpowder": true,
-      "Penetrating": true
+      "Penetrating": true,
+      "AmmoType": "Pocisk i proch"
     },
     {
       "Name": "Krasnoludzki pistolet",
@@ -237,7 +242,8 @@
       "Damaging": true,
       "Blackpowder": true,
       "Pistol": true,
-      "Penetrating": true
+      "Penetrating": true,
+      "AmmoType": "Pocisk i proch"
     },
     {
       "Name": "Krótki łuk",
@@ -246,7 +252,8 @@
       "TwoHanded": true,
       "AttackRange": 10,
       "S": 2,
-      "Encumbrance": 1
+      "Encumbrance": 1,
+      "AmmoType": "Strzała"
     },
     {
       "Name": "Kusza",
@@ -256,7 +263,8 @@
       "AttackRange": 30,
       "S": 9,
       "Encumbrance": 2,
-      "ReloadTime": 1
+      "ReloadTime": 1,
+      "AmmoType": "Bełt"
     },
     {
       "Name": "Kusza pistoletowa",
@@ -264,7 +272,8 @@
       "Type": [ "ranged" ],
       "AttackRange": 5,
       "S": 7,
-      "Pistol": true
+      "Pistol": true,
+      "AmmoType": "Bełt"
     },
     {
       "Name": "Łamacz mieczy",
@@ -294,7 +303,8 @@
       "TwoHanded": true,
       "AttackRange": 25,
       "S": 3,
-      "Encumbrance": 2
+      "Encumbrance": 2,
+      "AmmoType": "Strzała"
     },
     {
       "Name": "Miecz",
@@ -370,7 +380,8 @@
       "Accurate": true,
       "Precise": true,
       "Damaging": true,
-      "Blackpowder": true
+      "Blackpowder": true,
+      "AmmoType": "Pocisk i proch"
     },
     {
       "Name": "Nadziak",
@@ -448,7 +459,8 @@
       "ReloadTime": 1,
       "Damaging": true,
       "Blackpowder": true,
-      "Pistol": true
+      "Pistol": true,
+      "AmmoType": "Pocisk i proch"
     },
     {
       "Name": "Pistolet samopowtarzalny",
@@ -462,7 +474,8 @@
       "Damaging": true,
       "Blackpowder": true,
       "Pistol": true,
-      "Dangerous": true
+      "Dangerous": true,
+      "AmmoType": "Pocisk i proch"
     },
     {
       "Name": "Półtorak",
@@ -480,7 +493,8 @@
       "Category": "sling",
       "Type": [ "ranged" ],
       "AttackRange": 30,
-      "S": 6
+      "S": 6,
+      "AmmoType": "Pocisk kamienny"
     },
     {
       "Name": "Proca drzewcowa",
@@ -489,7 +503,8 @@
       "TwoHanded": true,
       "AttackRange": 50,
       "S": 7,
-      "Encumbrance": 2
+      "Encumbrance": 2,
+      "AmmoType": "Pocisk kamienny"
     },
     {
       "Name": "Puklerz",
@@ -522,7 +537,8 @@
       "Dangerous": true,
       "ReloadTime": 3,
       "Blackpowder": true,
-      "Damaging": true
+      "Damaging": true,
+      "AmmoType": "Pocisk i proch"
     },
     {
       "Name": "Rusznica dwulufowa",
@@ -536,7 +552,8 @@
       "AmmoMax": 2,
       "ReloadTime": 4,
       "Blackpowder": true,
-      "Damaging": true
+      "Damaging": true,
+      "AmmoType": "Pocisk i proch"
     },
     {
       "Name": "Szabla",

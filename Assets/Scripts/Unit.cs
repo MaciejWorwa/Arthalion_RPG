@@ -148,7 +148,7 @@ public class Unit : MonoBehaviour
 
             if(SelectedUnit.GetComponent<Spell>() != null && MagicManager.Instance.Targets.Count < SelectedUnit.GetComponent<Spell>().Targets)
             {
-                Debug.Log($"Wskaż kolejny cel. Musisz wybrać {SelectedUnit.GetComponent<Spell>().Targets} unikalnych celów. Wybrano {MagicManager.Instance.Targets.Count}.");
+                Debug.Log($"Wskaż kolejny cel. Musisz wybrać {SelectedUnit.GetComponent<Spell>().Targets} unikalne cele. Dotychczas wybrano {MagicManager.Instance.Targets.Count}. Aby pominąć wybór kolejnych - naciśnij \"Enter\".");
             }
         }
     }

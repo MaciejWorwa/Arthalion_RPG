@@ -246,11 +246,7 @@ public class RoundsManager : MonoBehaviour
 
         for (int i = 0; i < UnitsManager.Instance.AllUnits.Count; i++)
         {
-            //Debug.Log($"<color=white>KOLEJKA NR {i}/{UnitsManager.Instance.AllUnits.Count}.</color>");
-
             if (UnitsManager.Instance.AllUnits[i] == null || !InitiativeQueueManager.Instance.InitiativeQueue.ContainsKey(UnitsManager.Instance.AllUnits[i])) continue;
-
-            //Debug.Log($"<color=white>KOLEJKA NR {i}. Długość kolejki inicjatywy: {InitiativeQueueManager.Instance.InitiativeQueue.Count}. Lecimy z tematem</color>");
 
             InitiativeQueueManager.Instance.SelectUnitByQueue();
             yield return new WaitForSeconds(0.1f);
@@ -259,7 +255,6 @@ public class RoundsManager : MonoBehaviour
             if (Unit.SelectedUnit != null)
             {
                 unit = Unit.SelectedUnit.GetComponent<Unit>();
-                //Debug.Log($"<color=white>TERAZ AKCJA {unit.Stats.Name}</color>");
             }
             else continue;
 
@@ -288,49 +283,6 @@ public class RoundsManager : MonoBehaviour
         NextRoundButton.gameObject.SetActive(true);
         _useFortunePointsButton.SetActive(true);
     }
-
-    //private IEnumerator AutoCombat()
-    //{
-    //    NextRoundButton.gameObject.SetActive(false);
-    //    _useFortunePointsButton.SetActive(false);
-
-    //    foreach (Unit u in InitiativeQueueManager.Instance.InitiativeQueue.Keys.ToList())
-    //    {
-    //        Unit unit = u;
-    //        if (unit == null) continue;
-
-    //        InitiativeQueueManager.Instance.SelectUnitByQueue();
-
-    //        if (Unit.SelectedUnit != null)
-    //        {
-    //            unit = Unit.SelectedUnit.GetComponent<Unit>();
-    //        }
-    //        else continue;
-
-    //        // Jeśli jednostka to PlayerUnit i gramy w trybie ukrywania statystyk wrogów
-    //        if (unit.CompareTag("PlayerUnit") && GameManager.IsStatsHidingMode)
-    //        {
-    //            // Czeka aż jednostka zakończy swoją turę
-    //            yield return new WaitUntil(() => (unit.CanDoAction == false && unit.CanMove == false) || unit.IsTurnFinished);
-    //        }
-    //        else
-    //        {
-    //            AutoCombatManager.Instance.Act(unit);
-
-    //            // Czeka, aż jednostka zakończy ruch
-    //            yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
-    //            yield return new WaitForSeconds(0.5f);
-
-    //            if (!unit.IsTurnFinished && (unit.CanDoAction || unit.CanMove))
-    //            {
-    //                FinishTurn();
-    //            }
-    //        }
-    //    }
-
-    //    NextRoundButton.gameObject.SetActive(true);
-    //    _useFortunePointsButton.SetActive(true);
-    //}
 
     #region Units actions
     public void DoAction(Unit unit)

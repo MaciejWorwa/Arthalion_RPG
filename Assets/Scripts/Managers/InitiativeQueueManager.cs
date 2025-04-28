@@ -152,10 +152,13 @@ public class InitiativeQueueManager : MonoBehaviour
         initiativeText.text = pair.Value.ToString();
 
         // Jeśli jednostka posiada broń z cechą "Szybka" to wyświetla odpowiednią ikonkę obok wartości inicjatywy
-        optionObj.transform.Find("FastWeapon_Image").gameObject.SetActive(pair.Key.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Fast));
+        optionObj.transform.Find("Icons/FastWeapon_Image").gameObject.SetActive(pair.Key.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Fast));
 
         // Jeśli jednostka posiada broń z cechą "Powolna" to wyświetla odpowiednią ikonkę obok wartości inicjatywy
-        optionObj.transform.Find("SlowWeapon_Image").gameObject.SetActive(pair.Key.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Slow));
+        optionObj.transform.Find("Icons/SlowWeapon_Image").gameObject.SetActive(pair.Key.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Slow));
+
+        // Jeśli jednostka posiada talent woltyżerka i dosiada wierzchowca to wyświetla odpowiednią ikonkę obok wartości inicjatywy
+        optionObj.transform.Find("Icons/MoveFirst_Image").gameObject.SetActive(pair.Key.IsMounted && pair.Key.GetComponent<Stats>().Vaulting > 0);
 
         return optionObj;
     }

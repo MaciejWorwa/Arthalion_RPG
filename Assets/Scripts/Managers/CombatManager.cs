@@ -39,7 +39,7 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _mountAttackButton;
     [SerializeField] private UnityEngine.UI.Button _grapplingButton;
     [SerializeField] private UnityEngine.UI.Button _feintButton;
-    //[SerializeField] private UnityEngine.UI.Button _stunButton;
+    [SerializeField] private UnityEngine.UI.Button _stompButton;
     [SerializeField] private UnityEngine.UI.Button _disarmButton;
     public Dictionary<string, bool> AttackTypes = new Dictionary<string, bool>();
 
@@ -108,10 +108,10 @@ public class CombatManager : MonoBehaviour
         AttackTypes.Add("StandardAttack", true);
         AttackTypes.Add("Charge", false);
         //AttackTypes.Add("Frenzy", false);  // Szał bojowy
-        AttackTypes.Add("MountAttack", false);  // Ostrożny atak
+        AttackTypes.Add("MountAttack", false);  // Atak wierzchowca
         AttackTypes.Add("Grappling", false);  // Zapasy
         AttackTypes.Add("Feint", false);  // Finta
-        AttackTypes.Add("Stun", false);  // Ogłuszanie
+        AttackTypes.Add("Stomp", false);  // Tupnięcie
         AttackTypes.Add("Disarm", false);  // Rozbrajanie
     }
 
@@ -180,13 +180,13 @@ public class CombatManager : MonoBehaviour
             //    }
             //}
 
-            ////Ogłuszanie jest dostępne tylko dla jednostek ze zdolnością ogłuszania
-            //if (AttackTypes["Stun"] == true && stats.StrikeToStun == 0)
-            //{
-            //    AttackTypes[attackTypeName] = false;
-            //    AttackTypes["StandardAttack"] = true;
-            //    Debug.Log("Ogłuszanie mogą wykonywać tylko jednostki posiadające ten talent.");
-            //}
+            //Tupnięcie jest dostępne tylko dla dużych jednostek
+            if (AttackTypes["Stomp"] == true && stats.Size < SizeCategory.Large)
+            {
+                AttackTypes[attackTypeName] = false;
+                AttackTypes["StandardAttack"] = true;
+                Debug.Log("Tupnięcie mogą wykonywać tylko odpowiednio duże jednostki.");
+            }
 
             //Rozbrajanie jest dostępne tylko dla jednostek ze zdolnością rozbrajania
             if (AttackTypes["Disarm"] == true && stats.Disarm == 0)
@@ -205,18 +205,12 @@ public class CombatManager : MonoBehaviour
             }
 
             //Ograniczenie finty, ogłuszania i rozbrajania do ataków w zwarciu
-            if ((AttackTypes["Feint"] || AttackTypes["Stun"] || AttackTypes["Disarm"] || AttackTypes["Charge"]) == true && unit.GetComponent<Inventory>().EquippedWeapons[0] != null && unit.GetComponent<Inventory>().EquippedWeapons[0].Type.Contains("ranged"))
+            if ((AttackTypes["Feint"] || AttackTypes["Disarm"] || AttackTypes["Charge"]) == true && unit.GetComponent<Inventory>().EquippedWeapons[0] != null && unit.GetComponent<Inventory>().EquippedWeapons[0].Type.Contains("ranged"))
             {
                 AttackTypes[attackTypeName] = false;
                 AttackTypes["StandardAttack"] = true;
                 Debug.Log("Jednostka walcząca bronią dystansową nie może wykonać tej akcji.");
             }
-            // else if ((AttackTypes["AllOutAttack"] || AttackTypes["GuardedAttack"] || AttackTypes["Charge"]) == true)
-            // {
-            //     AttackTypes[attackTypeName] = false;
-            //     AttackTypes["StandardAttack"] = true;
-            //     Debug.Log("Ta jednostka nie może w tej rundzie wykonać akcji podwójnej.");
-            // }
 
             // Podczas pochwycenia lub pochwytywania kogoś możemy tylko wykonywac atak typu Zapasy
             if (attackTypeName != "Grappling" && (unit.Entangled > 0 || unit.EntangledUnitId != 0))
@@ -259,7 +253,7 @@ public class CombatManager : MonoBehaviour
         _mountAttackButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["MountAttack"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _grapplingButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Grappling"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _feintButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Feint"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
-        //_stunButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Stun"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
+        _stompButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Stomp"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _disarmButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Disarm"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         
         SetActionsButtonsInteractable();
@@ -269,11 +263,12 @@ public class CombatManager : MonoBehaviour
     {
         if (Unit.SelectedUnit == null) return;
         _disarmButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Disarm > 0;
-        _feintButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Feint > 0;
+        _feintButton.gameObject.SetActive(Unit.SelectedUnit.GetComponent<Stats>().Feint > 0);
         _frenzyButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Frenzy;
         _reloadButton.interactable = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.ReloadLeft > 0);
         _grapplingButton.gameObject.SetActive(!Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
         _mountAttackButton.gameObject.SetActive(Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
+        _stompButton.gameObject.SetActive(Unit.SelectedUnit.GetComponent<Stats>().Size > SizeCategory.Average);
     }
 
     #endregion
@@ -297,10 +292,31 @@ public class CombatManager : MonoBehaviour
         bool frenzyAttack = attacker.GetComponent<Stats>().FrenzyAttacksLeft > 0;
 
         // Sprawdź, czy jednostka może wykonać atak
-        if (!attacker.CanDoAction && !opportunityAttack && !furiousAssault && !frenzyAttack)
+        if (!attacker.CanDoAction && !opportunityAttack && !furiousAssault && !frenzyAttack && !AttackTypes["Stomp"])
         {
             Debug.Log("Wybrana jednostka nie może wykonać ataku w tej rundzie.");
             return;
+        }
+
+        if(AttackTypes["Stomp"])
+        {
+            if (attacker.GetComponent<Stats>().Size <= target.GetComponent<Stats>().Size)
+            {
+                Debug.Log("Tupnięcie można wykonać tylko na przeciwniku mniejszym od siebie.");
+                return;
+            }
+
+            int advantage = attacker.tag == "PlayerUnit" ? InitiativeQueueManager.Instance.PlayersAdvantage : InitiativeQueueManager.Instance.EnemiesAdvantage;
+            if (advantage == 0)
+            {
+                Debug.Log("Wybrana jednostka nie może wykonać tupnięcia w tej rundzie. Za mało punktów przewagi.");
+                return;
+            }
+            else
+            {
+                //Zaktualizowanie przewagi
+                InitiativeQueueManager.Instance.CalculateAdvantage(attacker.tag, -1);
+            }
         }
 
         if (opportunityAttack) ChangeAttackType();
@@ -324,19 +340,23 @@ public class CombatManager : MonoBehaviour
 
         Weapon attackerWeapon = null;
         Weapon targetWeapon = null;
-        if (AttackTypes["Grappling"] == true) // Zapasy
+        if (AttackTypes["Grappling"] || AttackTypes["Stomp"]) // Zapasy lub tupnięcie
         {
             attackerStats.GetComponent<Weapon>().ResetWeapon();
             attackerWeapon = attackerStats.GetComponent<Weapon>();
 
-            targetStats.GetComponent<Weapon>().ResetWeapon();
-            targetWeapon = targetStats.GetComponent<Weapon>();
-
-            if (attacker.Entangled > 0 && target.EntangledUnitId != attacker.UnitId)
+            if(AttackTypes["Grappling"])
             {
-                Debug.Log("Celem ataku musi być jednostka, z którą toczą się zapasy.");
-                yield break;
+                targetStats.GetComponent<Weapon>().ResetWeapon();
+                targetWeapon = targetStats.GetComponent<Weapon>();
+
+                if (attacker.Entangled > 0 && target.EntangledUnitId != attacker.UnitId)
+                {
+                    Debug.Log("Celem ataku musi być jednostka, z którą toczą się zapasy.");
+                    yield break;
+                }
             }
+            else targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
         }
         else // Zwykły atak bronią
         {
@@ -449,7 +469,7 @@ public class CombatManager : MonoBehaviour
             attacker.CanMove = false;
             MovementManager.Instance.SetCanMoveToggle(false);
         }
-        else if (!opportunityAttack && !reactionStrike && secondAttackRollResult == 0)
+        else if (!opportunityAttack && !reactionStrike && secondAttackRollResult == 0 && !AttackTypes["Stomp"])
         {
             if (attacker.CanDoAction)
             {
@@ -529,6 +549,23 @@ public class CombatManager : MonoBehaviour
         }
 
         int[] results = CalculateSuccessLevel(attackerWeapon, rollOnAttack, skillValue, true, attackModifier);
+
+        // Talent "Cios poniżej pasa"
+        if (results[0] >= 0 && attackerWeapon.Category == "brawling" && attackerStats.DirtyFighting > 0)
+        {
+            results[1] += attackerStats.DirtyFighting;
+            attackModifier += attackerStats.DirtyFighting * 10;
+            Debug.Log("Uwzględniono modyfikator za talent Cios poniżej pasa. Łączny modyfikator: " + attackModifier);
+        }
+
+        // Talent "Dwie bronie"
+        if (results[0] >= 0 && attackerStats.DualWielder > 0 && attacker.GetComponent<Inventory>().EquippedWeapons.All(weapon => weapon != null && weapon.Shield == 0 && !weapon.TwoHanded))
+        {
+            results[1] += attackerStats.DualWielder;
+            attackModifier += attackerStats.DualWielder * 10;
+            Debug.Log("Uwzględniono modyfikator za talent Dwie bronie. Łączny modyfikator: " + attackModifier);
+        }
+
         int attackerSuccessValue = results[0];
         int attackerSuccessLevel = results[1];
 
@@ -734,12 +771,13 @@ public class CombatManager : MonoBehaviour
                 rollResult = UnityEngine.Random.Range(1, 101);
             }
 
-            int[] rollResults = DiceRollManager.Instance.TestSkill("SW", targetStats, "Cool", 20 + (targetStats.Unshakable * 10), rollResult);
+            int[] rollResults = DiceRollManager.Instance.TestSkill("SW", targetStats, "Cool", 20, rollResult);
             if (rollResults[0] < 0)
             {
                 target.Broken++;
                 Debug.Log($"<color=#FF7F50>Poziom paniki {targetStats.Name} wzrasta o 1.</color>");
             }
+            else rollResults[1] += targetStats.Unshakable;
         }
 
         // Atak chybił, przerywamy funkcję lub gdy atakowanym jest Czempion, stosujemy kontratak
@@ -1208,8 +1246,6 @@ public class CombatManager : MonoBehaviour
         if (attackerWeapon.Fast && _isTrainedWeaponCategory) modifier -= 10;
         if (attackerStats.Size > targetStats.Size) modifier -= (attackerStats.Size - targetStats.Size) * 20; // Kara do parowania za rozmiar
         if (attackerStats.Size > targetStats.Size) Debug.Log($"modyfikator parowania za rozmiar -{(attackerStats.Size - targetStats.Size) * 20}");
-        if (targetStats.Shieldsman > 0 && target.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Shield > 0)) modifier += targetStats.Shieldsman * 10; // Modyfikator za talent Tarczownik
-        if (targetStats.Riposte > 0) modifier += targetStats.Riposte * 10; // Modyfikator za talent Riposta
 
         // Modyfikator za dekoncentrującego przeciwnika w pobliżu
         foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
@@ -1242,7 +1278,6 @@ public class CombatManager : MonoBehaviour
         if (attackerWeapon != null && attackerWeapon.Slow) modifier += 10;
 
         if (target.IsMounted && targetStats.Vaulting == 0) modifier -= 20; // Modyfikator za dosiadanie wierzchowca bez talentu woltyżerka
-        else if (target.IsMounted) modifier += targetStats.Vaulting * 10; // Modyfikator za talent Woltyżerka
 
         // Modyfikator za dekoncentrującego przeciwnika w pobliżu
         foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
@@ -1320,13 +1355,12 @@ public class CombatManager : MonoBehaviour
     private IEnumerator Parry(Unit target, Stats targetStats, Stats attackerStats, Weapon targetWeapon, int parryValue, int parryModifier, MeleeCategory targetMeleeSkill)
     {
         int defenceRollResult = 0;
-        string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
 
         // Jeżeli jest ustawiony modyfikator w panelu jednostki
         if (DiceRollManager.Instance.RollModifier != 0)
         {
             parryValue += DiceRollManager.Instance.RollModifier;
-            parryModifierString = $" Modyfikator: {parryModifier + DiceRollManager.Instance.RollModifier}.";
+            parryModifier += DiceRollManager.Instance.RollModifier;
             DiceRollManager.Instance.ResetRollModifier();
         }
 
@@ -1342,9 +1376,24 @@ public class CombatManager : MonoBehaviour
         }
 
         DefenceResults = CalculateSuccessLevel(targetWeapon, defenceRollResult, parryValue, false);
+
+        // Modyfikator za talent Tarczownik
+        if (DefenceResults[0] >= 0 && targetStats.Shieldsman > 0 && target.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Shield > 0))
+        {
+            DefenceResults[1] += targetStats.Shieldsman;
+            parryModifier += targetStats.Shieldsman * 10;
+        }
+        // Modyfikator za talent Riposta
+        if (DefenceResults[0] >= 0 && targetStats.Riposte > 0) 
+        {
+            DefenceResults[1] += targetStats.Riposte;
+            parryModifier += targetStats.Riposte * 10;
+        }
+
         int defenceSuccessValue = DefenceResults[0];
         int defenceSuccessLevel = DefenceResults[1];
         string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
+        string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
         Debug.Log($"{targetStats.Name} próbuje parować przy użyciu {targetWeapon.Name}. Wynik rzutu: {defenceRollResult}. Wartość umiejętności: {targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill)}.{parryModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>.");
 
         // Obsługa fuksa / pecha
@@ -1377,13 +1426,12 @@ public class CombatManager : MonoBehaviour
     public IEnumerator Dodge(Unit target, Stats targetStats, int dodgeValue, int dodgeModifier)
     {
         int defenceRollResult = 0;
-        string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}." : "";
 
         // Jeżeli jest ustawiony modyfikator w panelu jednostki
         if (DiceRollManager.Instance.RollModifier != 0)
         {
             dodgeValue += DiceRollManager.Instance.RollModifier;
-            dodgeModifierString = $" Modyfikator: {dodgeModifier + DiceRollManager.Instance.RollModifier},";
+            dodgeModifier += DiceRollManager.Instance.RollModifier;
             DiceRollManager.Instance.ResetRollModifier();
         }
 
@@ -1399,9 +1447,18 @@ public class CombatManager : MonoBehaviour
         }
 
         DefenceResults = CalculateSuccessLevel(null, defenceRollResult, dodgeValue, false);
+
+        // Modyfikator za talent Woltyżerka
+        if (DefenceResults[0] >= 0 && target.IsMounted && targetStats.Vaulting > 0)
+        {
+            DefenceResults[1] += targetStats.Vaulting;
+            dodgeModifier += targetStats.Vaulting * 10;
+        }
+
         int defenceSuccessValue = DefenceResults[0];
         int defenceSuccessLevel = DefenceResults[1];
         string coloredText = defenceSuccessValue >= 0 ? "green" : "red";
+        string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}." : "";
         Debug.Log($"{targetStats.Name} próbuje unikać. Wynik rzutu: {defenceRollResult}. Wartość umiejętności: {targetStats.Dodge + targetStats.Zw}.{dodgeModifierString} PS: <color={coloredText}>{defenceSuccessLevel}</color>.");
 
         // Obsługa fuksa / pecha
@@ -1737,20 +1794,6 @@ public class CombatManager : MonoBehaviour
                     break; // Żeby modyfikator nie kumulował się za każdą postać
                 }
             }
-        }
-
-        // Talent "Cios poniżej pasa"
-        if (attackerWeapon.Category == "brawling" && attackerStats.DirtyFighting > 0)
-        {
-            attackModifier += attackerStats.DirtyFighting * 10;
-            Debug.Log("Uwzględniono modyfikator za talent Cios poniżej pasa. Łączny modyfikator: " + attackModifier);
-        }
-
-        // Talent "Dwie bronie"
-        if (attackerStats.DualWielder > 0 && attackerUnit.GetComponent<Inventory>().EquippedWeapons.All(weapon => weapon != null && weapon.Shield == 0 && !weapon.TwoHanded))
-        {
-            attackModifier += attackerStats.DualWielder * 10;
-            Debug.Log("Uwzględniono modyfikator za talent Dwie bronie. Łączny modyfikator: " + attackModifier);
         }
 
         return attackModifier;
@@ -2982,8 +3025,11 @@ public class CombatManager : MonoBehaviour
 
             SetActionsButtonsInteractable();
 
-            // Zaktualizowanie przewagi (ładowanie jest uznawane jako akcja Oceny Sytuacji)
-            InitiativeQueueManager.Instance.CalculateAdvantage(stats.gameObject.tag, 2);
+            if(stats.RapidReload > 0 || (stats.Gunner > 0 && weapon.Category == "blackpowder"))
+            {
+                // Zaktualizowanie przewagi (ładowanie jest uznawane jako akcja Oceny Sytuacji)
+                InitiativeQueueManager.Instance.CalculateAdvantage(stats.gameObject.tag, 3);
+            }
         }
         else
         {
@@ -2995,6 +3041,8 @@ public class CombatManager : MonoBehaviour
 
     private void ResetWeaponLoad(Weapon attackerWeapon, Stats attackerStats)
     {
+        if (attackerWeapon.ReloadTime == 0) return;
+
         //Sprawia, że po ataku należy przeładować broń
         attackerWeapon.ReloadLeft = attackerWeapon.ReloadTime;
         attackerWeapon.WeaponsWithReloadLeft[attackerWeapon.Id] = attackerWeapon.ReloadLeft;
@@ -3012,9 +3060,15 @@ public class CombatManager : MonoBehaviour
         }
 
         //Zapobiega ujemnej wartości czasu przeładowania
-        if (attackerWeapon.ReloadLeft < 0)
+        if (attackerWeapon.ReloadLeft <= 0)
         {
             attackerWeapon.ReloadLeft = 0;
+
+            if (attackerStats.RapidReload > 0 || (attackerStats.Gunner > 0 && attackerWeapon.Category == "blackpowder"))
+            {
+                // Zaktualizowanie przewagi (ładowanie jest uznawane jako akcja Oceny Sytuacji)
+                InitiativeQueueManager.Instance.CalculateAdvantage(attackerStats.gameObject.tag, 3);
+            }
         }
 
         InventoryManager.Instance.DisplayReloadTime();
@@ -3176,16 +3230,24 @@ public class CombatManager : MonoBehaviour
 
         // Wywołanie testów – przekazujemy wynik rzutu tylko dla jednostki, która była manualna
         int[] targetTest = DiceRollManager.Instance.TestSkill("WW", targetStats, targetMeleeSkill.ToString(), 0, targetRoll);
-        int[] attackerTest = DiceRollManager.Instance.TestSkill("WW", attackerStats, "Fencing", attackerStats.Feint * 10, attackerRoll);
+        int[] attackerTest = DiceRollManager.Instance.TestSkill("WW", attackerStats, "Fencing", 0, attackerRoll);
+        
+        // Talent Finta
+        if (attackerTest[0] >= 0 && attackerStats.Feint > 0)
+        {
+            attackerTest[1] += attackerStats.Feint;
+            Debug.Log($"Poziom sukcesu {attackerStats.Name} wzrasta do <color=green>{attackerTest[1]}</color> za talent \"Finta.\"");
+        }
 
         int targetSuccessLevel = targetTest[1];
         int attackerSuccessLevel = attackerTest[1];
 
         if (attackerSuccessLevel > targetSuccessLevel)
         {
-            Debug.Log($"Finta powiodła się. Następny atak {attackerStats.Name} przeciwko {targetStats.Name} będzie wykonywany z modyfikatorem {(attackerSuccessLevel - targetSuccessLevel) * 10}");
-            attackerUnit.FeintModifier = (attackerSuccessLevel - targetSuccessLevel) * 10;
+            attackerUnit.FeintModifier = Math.Min(60, (attackerSuccessLevel - targetSuccessLevel) * 10);
             attackerUnit.FeintedUnitId = targetUnit.UnitId;
+
+            Debug.Log($"Finta powiodła się. Następny atak {attackerStats.Name} przeciwko {targetStats.Name} będzie wykonywany z modyfikatorem <color=green>{attackerUnit.FeintModifier}</color>");
         }
         else
         {
@@ -3229,8 +3291,22 @@ public class CombatManager : MonoBehaviour
         }
 
         // Wywołanie testów – przekazujemy wynik rzutu tylko dla jednostki, która była manualna
-        int[] attackerTest = DiceRollManager.Instance.TestSkill("S", attackerStats, null, attackerStats.StrikeToStun * 10, attackerRoll);
-        int[] targetTest = DiceRollManager.Instance.TestSkill("Wt", targetStats, "Endurance", targetStats.IronJaw * 10, targetRoll);
+        int[] attackerTest = DiceRollManager.Instance.TestSkill("S", attackerStats, null, 0, attackerRoll);
+        int[] targetTest = DiceRollManager.Instance.TestSkill("Wt", targetStats, "Endurance", 0, targetRoll);
+
+        // Talent Ogłuszanie
+        if (attackerTest[0] >= 0 && attackerStats.StrikeToStun > 0)
+        {
+            attackerTest[1] += attackerStats.StrikeToStun;
+            Debug.Log($"Poziom sukcesu {attackerStats.Name} wzrasta do <color=green>{attackerTest[1]}</color> za talent \"Ogłuszenie.\"");
+        }
+
+        // Talent Żelazna Szczęka
+        if (targetTest[0] >= 0 && targetStats.IronJaw > 0)
+        {
+            targetTest[1] += targetStats.IronJaw;
+            Debug.Log($"Poziom sukcesu {targetStats.Name} wzrasta do <color=green>{targetTest[1]}</color> za talent \"Źelazna Szczęka.\"");
+        }
 
         int attackerSuccessLevel = attackerTest[1];
         int targetSuccessLevel = targetTest[1];
@@ -3314,8 +3390,15 @@ public class CombatManager : MonoBehaviour
         MeleeCategory attackerMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(attackerWeapon.Category) ?? MeleeCategory.Basic;
 
         // Wywołanie testów – przekazujemy wynik rzutu tylko dla jednostki, która była manualna
-        int[] attackerTest = DiceRollManager.Instance.TestSkill("WW", attackerStats, attackerMeleeSkill.ToString(), (attackerStats.Disarm - 1) * 10, attackerRoll);
+        int[] attackerTest = DiceRollManager.Instance.TestSkill("WW", attackerStats, attackerMeleeSkill.ToString(), 0, attackerRoll);
         int[] targetTest = DiceRollManager.Instance.TestSkill("WW", targetStats, targetMeleeSkill.ToString(), 0, targetRoll);
+
+        // Talent Rozbrojenie
+        if (attackerTest[0] >= 0 && attackerStats.Disarm > 0)
+        {
+            attackerTest[1] += attackerStats.Disarm;
+            Debug.Log($"Poziom sukcesu {attackerStats.Name} wzrasta do <color=green>{attackerTest[1]}</color> za talent \"Rozbrojenie.\"");
+        }
 
         int attackerSuccessLevel = attackerTest[1];
         int targetSuccessLevel = targetTest[1];

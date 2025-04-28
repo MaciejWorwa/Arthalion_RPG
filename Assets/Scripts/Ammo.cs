@@ -5,24 +5,24 @@ public class Ammo
 {
     public string Name; // Nazwa amunicji
 
-    // Lista efektÛw, ktÛre ta amunicja zmienia
-    public int? S = null;        // Si≥a (S) - null oznacza, øe nie zmienia tej cechy
+    // Lista efekt√≥w, kt√≥re ta amunicja zmienia
+    public int? S = null;        // Si≈Ça (S) - null oznacza, ≈ºe nie zmienia tej cechy
     public float? AttackRange = null;
-    public int? ReloadTime = null; // Czas prze≥adowania
+    public int? ReloadTime = null; // Czas prze≈Çadowania
     public bool? Accurate = null; // Celny
-    public bool? Penetrating = null; // Przek≥uwajπcy
-    public bool? Impale = null; // Nadziewajπcy
-    public int? Slash = null; // Sieczny --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaÊ wywo≥anie funkcji, takie jak np. w input fieldzie Accurate)
-    public bool? Undamaging = null; // TÍpy
+    public bool? Penetrating = null; // Przek≈ÇuwajƒÖcy
+    public bool? Impale = null; // NadziewajƒÖcy
+    public int? Slash = null; // Sieczny --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaƒá wywo≈Çanie funkcji, takie jak np. w input fieldzie Accurate)
+    public bool? Undamaging = null; // Tƒôpy
     public bool? Imprecise = null; // Nieprecyzyjna
     public bool? Dangerous = null; // Niebezpieczna
-    public bool? Pummel = null; // Og≥uszajπcy
-    public bool? Impact = null; // Druzgoczπcy
-    public int? Spread = null; // Rozrzucajπca --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaÊ wywo≥anie funkcji, takie jak np. w input fieldzie Accurate)
+    public bool? Pummel = null; // Og≈ÇuszajƒÖcy
+    public bool? Impact = null; // DruzgoczƒÖcy
+    public int? Spread = null; // RozrzucajƒÖca --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodaƒá wywo≈Çanie funkcji, takie jak np. w input fieldzie Accurate)
     public bool? Precise = null; // Precyzyjna
     public int? Blast = null; // Wybuchowa
 
-    // Konstruktor pozwalajπcy na ustawienie efektÛw
+    // Konstruktor pozwalajƒÖcy na ustawienie efekt√≥w
     public Ammo(string name, int? strength = null, float? attackRange = null, int? reloadTime = null,
                       bool? accurate = null, bool? penetrating = null,
                       bool? impale = null, int? slash = null,
@@ -49,27 +49,27 @@ public class Ammo
         Blast = blast;
     }
 
-    // TO POSIADA PRZYK£ADOWO WPISANE WARTOåCI. NALEØY TO UZUPE£NI∆ RZECZYWISTYMI WARTOåCIAMI
+    // TO POSIADA PRZYK≈ÅADOWO WPISANE WARTO≈öCI. NALE≈ªY TO UZUPE≈ÅNIƒÜ RZECZYWISTYMI WARTO≈öCIAMI
     public static readonly Dictionary<string, Ammo> Ammos = new Dictionary<string, Ammo>
     {
         { "Brak", new Ammo("Brak") },
-        { "Be≥t", new Ammo("Be≥t", impale: true) },
+        { "Be≈Çt", new Ammo("Be≈Çt", impale: true) },
         { "Bomba", new Ammo("Bomba", strength: 15, impact: true, dangerous: true, blast: 5) },
-        { "Duøy pocisk i proch", new Ammo("Duøy pocisk i proch", strength: 2, impact: true, impale: true, penetrating: true) },
-        { "Improwizowany úrut i proch", new Ammo("Improwizowany úrut i proch", attackRange: -12f)}, // ------------------- POWINNO ZMNIEJSZA∆ ZASI G O PO£OW 
+        { "Du≈ºy pocisk i proch", new Ammo("Du≈ºy pocisk i proch", strength: 2, impact: true, impale: true, penetrating: true) },
+        { "Improwizowany ≈õrut i proch", new Ammo("Improwizowany ≈õrut i proch", attackRange: -12f)}, // ------------------- POWINNO ZMNIEJSZAƒÜ ZASIƒòG O PO≈ÅOWƒò
         { "Kamyk", new Ammo("Kamyk", strength: -2, attackRange: -5f, imprecise: true, undamaging: true) },
-        { "Nasπczony Aqshy proch", new Ammo("Nasπczony Aqshy proch", strength: 2, attackRange: 5f, impale: true, penetrating: true) },
+        { "NasƒÖczony Aqshy proch", new Ammo("NasƒÖczony Aqshy proch", strength: 2, attackRange: 5f, impale: true, penetrating: true) },
         { "Patron", new Ammo("Patron", strength: 1, impale: true, penetrating: true) },
         { "Pocisk i proch", new Ammo("Pocisk i proch", strength: 1, impale: true, penetrating: true) },
         { "Pocisk kamienny", new Ammo("Pocisk kamienny", pummel: true) },
-        { "Pocisk o≥owiany", new Ammo("Pocisk o≥owiany", strength: 1, attackRange: -5f, pummel: true) },
+        { "Pocisk o≈Çowiany", new Ammo("Pocisk o≈Çowiany", strength: 1, attackRange: -5f, pummel: true) },
         { "Precyzyjny pocisk i proch", new Ammo("Precyzyjny pocisk i proch", strength: 1, impale: true, penetrating: true, precise: true) },
-        { "Strza≥a", new Ammo("Strza≥a", impale: true) },
-        { "Strza≥a elfia", new Ammo("Strza≥a elfia", strength: 1, attackRange: 25f, accurate: true, impale: true, penetrating: true) },
-        { "Strza≥a przebijajπca", new Ammo("Strza≥a przebijajπca", impale: true, penetrating: true) },
-        { "Strza≥a zπbkowana", new Ammo("Strza≥a zπbkowana", impale: true, slash: 1) },
-        { "årut i proch", new Ammo("årut i proch", spread: 3) },
-        { "Zaostrzony patyk", new Ammo("Zaostrzony patyk", strength: -2, attackRange: -12f, imprecise: true, undamaging: true, dangerous: true) }, // ------------------- POWINNO ZMNIEJSZA∆ ZASI G O PO£OW 
+        { "Strza≈Ça", new Ammo("Strza≈Ça", impale: true) },
+        { "Strza≈Ça elfia", new Ammo("Strza≈Ça elfia", strength: 1, attackRange: 25f, accurate: true, impale: true, penetrating: true) },
+        { "Strza≈Ça przebijajƒÖca", new Ammo("Strza≈Ça przebijajƒÖca", impale: true, penetrating: true) },
+        { "Strza≈Ça zƒÖbkowana", new Ammo("Strza≈Ça zƒÖbkowana", impale: true, slash: 1) },
+        { "≈örut i proch", new Ammo("≈örut i proch", spread: 3) },
+        { "Zaostrzony patyk", new Ammo("Zaostrzony patyk", strength: -2, attackRange: -12f, imprecise: true, undamaging: true, dangerous: true) }, // ------------------- POWINNO ZMNIEJSZAƒÜ ZASIƒòG O PO≈ÅOWƒò
     };
 
     internal static bool TryGetValue(string ammoType, out Ammo effect)

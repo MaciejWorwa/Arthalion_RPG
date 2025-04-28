@@ -138,7 +138,7 @@ public class Weapon : MonoBehaviour
     public void ResetWeapon()
     {
         Id = 0;
-        Name = "Pięści";
+        Name = "Pięści i kopniaki";
         Type = new string[] { "melee", "natural-weapon" };
         NaturalWeapon = true;
         TwoHanded = false;

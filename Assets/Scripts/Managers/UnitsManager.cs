@@ -5,9 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using TMPro;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
 
 public class UnitsManager : MonoBehaviour
 {
@@ -35,7 +33,7 @@ public class UnitsManager : MonoBehaviour
     }
 
     [SerializeField] private GameObject _unitPanel;
-    [SerializeField] private GameObject _spellbookButton;
+    [SerializeField] private UnityEngine.UI.Button _spellbookButton;
     [SerializeField] private GameObject _spellListPanel;
     [SerializeField] private TMP_Text _raceDisplay;
     [SerializeField] private TMP_Text _healthDisplay;
@@ -903,15 +901,13 @@ public class UnitsManager : MonoBehaviour
             {
                 _unitPanel.transform.Find("Name_input").gameObject.SetActive(true);
             }
-
-            Unit unitComponent = unit.GetComponent<Unit>();
         }
 
         Stats stats = unit.GetComponent<Stats>();
 
         if (stats.MagicLanguage > 0)
         {
-            _spellbookButton.SetActive(true);
+            _spellbookButton.interactable = true;
             DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć, które może rzucić jednostka
 
             if (unit.GetComponent<Spell>() == null)
@@ -921,7 +917,7 @@ public class UnitsManager : MonoBehaviour
         }
         else
         {
-            _spellbookButton.SetActive(false);
+            _spellbookButton.interactable = false;
             _spellListPanel.SetActive(false);
         }
 
@@ -1215,7 +1211,7 @@ public class UnitsManager : MonoBehaviour
 
             if (!pair.Key.CompareTag(unit.tag))
             {
-                if ((pair.Key.GetComponent<Stats>().Fear != 0 && pair.Key.GetComponent<Stats>().Fear > successLevel) || pair.Key.GetComponent<Stats>().Size - stats.Size > successLevel)
+                if ((pair.Key.GetComponent<Stats>().Fear != 0 && pair.Key.GetComponent<Stats>().Fear > successLevel) || (pair.Key.GetComponent<Stats>().Size > stats.Size && pair.Key.GetComponent<Stats>().Size - stats.Size > successLevel))
                 {
                     unit.FearedUnits.Add(pair.Key);
                 }

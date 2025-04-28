@@ -76,6 +76,7 @@ public class Stats : MonoBehaviour
     public int Dodge; // Unik
     public int Endurance; // Odporność
     public int MagicLanguage; // Język magiczny
+    public int Pray; // Modlitwa
     public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
@@ -95,6 +96,7 @@ public class Stats : MonoBehaviour
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
     public int Hardy; // Twardziel
+    public int HolyHatred; // Święta nienawiść
     public int Implacable; // Nieubłagany
     public int InstinctiveDiction; // Precyzyjne inkantowanie
     public int IronJaw; // Żelazna szczęka
@@ -119,7 +121,7 @@ public class Stats : MonoBehaviour
     public int Sturdy; // Tragarz
     public int SureShot; // Strzał przebijający
     public int Unshakable; // Niewzruszony
-    public int Vaulting; // Woltyżerka ---------------------------- MECHANIKA DO WPPROWADZENIA: jeśli jednostka jest na koniu to może wykonać ruch na początku rundy zamiast w swojej turze
+    public int Vaulting; // Woltyżerka
     public bool WarWizard; // Mag bitewny
 
     [Header("Cechy stworzeń")]
@@ -131,7 +133,7 @@ public class Stats : MonoBehaviour
     public bool Distracting; // Dekoncentrujący
     public bool Ethereal; // Eteryczny
     public int Fear; // Strach
-    public bool Hungry; // Żarłoczny ---------------------------- MECHANIKA DO WPPROWADZENIA
+    public bool Hungry; // Żarłoczny
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int NaturalArmor;
     public bool Regeneration; // Regeneracja
@@ -139,16 +141,10 @@ public class Stats : MonoBehaviour
     public int Terror; // Groza
     public bool Undead; // Ożywieniec
     public bool Unstable; // Niestabilny
-    public bool Vampiric; // Wampiryczny ---------------------------- MECHANIKA DO WPPROWADZENIA
+    public bool Vampiric; // Wampiryczny
     public bool Venom; // Jad
     public int VenomModifier; // Siła jadu
     public int Ward; // Ochrona
-
-    //STARE
-    public bool ArmouredCasting; // Pancerz Wiary
-    public bool MagicSense; //Zmysł magii
-    public bool MightyMissile; // Morderczy pocisk
-    public bool WillOfIron; // Żelazna wola
 
     [Header("Statystyki")]
     public int HighestDamageDealt; // Największe zadane obrażenia
@@ -468,7 +464,7 @@ public class Stats : MonoBehaviour
                         field.SetValue(this, false);
                     }
 
-                    if (field.Name == "NaturalArmor")
+                    if (field != null && field.Name == "NaturalArmor")
                     {
                         InventoryManager.Instance.CheckForEquippedWeapons();
                     }

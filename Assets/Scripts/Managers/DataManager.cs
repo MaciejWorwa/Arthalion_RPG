@@ -697,6 +697,18 @@ public class StatsData
     public int Armor_torso;
     public int Armor_legs;
 
+    [Header("Umiejętności")]
+    public int Athletics; // Atletyka
+    public int Channeling; // Splatanie magii
+    public int Cool; // Opanowanie
+    public int Dodge; // Unik
+    public int Endurance; // Odporność
+    public int MagicLanguage; // Język magiczny
+    public int Pray; // Modlitwa
+    public List<Pair> MeleeSerialized = new List<Pair>();
+    public List<Pair> RangedSerialized = new List<Pair>();
+
+
     [Header("Talenty")]
     public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
@@ -713,6 +725,7 @@ public class StatsData
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
     public int Hardy; // Twardziel
+    public int HolyHatred; // Święta nienawiść
     public int Implacable; // Nieubłagany
     public int InstinctiveDiction; // Precyzyjne inkantowanie
     public int IronJaw; // Żelazna szczęka
@@ -749,7 +762,7 @@ public class StatsData
     public bool Distracting; // Dekoncentrujący
     public bool Ethereal; // Eteryczny
     public int Fear; // Strach
-    public bool Hungry; // Żarłoczny ---------------------------- MECHANIKA DO WPPROWADZENIA
+    public bool Hungry; // Żarłoczny
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int NaturalArmor;
     public bool Regeneration; // Regeneracja
@@ -757,26 +770,12 @@ public class StatsData
     public int Terror; // Groza
     public bool Undead; // Ożywieniec
     public bool Unstable; // Niestabilny
-    public bool Vampiric; // Wampiryczny ---------------------------- MECHANIKA DO WPPROWADZENIA
+    public bool Vampiric; // Wampiryczny
     public bool Venom; // Jad
     public int VenomModifier; // Siła jadu
     public int Ward; // Ochrona
 
-    //STARE
-    public bool ArmouredCasting; // Pancerz Wiary
-    public bool MagicSense; //Zmysł magii
-    public bool MightyMissile; // Morderczy pocisk
-    public bool WillOfIron; // Żelazna wola
-
-    public int Athletics; // Atletyka
-    public int Channeling; // Splatanie magii
-    public int Cool; // Opanowanie
-    public int Dodge; // Unik
-    public int Endurance; // Odporność
-    public int MagicLanguage; // Język magiczny
-    public List<Pair> MeleeSerialized = new List<Pair>();
-    public List<Pair> RangedSerialized = new List<Pair>();
-
+    [Header("Statystyki")]
     public int HighestDamageDealt; // Największe zadane obrażenia
     public int TotalDamageDealt; // Suma zadanych obrażeń
     public int HighestDamageTaken; // Największe otrzymane obrażenia

@@ -2,7 +2,6 @@ using System.Collections;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
 
 public class StatesManager : MonoBehaviour
 {
@@ -131,7 +130,16 @@ public class StatesManager : MonoBehaviour
                 if (rollResult == 0) yield break;
             }
 
-            int successLevel = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", stats.StoutHearted * 10, rollResult)[1];
+            int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
+
+            if (test[0] > 0 && stats.StoutHearted > 0)
+            {
+                test[1] += stats.StoutHearted;
+                Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{test[1]}</color> za talent \"Waleczne Serce.\"");
+            }
+
+            int successLevel = test[1];
+
             if (successLevel > 0)
             {
                 unit.Broken = Mathf.Max(0, unit.Broken - successLevel);
@@ -169,8 +177,6 @@ public class StatesManager : MonoBehaviour
                 yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność", result => rollResult = result));
                 if (rollResult == 0) yield break;
             }
-
-            Debug.Log("unit.PoisonTestModifier " + unit.PoisonTestModifier);
 
             int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", unit.PoisonTestModifier + 10, rollResult)[1];
             if (successLevel > 0)
