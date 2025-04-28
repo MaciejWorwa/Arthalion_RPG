@@ -21,13 +21,13 @@ At the moment only Polish language is supported.
 
 # Features
 
-- Battlefield editor with unique map elements,
-
 - Battlefield editor with hundreds of map assets from https://www.forgotten-adventures.net/. Author retains all copyright rights,
 
 - Various races and monsters to choose from,
 
-- Different weapons with quality selection,
+- Various weapons with quality selection,
+
+- A wide variety of spells and all Arcanes to choose from,
 
 - 10 different game modes (including automatic combat mode),
 
@@ -80,7 +80,7 @@ In Battle Mode, manage and control units with these actions:
 - **Adding Units:** Open the Unit Management Panel, click on the name of a unit, and then click on the desired location on the grid to place it. Alternatively, use the button to add a unit at a random position on the battlefield.
 - **Selecting Units:** Left-click a unit to select it. To select multiple units, enable the appropriate mode in the Unit Management Panel and drag the mouse over the desired units. You can copy selected units with `Ctrl + C` and paste them using `Ctrl + V`.
 - **Moving Units:** Left-click on an empty tile within the unit's movement range to move the selected unit. Movement range is visually highlighted.
-- **Attacking:** Right-click on an enemy unit to initiate an attack.
+- **Attacking:** Right-click on an enemy unit to initiate an attack. Hold the mouse button to choose a specific hit location.
 - **Editing Units:** After selecting a unit, you can edit its attributes in the panel located on the left side of the screen.
 - **Deleting Units:** Press `Delete` to remove selected units or use the "Delete" button in the Unit Management Panel.
 - **Drag and Drop Units or Map Elements**: Move elements freely across the map using drag and drop. Press `Delete` to remove the selected element or right-click to rotate it.
