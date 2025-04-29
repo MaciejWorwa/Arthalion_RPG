@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -450,21 +449,35 @@ public class Stats : MonoBehaviour
                 // Odwrócenie działania efektu – dla każdej modyfikowanej statystyki odejmujemy wartość buffa.
                 foreach (var mod in effect.StatModifiers)
                 {
+                    Unit affectedUnit = GetComponent<Unit>();
+
+                    // Szukamy pola najpierw w Stats
                     FieldInfo field = this.GetType().GetField(mod.Key, BindingFlags.Public | BindingFlags.Instance);
-                    if (field != null && field.FieldType == typeof(int))
+                    object targetObject = this;
+
+                    // Jeśli nie znaleziono w Stats, próbujemy znaleźć w Unit
+                    if (field == null && affectedUnit != null)
                     {
-                        int currentValue = (int)field.GetValue(this);
-                        field.SetValue(this, currentValue - mod.Value);
+                        field = affectedUnit.GetType().GetField(mod.Key, BindingFlags.Public | BindingFlags.Instance);
+                        targetObject = affectedUnit;
                     }
-                    if (field != null && field.FieldType == typeof(bool))
+
+                    if (field == null) continue;
+
+                    if (field.FieldType == typeof(int))
+                    {
+                        int currentValue = (int)field.GetValue(targetObject);
+                        field.SetValue(targetObject, currentValue - mod.Value);
+                    }
+                    if (field.FieldType == typeof(bool))
                     {
                         // Załóżmy, że w słowniku mod.Value == 1 oznacza, że buff włączył daną cechę
                         // Aby odwrócić, ustawiamy ją na false – oczywiście, jeśli oryginalna wartość była false.
                         // Jeśli mogło być też true – trzeba to odpowiednio przechowywać (np. jako dodatkowe pole w SpellEffect).
-                        field.SetValue(this, false);
+                        field.SetValue(targetObject, false);
                     }
 
-                    if (field != null && field.Name == "NaturalArmor")
+                    if (field.Name == "NaturalArmor")
                     {
                         InventoryManager.Instance.CheckForEquippedWeapons();
                     }

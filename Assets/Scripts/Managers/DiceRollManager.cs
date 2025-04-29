@@ -70,7 +70,7 @@ public class DiceRollManager : MonoBehaviour
             _rollInputField.text = "";
         }
 
-        while (ManualRollResult == 0)
+        while (ManualRollResult == 0 || _applyRollResultPanel.activeSelf)
         {
             yield return null;
         }

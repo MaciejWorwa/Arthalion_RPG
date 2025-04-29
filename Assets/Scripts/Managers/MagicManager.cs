@@ -47,7 +47,6 @@ public class MagicManager : MonoBehaviour
     private bool _wantsToDispell;
     private bool _dispellDone;
 
-    // DO WPROWADZENIA
     [Header("Panel do manualnego zarządzania krytycznym splecieniem zaklęcia")]
     [SerializeField] private GameObject _criticalCastingPanel;
     [SerializeField] private UnityEngine.UI.Button _criticalWoundButton; // Zadaje dodatkowo ranę krytyczną, jeśli to zaklęcie zadające obrażenia
@@ -55,7 +54,6 @@ public class MagicManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _antiDispellButton; // Zaklęcie nie może być rozproszone
     private string _criticalCastingString;
 
-    // DO WPROWADZENIA
     [Header("Panel do manualnego zarządzania overcastingiem")]
     [SerializeField] private GameObject _overcastingPanel;
     [SerializeField] private UnityEngine.UI.Button _extraTargetButton;
@@ -63,9 +61,9 @@ public class MagicManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _extraRangeButton;
     [SerializeField] private UnityEngine.UI.Button _extraAreaSizeButton;
     [SerializeField] private UnityEngine.UI.Button _extraDurationButton;
+    [SerializeField] private TMP_Text _overcastingLevelDisplay;
     private List<string> _overcastingStrings = new List<string>();
     private int _overcastingLevel;
-    [SerializeField] private TMP_Text _overcastingLevelDisplay;
 
     [Header("Tradycje magii")]
     [SerializeField] private List<UnityEngine.UI.Toggle> _arcanesToggles;
@@ -276,7 +274,7 @@ public class MagicManager : MonoBehaviour
 
         int castingNumberRequired = _grimuarToggle.isOn ? spell.CastingNumber * 2 : spell.CastingNumber;
 
-        int successLevels = castingTest[1] + unit.ChannelingModifier;
+        int successLevels = spell.Arcane == "Błogosławieństwa" || spell.Arcane == "Cuda" ? castingTest[1] : castingTest[1] + unit.ChannelingModifier;
         string color = successLevels >= castingNumberRequired ? "green" : "red"; // Zielony, jeśli >= CastingNumber, inaczej czerwony
         Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color={color}>{successLevels}/{castingNumberRequired}</color>.");
 
@@ -307,7 +305,7 @@ public class MagicManager : MonoBehaviour
             StartCoroutine(Overcasting(spell, successLevels - castingNumberRequired));
         }
 
-        while (_criticalCastingPanel.activeSelf || _overcastingPanel.activeSelf)
+        while (_criticalCastingPanel.activeSelf || _overcastingPanel.activeSelf)// || _overcastingBlessingPanel.activeSelf)
         {
             yield return null;
         }
@@ -351,9 +349,6 @@ public class MagicManager : MonoBehaviour
             {
                 Debug.Log($"{targetStats.Name} znajduje się poza zasięgiem zaklęcia.");
                 continue;
-                //ResetSpellCasting();
-                //unit.CanCastSpell = true;
-                //yield break;
             }
 
             // Ustala obszar działania zaklęcia. Zwykle jest to mnożnik bonusu z Siły Woli
@@ -373,9 +368,6 @@ public class MagicManager : MonoBehaviour
             {
                 Debug.Log("W obszarze działania zaklęcia musi znaleźć się odpowiedni cel.");
                 continue;
-                //ResetSpellCasting();
-                //unit.CanCastSpell = true;
-                //yield break;
             }
 
             //Czary dotykowe (ofensywne)
@@ -835,36 +827,20 @@ public class MagicManager : MonoBehaviour
         if (_azyrToggle.isOn)
         {
             Vector2 targetPos = targetStats.transform.position;
-            Vector2[] adjacentPositions = {
-                    targetPos + Vector2.right,
-                    targetPos + Vector2.left,
-                    targetPos + Vector2.up,
-                    targetPos + Vector2.down,
-                    targetPos + new Vector2(1, 1),
-                    targetPos + new Vector2(-1, -1),
-                    targetPos + new Vector2(-1, 1),
-                    targetPos + new Vector2(1, -1)
-                };
+            Unit[] unitsAroundTarget = CombatManager.Instance.GetAdjacentUnits(targetPos, targetStats.GetComponent<Unit>());
 
-            foreach (var pos in adjacentPositions)
+            foreach (Unit adjacentUnit in unitsAroundTarget)
             {
-                Collider2D collider = Physics2D.OverlapPoint(pos);
-                if (collider != null)
-                {
-                    Unit adjacentUnit = collider.GetComponent<Unit>();
-                    if (adjacentUnit != null && adjacentUnit != targetStats.GetComponent<Unit>())
-                    {
-                        int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(spellcasterStats, adjacentUnit.GetComponent<Stats>(), hitLocation, rollResult);
-                        int electricDamage = (spellcasterStats.SW / 10) + UnityEngine.Random.Range(1, 11);
-                        Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {electricDamage} obrażeń spowodowanych ładunkiem elektrycznym zaklęcia z Tradycji Niebios.");
+                int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(spellcasterStats, adjacentUnit.GetComponent<Stats>(), hitLocation, rollResult);
+                int electricDamage = (spellcasterStats.SW / 10) + UnityEngine.Random.Range(1, 11);
+                Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {electricDamage} obrażeń spowodowanych ładunkiem elektrycznym zaklęcia z Tradycji Niebios.");
 
-                        CombatManager.Instance.ApplyDamageToTarget(electricDamage, adjacentUnitArmor, spellcasterStats, adjacentUnit.GetComponent<Stats>(), adjacentUnit);
-                    }
-                }
+                CombatManager.Instance.ApplyDamageToTarget(electricDamage, adjacentUnitArmor, spellcasterStats, adjacentUnit.GetComponent<Stats>(), adjacentUnit);
             }
+
         }
 
-        if(_criticalCastingString == "critical_wound")
+        if (_criticalCastingString == "critical_wound")
         {
             StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, hitLocation, null, rollResult));
         }
@@ -963,7 +939,7 @@ public class MagicManager : MonoBehaviour
         _overcastingStrings.Clear();
         ClearAllOvercastCounterTexts();
 
-        if (_overcastingPanel != null)
+        if (_overcastingPanel != null)// && spell.Arcane != "Błogosławieństwa")
         {
             _extraTargetButton.interactable = !spell.Type.Contains("self-only") && spell.AreaSize == 0;
             _extraDamageButton.interactable = spell.Type.Contains("magic-missile");
@@ -1027,6 +1003,8 @@ public class MagicManager : MonoBehaviour
 
     private void OvercastingButtonClick(GameObject button, string action)
     {
+        if (Unit.SelectedUnit == null || Unit.SelectedUnit.GetComponent<Spell>() == null) return;
+
         // Ile razy dotychczas kliknięto przycisk dla danej akcji
         int count = _overcastingStrings.Count(a => a == action);
 
@@ -1035,7 +1013,11 @@ public class MagicManager : MonoBehaviour
 
         // Sprawdź, czy koszt bieżącego (kolejnego) kliknięcia przekracza dostępne SL
         // Używamy costTable[count] – zakładając, że index count odpowiada kosztowi kolejnego kliknięcia
-        if (count < costTable.Length && costTable[count] > _overcastingLevel)
+
+        string arcane = Unit.SelectedUnit.GetComponent<Spell>().Arcane;
+        bool isMiracleOrBlessing = arcane == "Błogosławieństwa" || arcane == "Cuda";
+
+        if ((count < costTable.Length && costTable[count] > _overcastingLevel && !isMiracleOrBlessing) || (isMiracleOrBlessing && _overcastingLevel < 2))
         {
             Debug.Log("Niewystarczająca ilość Poziomów Sukcesu, aby zwiększyć ten efekt.");
             return;
@@ -1047,7 +1029,7 @@ public class MagicManager : MonoBehaviour
         // Odejmujemy koszt kliknięcia – koszt bieżącego kliknięcia jest costTable[count]
         if (count < costTable.Length)
         {
-            _overcastingLevel -= costTable[count];
+            _overcastingLevel -= isMiracleOrBlessing ? 2 : costTable[count];
         }
 
         // Sumuje łączny koszt tego efektu
@@ -1058,7 +1040,7 @@ public class MagicManager : MonoBehaviour
         }
 
         // Obliczamy wartość efektu – zgodnie z Twoją tabelą, używając funkcji GetOvercastingEffectValue
-        int cumulativeValue = GetOvercastingEffectValue(totalCost, GetValueTableForAction(action));
+        int cumulativeValue = isMiracleOrBlessing ? count + 1 : GetOvercastingEffectValue(totalCost, GetValueTableForAction(action));
 
         // Formatowanie tekstu: dla "damage" oraz "target" pokażemy "+{cumulativeValue}",
         // a dla pozostałych (np. range, area_size, duration) "x{cumulativeValue}"
@@ -1179,11 +1161,11 @@ public class MagicManager : MonoBehaviour
         bool hasDouble = DiceRollManager.Instance.IsDoubleDigit(rollResult);
         bool hasZeroOnes = rollResult % 10 == 0;
 
-        if (!isSuccessful && hasDouble && skillName == "Pray") // Pech na modlitwę
+        if (skillName == "Pray" && ((!isSuccessful && hasDouble) || (rollResult % 10 <= stats.SinPoints))) // Pech na modlitwę
         {
             int roll = UnityEngine.Random.Range(1, 101);
             int modifier = Math.Max(Math.Max(0, (-successLevel) * 10), Math.Max(0, castingNumberLeft * 10));
-            int finalRoll = roll + modifier;
+            int finalRoll = !isSuccessful && hasDouble ? roll + modifier : roll;
 
             if (modifier != 0)
             {

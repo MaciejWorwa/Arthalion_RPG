@@ -187,11 +187,11 @@
       "Duration": 1,
       "Attributes": [
         {
-          "Key": "IsFrenzy",
+          "Key": "Frenzy",
           "Value": 1
         },
         {
-          "Key": "Frenzy",
+          "Key": "IsFrenzy",
           "Value": 1
         }
       ]

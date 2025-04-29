@@ -51,12 +51,12 @@ public class StatesManager : MonoBehaviour
         // Znalezienie najmniejszej wartości pancerza spośród wszystkich części ciała
         int minArmor = Mathf.Min(stats.Armor_head, stats.Armor_arms, stats.Armor_torso, stats.Armor_legs);
 
+        Debug.Log($"Obrazenia od ognia: {unit.Ablaze - 1} + k10. Łącznie {damage}");
+        Debug.Log($"Najmniejsza wartość pancerza: {minArmor} Bonus z Wytrzymałości: {stats.Wt / 10}");
+
         stats.TempHealth -= Mathf.Max(1, damage - minArmor - stats.Wt / 10);
         Debug.Log($"<color=#FF7F50>{stats.Name} traci {Mathf.Max(1, damage - minArmor - stats.Wt / 10)} punktów żywotności w wyniku podpalenia.</color>");
         unit.DisplayUnitHealthPoints();
-
-        Debug.Log($"Obrazenia od ognia: {unit.Ablaze - 1} + losowa liczba. Łącznie {damage}");
-        Debug.Log($"minimalna zbroja: {minArmor} bonus z WT: {stats.Wt / 10}");
     }
 
     private IEnumerator Bleeding(Unit unit)

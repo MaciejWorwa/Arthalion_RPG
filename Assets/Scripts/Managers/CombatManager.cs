@@ -71,6 +71,12 @@ public class CombatManager : MonoBehaviour
 
     public bool IsManualPlayerAttack;
 
+    private Unit[] _groupOfTargets;
+    private bool _groupOfTargetsPenalty;
+    private int _groupTargetModifier;
+    [SerializeField] private GameObject _groupOfTargetsPanel;
+    private Unit _newTargetUnit; //Jeżeli strzał trafi w inną jednostkę z grupy, to zmieniany jest cel ataku.
+
     // Metoda inicjalizująca słownik ataków
     void Start()
     {
@@ -492,7 +498,25 @@ public class CombatManager : MonoBehaviour
         // ==================================================================
         // 7) *** RZUT ATAKU *** (manualny lub automatyczny)
         // ==================================================================
+        if (isRangedAttack)
+        {
+            _groupOfTargets = GetAdjacentUnits(targetStats.transform.position);
+            _groupOfTargetsPanel.SetActive(true);
+
+            // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
+            yield return new WaitUntil(() => !_groupOfTargetsPanel.activeSelf); 
+        }
+
         int attackModifier = CalculateAttackModifier(attacker, attackerWeapon, target, attackDistance, furiousAssault);
+
+        // Jeżeli w wyniku ataku dystansowego w grupę została trafiona przypadkowo inna jednostka, aktualizujemy cel
+        if(_newTargetUnit != null)
+        {
+            target = _newTargetUnit;
+            targetStats = target.Stats;
+            targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
+            _newTargetUnit = null;
+        }
 
         // Modyfikator do trafienia, za wybór konkretnej lokacji
         if (HitLocation != null && HitLocation.Length > 0 && !((attackerWeapon.Pummel || attackerWeapon.Id == 4) && attackerStats.StrikeToStun > 0))
@@ -746,6 +770,17 @@ public class CombatManager : MonoBehaviour
 
         // Sprawdzenie warunku trafienia
         bool attackSucceeded = (isRangedAttack && ((!canParry && attackerSuccessValue > 0) || combinedSuccessLevel > 0 || (canParry && combinedSuccessLevel == 0 && skillValue > parryValue))) || (isMeleeAttack && (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue))));
+
+        // Jeśli normalnie test trafienia zakończyłby się niepowodzeniem, ale dzięki premii za strzelanie do grupy udało się trafić, to przyjmujemy, że poziom sukcesu wynosi 0 (czyli trafienie minimalne).
+        if (isRangedAttack && _groupTargetModifier != 0)
+        {
+            if ((!canParry && attackerSuccessValue - _groupTargetModifier < 0) || (canParry && combinedSuccessLevel - _groupTargetModifier / 10 < 0))
+            {
+                combinedSuccessLevel = 0;
+                Debug.Log($"Trafienie powiodło się dzięki modyfikatorowi za celowanie w grupę — poziom sukcesu zostaje ustawiony na 0.");
+            }    
+        }
+        _groupTargetModifier = 0;
 
         //Resetujemy czas przeładowania broni celu ataku, bo ładowanie zostało zakłócone przez atak, przed którym musi się bronić. W przypadku chybienia z broni dystansowej, nie przeszkadza to w ładowaniu
         if (targetWeapon.ReloadLeft != 0 && (attackSucceeded || isMeleeAttack))
@@ -1764,11 +1799,7 @@ public class CombatManager : MonoBehaviour
                 Debug.Log("Uwzględniono modyfikator za oślepienie atakującego. Łączny modyfikator: " + attackModifier);
             }
 
-            if (adjacentEnemies > 1)
-            {
-                attackModifier -= 20;
-                Debug.Log("Uwzględniono modyfikator za to, że cel jest zaangażowany w walkę w zwarciu. Łączny modyfikator: " + attackModifier);
-            }
+           
 
             // Sprawdza, czy na linii strzału znajduje się przeszkoda
             RaycastHit2D[] raycastHits = Physics2D.RaycastAll(attackerUnit.transform.position, targetUnit.transform.position - attackerUnit.transform.position, attackDistance);
@@ -1787,12 +1818,40 @@ public class CombatManager : MonoBehaviour
                     break; // Żeby modyfikator nie kumulował się za każdą przeszkodę
                 }
 
-                if (unit != null && unit != targetUnit && unit != attackerUnit)
+                if (unit != null && unit != targetUnit && unit != attackerUnit && !_groupOfTargets.Contains(unit))
                 {
                     attackModifier -= 20;
                     Debug.Log("Na linii strzału znajduje się inna jednostka. Zastosowano modyfikator -20 do trafienia. Łączny modyfikator: " + attackModifier);
                     break; // Żeby modyfikator nie kumulował się za każdą postać
                 }
+            }
+
+            // Jeżeli strzelamy w grupę jednostek (i chcemy trafić którąkolwiek)
+            int groupSize = _groupOfTargets.Length;
+            if (groupSize > 1 && !_groupOfTargetsPenalty)
+            {
+                _groupTargetModifier = 0;
+
+                if (groupSize >= 7)
+                    _groupTargetModifier = 40;
+                else if (groupSize >= 3)
+                    _groupTargetModifier = 20;
+
+                attackModifier += _groupTargetModifier;
+
+                if(_groupTargetModifier != 0)
+                {
+                    Debug.Log("Cel ataku znajduje się w grupie innych jednostek. Zastosowano modyfikator do trafienia w całą grupę. Łączny modyfikator: " + attackModifier);
+                }
+
+                _newTargetUnit = _groupOfTargets[UnityEngine.Random.Range(0, _groupOfTargets.Length)];
+                Debug.Log($"Pocisk kieruje się w stronę {_newTargetUnit.Stats.Name}.");
+            }
+            else if (adjacentEnemies > 0 && _groupOfTargetsPenalty) //Zastosowanie kary za strzelanie w grupę jednostek (jeśli nie chcemy trafić którejkolwiek)
+            {
+                attackModifier -= 20;
+                _groupOfTargetsPenalty = false;
+                Debug.Log("Uwzględniono modyfikator za to, że cel jest zaangażowany w walkę w zwarciu. Łączny modyfikator: " + attackModifier);
             }
         }
 
@@ -2522,7 +2581,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private void RiderOrMountButtonClick(string riderOrmount)
+    public void RiderOrMountButtonClick(string riderOrmount)
     {
         _riderOrMount = riderOrmount;
     }
@@ -3337,7 +3396,11 @@ public class CombatManager : MonoBehaviour
             Debug.Log($"<color=#FF7F50>Atak {attackerStats.Name} oszołomił {targetStats.Name}.</color>");
             targetUnit.Stunned++;
 
-            StartCoroutine(FrenzyCoroutine(false, targetUnit)); //Zresetowanie szału bojowego
+            //Zresetowanie szału bojowego
+            if (targetUnit.IsFrenzy)
+            {
+                StartCoroutine(FrenzyCoroutine(false, targetUnit));
+            }
         }
         else
         {
@@ -3508,6 +3571,45 @@ public class CombatManager : MonoBehaviour
         {
             _frenzyButton.GetComponent<UnityEngine.UI.Image>().color = UnityEngine.Color.white;
         }
+    }
+    #endregion
+
+    #region Find adjacent units
+    public Unit[] GetAdjacentUnits(Vector2 centerPosition, Unit exclude = null)
+    {
+        List<Unit> adjacentUnits = new List<Unit>();
+        Vector2[] directions = {
+        Vector2.zero,
+        Vector2.right,
+        Vector2.left,
+        Vector2.up,
+        Vector2.down,
+        new Vector2(1, 1),
+        new Vector2(-1, -1),
+        new Vector2(-1, 1),
+        new Vector2(1, -1)
+    };
+
+        foreach (var dir in directions)
+        {
+            Vector2 pos = centerPosition + dir;
+            Collider2D collider = Physics2D.OverlapPoint(pos);
+            if (collider != null)
+            {
+                Unit unit = collider.GetComponent<Unit>();
+                if (unit != null && unit != exclude)
+                {
+                    adjacentUnits.Add(unit);
+                }
+            }
+        }
+
+        return adjacentUnits.ToArray();
+    }
+
+    public void UnitOrGroupButtonClick(string unitOrGroup)
+    {
+        _groupOfTargetsPenalty = unitOrGroup == "unit";
     }
     #endregion
 }

@@ -191,10 +191,6 @@ public class Unit : MonoBehaviour
             StartCoroutine(MovementManager.Instance.UpdateMovementRange(1)); //Resetuje szarżę lub bieg, jeśli były aktywne   
             MovementManager.Instance.Retreat(false); //Resetuje bezpieczny odwrót    
 
-            CombatManager.Instance.UpdateAimButtonColor();
-            CombatManager.Instance.UpdateDefensiveStanceButtonColor();
-            CombatManager.Instance.UpdateFrenzyButtonColor();
-
             //Odświeża listę ekwipunku
             InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().SelectedIndex = 0;
             InventoryManager.Instance.UpdateInventoryDropdown(SelectedUnit.GetComponent<Inventory>().AllWeapons, true);
@@ -226,8 +222,6 @@ public class Unit : MonoBehaviour
 
         //Zaznacza lub odznacza jednostkę na kolejce inicjatywy
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
-
-        MountsManager.Instance.UpdateMountButtonColor();
 
         if (Broken > 0)
         {

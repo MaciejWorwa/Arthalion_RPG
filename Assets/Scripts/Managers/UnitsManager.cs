@@ -936,6 +936,11 @@ public class UnitsManager : MonoBehaviour
 
         RoundsManager.Instance.DisplayActionsLeft();
 
+        CombatManager.Instance.UpdateFrenzyButtonColor();
+        CombatManager.Instance.UpdateDefensiveStanceButtonColor();
+        CombatManager.Instance.UpdateAimButtonColor();
+        MountsManager.Instance.UpdateMountButtonColor();
+
         LoadAttributes(unit);
     }
 
