@@ -31,6 +31,7 @@ public class MovementManager : MonoBehaviour
     }
     [HideInInspector] public bool IsMoving;
     [SerializeField] private Button _runButton;
+    [SerializeField] private Button _flightButton;
     [SerializeField] private Button _retreatButton;
     [SerializeField] private Toggle _canMoveToggle;
 
@@ -42,7 +43,6 @@ public class MovementManager : MonoBehaviour
 
     void Start()
     {
-
         _dodgeButton.onClick.AddListener(() => RetreatWayButtonClick("dodge"));
         _advantageButton.onClick.AddListener(() => RetreatWayButtonClick("advantage"));
     }
@@ -325,7 +325,7 @@ public class MovementManager : MonoBehaviour
         return (int)(Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y));
     }
 
-    #region Charge and Run modes
+    #region Charge, run and flight modes
     public void Run()
     {
         if (Unit.SelectedUnit != null && Unit.SelectedUnit.GetComponent<Unit>().Prone)
@@ -341,7 +341,22 @@ public class MovementManager : MonoBehaviour
         Retreat(false); // Zresetowanie bezpiecznego odwrotu
     }
 
-    public IEnumerator UpdateMovementRange(int modifier, Unit unit = null, bool isCharging = false)
+    public void Flight()
+    {
+        if (Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit.GetComponent<Unit>().Prone)
+        {
+            Debug.Log("Jednostka w stanie powalenia nie może wykonywać lotu.");
+            return;
+        }
+
+        int modifier = Unit.SelectedUnit.GetComponent<Stats>().Flight;
+
+        StartCoroutine(UpdateMovementRange(modifier, null, false, true));
+        Retreat(false); // Zresetowanie bezpiecznego odwrotu
+    }
+
+    public IEnumerator UpdateMovementRange(int modifier, Unit unit = null, bool isCharging = false, bool isFlying = false)
     {
         if (Unit.SelectedUnit != null)
         {
@@ -352,8 +367,8 @@ public class MovementManager : MonoBehaviour
 
         Stats stats = unit.GetComponent<Stats>();
 
-        //Jeżeli postać już jest w trybie szarży lub biegu, resetuje je
-        if ((isCharging && unit.IsCharging || unit.IsRunning && !isCharging) && modifier > 1)
+        //Jeżeli postać już jest w trybie szarży, lotu lub biegu, resetuje je
+        if ((isCharging && unit.IsCharging || unit.IsRunning && !isCharging || unit.IsFlying && isFlying) && modifier > 1)
         {
             modifier = 1;
         }
@@ -380,9 +395,10 @@ public class MovementManager : MonoBehaviour
         if(unit.IsMounted && unit.Mount != null)
         {
             stats.TempSz = unit.Mount.GetComponent<Stats>().Sz;
+            if (unit.Mount.GetComponent<Stats>().Flight != 0) unit.Stats.TempSz = unit.Mount.GetComponent<Stats>().Flight;
         }
 
-        //Sprawdza, czy jednostka może wykonać bieg lub szarże
+        //Sprawdza, czy jednostka może wykonać bieg, lot lub szarże
         if (modifier > 1 && !unit.CanDoAction)
         {
             Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
@@ -395,10 +411,11 @@ public class MovementManager : MonoBehaviour
         }
 
         //Aktualizuje obecny tryb poruszania postaci
-        unit.IsCharging = isCharging;
-        unit.IsRunning = modifier > 1 && !isCharging ? true : false;
+        unit.IsCharging = modifier > 1 && isCharging;
+        unit.IsFlying = modifier > 1 && isFlying;
+        unit.IsRunning = modifier > 1 && !isCharging && !isFlying? true : false;
 
-        if (unit.IsRunning)
+        if (!unit.IsCharging)
         {
             CombatManager.Instance.ChangeAttackType("StandardAttack"); //Resetuje szarże jako obecny typ ataku i ustawia standardowy atak
         }
@@ -419,10 +436,23 @@ public class MovementManager : MonoBehaviour
             //Uwzględnia talent Szybkobiegacz
             stats.TempSz += stats.Sprinter;
         }
-        else
+        else if(unit.IsFlying)
         {
             //Oblicza obecną szybkość
-            stats.TempSz *= modifier;
+            stats.TempSz = modifier;
+        }
+        else
+        {
+            // Jednostki latające mogą podczas szarżu użyc lotu
+            if(unit.IsCharging && stats.Flight != 0)
+            {
+                stats.TempSz = stats.Flight;
+            }
+            else
+            {
+                //Oblicza obecną szybkość
+                stats.TempSz *= modifier;
+            }
         }
 
         // Uwzględnia cechę Skoczny
@@ -434,16 +464,22 @@ public class MovementManager : MonoBehaviour
         // Uwzględnia ogłuszenie i powalenie
         if (unit.Stunned > 0 || unit.Prone) stats.TempSz /= 2;
 
-        ChangeButtonColor(modifier, unit.IsCharging);
+        ChangeButtonColor(modifier, unit.IsRunning, unit.IsFlying);
 
         // Aktualizuje podświetlenie pól w zasięgu ruchu
         GridManager.Instance.HighlightTilesInMovementRange(stats);
     }
 
-    private void ChangeButtonColor(int modifier, bool isCharging)
+    private void ChangeButtonColor(int modifier, bool isRunning, bool IsFlying)
     {
         //_chargeButton.GetComponent<Image>().color = modifier == 1 ? Color.white : modifier == 2 ? Color.green : Color.white;
-        _runButton.GetComponent<Image>().color = modifier == 2 && !isCharging ? Color.green : Color.white;
+        _runButton.GetComponent<Image>().color = modifier == 2 && isRunning ? Color.green : Color.white;
+        _flightButton.GetComponent<Image>().color = modifier > 1 && IsFlying ? Color.green : Color.white;
+    }
+
+    public void ShowOrHideFlightButton(bool value)
+    {
+        _flightButton.gameObject.SetActive(value);
     }
     #endregion
 

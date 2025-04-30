@@ -17,6 +17,7 @@ public class Unit : MonoBehaviour
     public bool IsTurnFinished; // Określa, czy postać zakończyła swoją turę (bo mogła to zrobić, np. zostawiając jedną akcję)
     public bool IsRunning; // Biegnie
     public bool IsCharging; // Szarżuje
+    public bool IsFlying; // Leci
     public bool IsRetreating; // Wycofuje się
     public bool IsFrenzy; // Jest w trakcie szału bojowego
 
@@ -209,6 +210,7 @@ public class Unit : MonoBehaviour
         if (IsMounted && Mount != null)
         {
             Stats.TempSz = Mount.GetComponent<Stats>().TempSz;
+            if (Mount.GetComponent<Stats>().Flight != 0) Stats.TempSz = Mount.GetComponent<Stats>().Flight;
         }
 
         GridManager.Instance.HighlightTilesInMovementRange(Stats);

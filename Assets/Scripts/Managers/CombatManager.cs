@@ -269,14 +269,13 @@ public class CombatManager : MonoBehaviour
     {
         if (Unit.SelectedUnit == null) return;
         _disarmButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Disarm > 0;
-        _feintButton.gameObject.SetActive(Unit.SelectedUnit.GetComponent<Stats>().Feint > 0);
+        _feintButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Feint > 0;
         _frenzyButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Frenzy;
         _reloadButton.interactable = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.ReloadLeft > 0);
         _grapplingButton.gameObject.SetActive(!Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
         _mountAttackButton.gameObject.SetActive(Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
-        _stompButton.gameObject.SetActive(Unit.SelectedUnit.GetComponent<Stats>().Size > SizeCategory.Average);
+        _stompButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Size > SizeCategory.Average;
     }
-
     #endregion
 
     #region Attack functions
@@ -498,13 +497,19 @@ public class CombatManager : MonoBehaviour
         // ==================================================================
         // 7) *** RZUT ATAKU *** (manualny lub automatyczny)
         // ==================================================================
+        
+        // Sprawdzenie, czy strzelamy do pojedynczego wroga, czy do grupy
         if (isRangedAttack)
         {
             _groupOfTargets = GetAdjacentUnits(targetStats.transform.position);
-            _groupOfTargetsPanel.SetActive(true);
 
-            // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
-            yield return new WaitUntil(() => !_groupOfTargetsPanel.activeSelf); 
+            if (_groupOfTargets.Length > 1)
+            {
+                _groupOfTargetsPanel.SetActive(true);
+
+                // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
+                yield return new WaitUntil(() => !_groupOfTargetsPanel.activeSelf);
+            }
         }
 
         int attackModifier = CalculateAttackModifier(attacker, attackerWeapon, target, attackDistance, furiousAssault);
@@ -623,14 +628,14 @@ public class CombatManager : MonoBehaviour
 
             if (attackerSuccessValue >= 0)
             {
-                Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
+                Debug.Log($"{attackerStats.Name} wyrzucił/a <color=green>FUKSA</color> na trafienie!");
 
                 StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon, rollOnAttack));
                 attackerStats.FortunateEvents++;
             }
             else if (DiceRollManager.Instance.IsDoubleDigit(rollOnAttack) || (attackerWeapon.Dangerous && (rollOnAttack % 10 == 9 || rollOnAttack / 10 == 9)))
             {
-                Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color> na trafienie!");
+                Debug.Log($"{attackerStats.Name} wyrzucił/a <color=red>PECHA</color> na trafienie!");
                 attackerStats.UnfortunateEvents++;
 
                 //Uwzględnienie cechy broni "Tandetny"
@@ -652,13 +657,13 @@ public class CombatManager : MonoBehaviour
         {
             if (attackerSuccessValue >= 0)
             {
-                Debug.Log($"{attackerStats.Name} wyrzucił <color=green>FUKSA</color> na trafienie!");
+                Debug.Log($"{attackerStats.Name} wyrzucił/a <color=green>FUKSA</color> na trafienie!");
                 StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon, rollOnAttack));
                 attackerStats.FortunateEvents++;
             }
             else if (isDoubleRoll || isDangerousRoll) // Tu sprawdzamy tylko double albo „niebezpieczny” rzut na 9, bo impale przy nieudanym rzucie nie wywołuje żadnego efektu.
             {
-                Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color> na trafienie!");
+                Debug.Log($"{attackerStats.Name} wyrzucił/a <color=red>PECHA</color> na trafienie!");
                 attackerStats.UnfortunateEvents++;
 
                 //Uwzględnienie cechy broni "Tandetny"
@@ -904,12 +909,12 @@ public class CombatManager : MonoBehaviour
 
             if(AttackTypes["Grappling"] == true)
             {
-                Debug.Log($"{attackerStats.Name} pochwycił {targetStats.Name}.");
+                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name}.");
                 yield break;
             }
             else if (attackerWeapon.Entangle)
             {
-                Debug.Log($"{attackerStats.Name} pochwycił {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
+                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
             }
         }
 
@@ -1107,7 +1112,7 @@ public class CombatManager : MonoBehaviour
             }
             else if (targetStats.TempHealth >= 0)
             {
-                Debug.Log($"{targetStats.Name} został zraniony.");
+                Debug.Log($"{targetStats.Name} został/a zraniony/a.");
             }
 
             target.DisplayUnitHealthPoints();
@@ -1143,7 +1148,7 @@ public class CombatManager : MonoBehaviour
                 target.Poison++;
                 target.PoisonTestModifier = attackerStats.VenomModifier;
 
-                Debug.Log("target.PoisonTestModifier " + target.PoisonTestModifier);
+                Debug.Log($"<color=#FF7F50>{targetStats.Name} zostaje zatruty/a. Modyfikator do testów przeciwko zatruciu: {target.PoisonTestModifier}</color>");
             }
 
             // Uwzględnienie cechy "Wampiryczny"
@@ -1155,7 +1160,7 @@ public class CombatManager : MonoBehaviour
 
                 if(healedAmount > 0)
                 {
-                    Debug.Log($"{attackerStats.Name} zregenerował {healedAmount} obrażeń.");
+                    Debug.Log($"{attackerStats.Name} zregenerował/a {healedAmount} obrażeń.");
                 }
             }
 
@@ -1280,7 +1285,7 @@ public class CombatManager : MonoBehaviour
         if (attackerWeapon.Slow) modifier += 10;
         if (attackerWeapon.Fast && _isTrainedWeaponCategory) modifier -= 10;
         if (attackerStats.Size > targetStats.Size) modifier -= (attackerStats.Size - targetStats.Size) * 20; // Kara do parowania za rozmiar
-        if (attackerStats.Size > targetStats.Size) Debug.Log($"modyfikator parowania za rozmiar -{(attackerStats.Size - targetStats.Size) * 20}");
+        if (attackerStats.Size > targetStats.Size) Debug.Log($"Modyfikator do parowania za rozmiar atakującego: -{(attackerStats.Size - targetStats.Size) * 20}");
 
         // Modyfikator za dekoncentrującego przeciwnika w pobliżu
         foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
@@ -2330,7 +2335,7 @@ public class CombatManager : MonoBehaviour
                 HandleDeath(targetStats, targetStats.gameObject, attackerStats);
             }
         }
-        else if (targetStats.gameObject != null && targetStats.TempHealth < 0)
+        else if (targetStats != null && targetStats.gameObject != null && targetStats.TempHealth < 0)
         {
             // Jeśli jednostka nie umarła, ale jej żywotność spadła poniżej 0 – ustaw na 0.
             targetStats.TempHealth = 0;

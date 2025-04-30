@@ -580,6 +580,7 @@ public class UnitData
     public bool IsTurnFinished;
     public bool IsRunning; // Biegnie
     public bool IsCharging; // Szarżuje
+    public bool IsFlying; // Leci
     public bool IsRetreating; // Wycofuje się
     public bool IsFrenzy; // Jest w trakcie szału bojowego
 
@@ -664,6 +665,7 @@ public class StatsData
 
     public SizeCategory Size; // Rozmiar
 
+    public List<PairString> PrimaryWeaponAttributes = new List<PairString>();
     public List<string> PrimaryWeaponNames = new List<string>();
     public int WW;
     public int US;
@@ -754,6 +756,7 @@ public class StatsData
     public bool WarWizard; // Mag bitewny
 
     [Header("Cechy stworzeń")]
+    public bool Belligerent; // Wojowniczy
     public bool Bestial; // Zwierzęcy
     public bool Bounce; // Skoczny
     public bool Champion; // Czempion
@@ -762,6 +765,7 @@ public class StatsData
     public bool Distracting; // Dekoncentrujący
     public bool Ethereal; // Eteryczny
     public int Fear; // Strach
+    public int Flight; // Latanie
     public bool Hungry; // Żarłoczny
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int NaturalArmor;
@@ -827,6 +831,13 @@ public class StatsData
         {
             ActiveSpellEffects = stats.ActiveSpellEffects.Select(e => new SpellEffectData(e)).ToList();
         }
+
+        if (stats.PrimaryWeaponAttributes != null)
+        {
+            PrimaryWeaponAttributes = stats.PrimaryWeaponAttributes
+                .Select(a => new PairString { Key = a.Key, Value = a.Value })
+                .ToList();
+        }
     }
 
 }
@@ -837,6 +848,14 @@ public class Pair
 {
     public string Key;
     public int Value;
+}
+
+//Klasa pomocnicza do zapisywania słowników stringów
+[System.Serializable]
+public class PairString
+{
+    public string Key;
+    public string Value;
 }
 
 [System.Serializable]

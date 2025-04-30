@@ -184,6 +184,8 @@ public class MountsManager : MonoBehaviour
 
             unit.Stats.TempSz = unit.Mount.GetComponent<Stats>().Sz;
 
+            if (unit.Mount.GetComponent<Stats>().Flight != 0) unit.Stats.TempSz = unit.Mount.GetComponent<Stats>().Flight;
+
             Debug.Log($"{unit.Stats.Name} dosiadł/a {unit.Mount.GetComponent<Stats>().Name}.");
         }
         else
@@ -304,5 +306,10 @@ public class MountsManager : MonoBehaviour
             }
         }
         return null;
+    }
+
+    public void ShowOrHideMountButton(bool value)
+    {
+        _mountButton.gameObject.SetActive(value);
     }
 }

@@ -32,6 +32,7 @@ public class Stats : MonoBehaviour
 
     [Header("Nazwy początkowych broni")]
     public List<string> PrimaryWeaponNames = new List<string>();
+    public List<PairString> PrimaryWeaponAttributes = new List<PairString>();
 
     [Header("Atrybuty")]
     public int WW;
@@ -124,6 +125,7 @@ public class Stats : MonoBehaviour
     public bool WarWizard; // Mag bitewny
 
     [Header("Cechy stworzeń")]
+    public bool Belligerent; // Wojowniczy
     public bool Bestial; // Zwierzęcy
     public bool Bounce; // Skoczny
     public bool Champion; // Czempion
@@ -132,6 +134,7 @@ public class Stats : MonoBehaviour
     public bool Distracting; // Dekoncentrujący
     public bool Ethereal; // Eteryczny
     public int Fear; // Strach
+    public int Flight; // Latanie
     public bool Hungry; // Żarłoczny
     public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int NaturalArmor;

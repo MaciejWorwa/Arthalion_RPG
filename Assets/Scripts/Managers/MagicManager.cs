@@ -464,6 +464,7 @@ public class MagicManager : MonoBehaviour
             Stats dispeller = null;
             foreach (Unit u in UnitsManager.Instance.AllUnits)
             {
+                if (u == null) continue;
                 if (!u.CompareTag(unit.tag) && u.CanDispell && (dispeller == null || dispeller.MagicLanguage + dispeller.Int < u.GetComponent<Stats>().MagicLanguage + u.GetComponent<Stats>().Int))
                 {
                     dispeller = u.GetComponent<Stats>();
@@ -818,7 +819,7 @@ public class MagicManager : MonoBehaviour
                 }
                 else
                 {
-                    StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, hitLocation, null, rollResult));
+                    StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation, null, rollResult));
                 }
             }
         }
@@ -842,7 +843,7 @@ public class MagicManager : MonoBehaviour
 
         if (_criticalCastingString == "critical_wound")
         {
-            StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, hitLocation, null, rollResult));
+            StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation, null, rollResult));
         }
     }
     #endregion

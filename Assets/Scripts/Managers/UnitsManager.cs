@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 public class UnitsManager : MonoBehaviour
 {
@@ -357,6 +358,65 @@ public class UnitsManager : MonoBehaviour
                 SaveAndLoadManager.Instance.IsLoading = true; // Tylko po to, żeby informacja o dobyciu broni i dodaniu do ekwipunku z metody GrabWeapon i LoadWeapon nie były wyświetlane w oknie wiadomości
 
                 InventoryManager.Instance.GrabPrimaryWeapons();
+            }
+
+            //  Wczytanie dodatkowych statystyk początkowej broni
+            if (stats.PrimaryWeaponAttributes != null && stats.PrimaryWeaponAttributes.Count > 0)
+            {
+                Weapon weapon = InventoryManager.Instance.ChooseWeaponToAttack(newUnitObject);
+
+                foreach (var attr in stats.PrimaryWeaponAttributes)
+                {
+                    var field = typeof(Weapon).GetField(attr.Key,
+                        BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (field == null) continue;
+
+                    object convertedValue = null;
+                    var ft = field.FieldType;
+
+                    try
+                    {
+                        if (ft == typeof(string))
+                        {
+                            convertedValue = attr.Value;
+                        }
+                        else if (ft == typeof(int) && int.TryParse(attr.Value, out var iVal))
+                        {
+                            convertedValue = iVal;
+                        }
+                        else if (ft == typeof(bool) && bool.TryParse(attr.Value, out var bVal))
+                        {
+                            convertedValue = bVal;
+                        }
+                        else if (ft == typeof(float) && float.TryParse(attr.Value, out var fVal))
+                        {
+                            convertedValue = fVal;
+                        }
+                    }
+                    catch
+                    {
+                        Debug.LogWarning($"Nie udało się przekonwertować PrimaryWeaponAttribute {attr.Key}:{attr.Value} na {ft.Name}");
+                        continue;
+                    }
+
+                    if (convertedValue != null)
+                    {
+                        // Ustaw wartość na broni
+                        field.SetValue(weapon, convertedValue);
+
+                        // Próbujemy też ustawić to samo pole w BaseWeaponStats, jeśli istnieje
+                        var baseStats = weapon.BaseWeaponStats;
+                        if (baseStats != null)
+                        {
+                            var baseField = typeof(WeaponBaseStats).GetField(attr.Key,
+                                BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+                            if (baseField != null && baseField.FieldType == ft)
+                            {
+                                baseField.SetValue(baseStats, convertedValue);
+                            }
+                        }
+                    }
+                }
             }
 
             //Ustala początkową inicjatywę i dodaje jednostkę do kolejki inicjatywy
@@ -792,12 +852,9 @@ public class UnitsManager : MonoBehaviour
                             ? inputValue
                             : 0;
 
-                field.SetValue(stats, value);
+                if (attributeName == "Flight") value /= 2;
 
-                if (attributeName == "Mag")
-                {
-                    DataManager.Instance.LoadAndUpdateSpells(); //Aktualizuje listę zaklęć
-                }
+                field.SetValue(stats, value);
             }
             else if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() != null)
             {
@@ -942,6 +999,9 @@ public class UnitsManager : MonoBehaviour
         MountsManager.Instance.UpdateMountButtonColor();
 
         LoadAttributes(unit);
+
+        MountsManager.Instance.ShowOrHideMountButton(stats.Flight == 0);
+        MovementManager.Instance.ShowOrHideFlightButton(stats.Flight != 0);
     }
 
     private void UpdateHealthBarColor(float tempHealth, float maxHealth, UnityEngine.UI.Image image)
@@ -1016,7 +1076,12 @@ public class UnitsManager : MonoBehaviour
 
             if (field.FieldType == typeof(int))
             {
-                SetInputFieldValue(inputField, (int)value);
+                // Rzutujemy na zmienną, żeby móc ją modyfikować
+                int intValue = (int)value;
+
+                if (attributeName == "Flight") intValue *= 2;
+
+                SetInputFieldValue(inputField, intValue);
             }
             else if (field.FieldType == typeof(bool))
             {
@@ -1192,6 +1257,7 @@ public class UnitsManager : MonoBehaviour
     public IEnumerator FearRoll(Unit unit, string opponentName, int value = 0)
     {
         if (unit.IsFearTestPassed || unit.GetComponent<Stats>().ImmunityToPsychology) yield break;
+        if (unit.GetComponent<Stats>().Belligerent && (unit.CompareTag("PlayerUnit") && InitiativeQueueManager.Instance.PlayersAdvantage > InitiativeQueueManager.Instance.EnemiesAdvantage) || (unit.CompareTag("EnemyUnit") && InitiativeQueueManager.Instance.PlayersAdvantage < InitiativeQueueManager.Instance.EnemiesAdvantage)) yield break;
 
         int rollResult = 0;
         Stats stats = unit.GetComponent<Stats>();
@@ -1252,7 +1318,8 @@ public class UnitsManager : MonoBehaviour
     public IEnumerator TerrorRoll(Unit unit, string opponentName, int value)
     {
         if (unit.IsTerrorTestPassed || unit.GetComponent<Stats>().ImmunityToPsychology) yield break;
-
+        if(unit.GetComponent<Stats>().Belligerent && (unit.CompareTag("PlayerUnit") && InitiativeQueueManager.Instance.PlayersAdvantage > InitiativeQueueManager.Instance.EnemiesAdvantage) || (unit.CompareTag("EnemyUnit") && InitiativeQueueManager.Instance.PlayersAdvantage < InitiativeQueueManager.Instance.EnemiesAdvantage)) yield break;
+        
         int rollResult = 0;
         Stats stats = unit.GetComponent<Stats>();
 
