@@ -690,7 +690,7 @@ public class InventoryManager : MonoBehaviour
 
         if (field == null) return;
 
-        // Zmienia wartść cechy
+        // Zmienia wartość cechy
         if (field.FieldType == typeof(int))
         {
             // Pobiera wartość inputa, starając się przekonwertować ją na int

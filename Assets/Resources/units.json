@@ -104,11 +104,41 @@
       "Notebook": "Aby uzyskać przewagę liczebną nad Amfisbeną potrzebna jest przewaga 4:1 zamiast 2:1"
     },
     {
+      "Race": "Bestia bagienna",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Quality",
+          "Value": "Magiczna"
+        }
+      ],
+      "WW": 35,
+      "US": 0,
+      "S": 50,
+      "Wt": 55,
+      "I": 10,
+      "Zw": 15,
+      "Zr": 10,
+      "Int": 0,
+      "SW": 0,
+      "Ogd": 0,
+      "Sz": 4,
+      "Regeneration": true,
+      "Unstable": true
+    },
+    {
       "Race": "Chimera",
       "Size": 5,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Quality",
+          "Value": "Magiczna"
+        }
+      ],
       "WW": 65,
-      "US":55,
+      "US": 55,
       "S": 63,
       "Wt": 52,
       "I": 50,
@@ -153,6 +183,10 @@
         {
           "Key": "Quality",
           "Value": "Magiczna"
+        },
+        {
+          "Key": "S",
+          "Value": 3
         }
       ],
       "WW": 30,
@@ -210,7 +244,7 @@
       "Int": 10,
       "SW": 20,
       "Ogd": 0,
-      "Sz": 7,      
+      "Sz": 7,
       "Bestial": true,
       "CorrosiveBlood": true,
       "Venom": true,
@@ -348,7 +382,7 @@
       "SW": 40,
       "Ogd": 0,
       "Sz": 6,
-      "NaturalArmor": 1,      
+      "NaturalArmor": 1,
       "Bestial": true,
       "Flight": 15
     },
@@ -366,7 +400,7 @@
       "Int": 5,
       "SW": 35,
       "Ogd": 0,
-      "Sz": 7,      
+      "Sz": 7,
       "Bestial": true,
       "Stride": true,
       "Belligerent": true,
@@ -386,7 +420,7 @@
       "Int": 15,
       "SW": 25,
       "Ogd": 0,
-      "Sz": 6,      
+      "Sz": 6,
       "Bestial": true,
       "Stride": true,
       "Regeneration": true,
@@ -481,12 +515,35 @@
       "Int": 10,
       "SW": 35,
       "Ogd": 0,
-      "Sz": 6,      
+      "Sz": 6,
       "Bestial": true,
       "Venom": true,
       "Distracting": true,
       "NaturalArmor": 2,
       "Flight": 12
+    },
+    {
+      "Race": "Merwyrm",
+      "Size": 5,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 62,
+      "US": 0,
+      "S": 65,
+      "Wt": 60,
+      "I": 45,
+      "Zw": 26,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 38,
+      "Ogd": 10,
+      "Sz": 6,
+      "ImmunityToPsychology": true,
+      "Regenerate": true,
+      "Hungry": true,
+      "NaturalArmor": 3,
+      "StrikeMightyBlow": 1,
+      "Venom": true,
+      "VenomModifier": -10
     },
     {
       "Race": "Minotaur",
@@ -507,6 +564,10 @@
       "MeleeSerialized": [
         {
           "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Flail",
           "Value": 1
         }
       ]
@@ -570,7 +631,8 @@
       "NaturalArmor": 2,
       "Bestial": true,
       "Stride": true,
-      "Belligerent": true
+      "Belligerent": true,
+      "StrikeMightyBlow": 1
     },
     {
       "Race": "Ogr",
@@ -592,6 +654,42 @@
       "MeleeSerialized": [
         {
           "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Flail",
+          "Value": 1
+        }
+      ]
+    },
+    {
+      "Race": "Olbrzym",
+      "Size": 5,
+      "PrimaryWeaponNames": [ "Pałka", "Topór drzewcowy", "Wielki topór", "Kiścień" ],
+      "WW": 30,
+      "US": 30,
+      "S": 65,
+      "Wt": 55,
+      "I": 30,
+      "Zw": 20,
+      "Zr": 15,
+      "Int": 25,
+      "SW": 25,
+      "Ogd": 20,
+      "Sz": 6,
+      "NaturalArmor": 1,
+      "Stride": true,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Flail",
+          "Value": 1
+        },
+        {
+          "Key": "Polearm",
           "Value": 1
         }
       ]
@@ -620,6 +718,10 @@
         },
         {
           "Key": "Polearm",
+          "Value": 1
+        },
+        {
+          "Key": "Flail",
           "Value": 1
         }
       ],
@@ -658,6 +760,12 @@
       "Race": "Olbrzymi wilk",
       "Size": 4,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "S",
+          "Value": 3
+        }
+      ],
       "WW": 35,
       "US": 0,
       "S": 45,
@@ -671,12 +779,19 @@
       "Sz": 4,
       "NaturalArmor": 1,
       "Bestial": true,
-      "Stride": true
+      "Stride": true,
+      "Notebook": "Olbrzymie wilki otrzymują +10 do przewagi liczebnej. Czyli w przewadze 2:1 mają +30 zamiast +20."
     },
     {
       "Race": "Pegaz",
       "Size": 4,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "S",
+          "Value": 3
+        }
+      ],
       "WW": 35,
       "US": 0,
       "S": 45,
@@ -687,7 +802,7 @@
       "Int": 20,
       "SW": 25,
       "Ogd": 0,
-      "Sz": 9,      
+      "Sz": 9,
       "Stride": true,
       "Flight": 60
     },
@@ -753,7 +868,8 @@
       "Bestial": true,
       "Stride": true,
       "Distracting": true,
-      "Frenzy": true
+      "Frenzy": true,
+      "StrikeMightyBlow": 1
     },
     {
       "Race": "Smok",
@@ -776,7 +892,7 @@
     {
       "Race": "Snotling",
       "Size": 2,
-      "PrimaryWeaponNames": [ "Krótki łuk", "Sztylet", "Pałka"],
+      "PrimaryWeaponNames": [ "Krótki łuk", "Sztylet", "Pałka" ],
       "WW": 25,
       "US": 15,
       "S": 25,
@@ -795,6 +911,29 @@
           "Value": 1
         }
       ]
+    },
+    {
+      "Race": "Syrena",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "S",
+          "Value": 3
+        }
+      ],
+      "WW": 35,
+      "US": 0,
+      "S": 49,
+      "Wt": 33,
+      "I": 42,
+      "Zw": 49,
+      "Zr": 35,
+      "Int": 30,
+      "SW": 52,
+      "Ogd": 35,
+      "Sz": 2,
+      "Notebook": "Jej szybkość w wodzie wynosi 8.\n\nKażdy kto słyszy syreni śpiew musi zdać test SW -10 albo jest traktowany jako bezbronny (utrata przytomności). Zatkanie uszu ułatwia ten test do +40"
     },
     {
       "Race": "Szczurogr",
@@ -936,6 +1075,12 @@
       "Race": "Upiorny wilk",
       "Size": 4,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "S",
+          "Value": 3
+        }
+      ],
       "WW": 30,
       "US": 0,
       "S": 35,
@@ -961,7 +1106,7 @@
       "US": 0,
       "S": 55,
       "Wt": 55,
-      "I":30,
+      "I": 30,
       "Zw": 50,
       "Zr": 20,
       "Int": 10,
@@ -1026,7 +1171,7 @@
       "Int": 45,
       "SW": 45,
       "Ogd": 25,
-      "Sz": 2,      
+      "Sz": 2,
       "NaturalArmor": 1,
       "Flight": 60
     },
@@ -1097,11 +1242,29 @@
       "Int": 10,
       "SW": 50,
       "Ogd": 0,
-      "Sz": 4,      
+      "Sz": 4,
       "Bestial": true,
       "Venom": true,
       "NaturalArmor": 2,
       "Flight": 45
+    },
+    {
+      "Race": "Zębacz jaskiniowy",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 45,
+      "US": 0,
+      "S": 50,
+      "Wt": 30,
+      "I": 10,
+      "Zw": 40,
+      "Zr": 0,
+      "Int": 5,
+      "SW": 15,
+      "Ogd": 0,
+      "Sz": 4,
+      "Bestial": true,
+      "Bounce": true
     },
     {
       "Race": "Zombie",
