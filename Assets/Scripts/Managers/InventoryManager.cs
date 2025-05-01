@@ -151,6 +151,8 @@ public class InventoryManager : MonoBehaviour
             unit.GetComponent<Inventory>().AllWeapons.Sort((x, y) => x.Name.CompareTo(y.Name));
 
             Debug.Log($"Przedmiot {newWeapon.Name} został dodany do ekwipunku {unit.GetComponent<Stats>().Name}.");
+
+            CalculateEncumbrance(unit.GetComponent<Stats>());
         }
 
         //Zapisuje bazowe statystyki broni (przed uwzględnieniem amunicji)
@@ -160,7 +162,6 @@ public class InventoryManager : MonoBehaviour
         }
 
         UpdateInventoryDropdown(unit.GetComponent<Inventory>().AllWeapons, true);
-        CalculateEncumbrance(unit.GetComponent<Stats>());
     }
     #endregion
 
@@ -654,6 +655,8 @@ public class InventoryManager : MonoBehaviour
             totalEncumbrance += encumbrance;
         }
 
+        totalEncumbrance += stats.ExtraEncumbrance;
+
         stats.CurrentEncumbrance = totalEncumbrance;
         DisplayEncumbrance(stats);
     }
@@ -697,6 +700,11 @@ public class InventoryManager : MonoBehaviour
             int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int inputValue) ? inputValue : 0;
 
             field.SetValue(selectedWeapon, value);
+
+            if (attributeName == "Encumbrance")
+            {
+                CalculateEncumbrance(unit.GetComponent<Stats>());
+            }
         }
         else if (field.FieldType == typeof(float))
         {

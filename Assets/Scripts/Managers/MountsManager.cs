@@ -165,7 +165,7 @@ public class MountsManager : MonoBehaviour
         {
             if (MountsScrollViewContent.childCount == 0)
             {
-                Debug.Log($"Musisz stać obok potencjalnego wierzchowca, aby móc go dosiąść.");
+                Debug.Log($"Aby dosiąść wierzchowca, stań obok sojuszniczej jednostki o większym rozmiarze.");
             }
             else _mountsPanel.SetActive(true);
 

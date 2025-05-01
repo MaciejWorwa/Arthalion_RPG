@@ -693,6 +693,7 @@ public class StatsData
     public int Initiative;
     public int CurrentEncumbrance; // Aktualne obciążenie ekwipunkiem
     public int MaxEncumbrance; // Maksymalny udźwig
+    public int ExtraEncumbrance; // Dodatkowe obciążenie za przedmioty niebędące uzbrojeniem
 
     public int Armor_head;
     public int Armor_arms;

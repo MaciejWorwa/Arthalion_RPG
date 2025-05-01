@@ -189,7 +189,7 @@ public class SaveAndLoadManager : MonoBehaviour
 
         if (savesFolderName == "savedUnitsList")
         {
-            Debug.Log($"Jednostka '{Unit.SelectedUnit.GetComponent<Stats>().Name}' została zapisana.");
+            Debug.Log($"<color=green>Jednostka '{Unit.SelectedUnit.GetComponent<Stats>().Name}' została zapisana.</color>");
             DataManager.Instance.LoadAndUpdateStats();
         }
     }

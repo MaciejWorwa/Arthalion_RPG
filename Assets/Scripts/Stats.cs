@@ -62,6 +62,7 @@ public class Stats : MonoBehaviour
     public int Initiative; // Inicjatywa w walce
     public int CurrentEncumbrance; // Aktualne obciążenie ekwipunkiem
     public int MaxEncumbrance; // Maksymalny udźwig
+    public int ExtraEncumbrance; // Dodatkowe obciążenie za przedmioty niebędące uzbrojeniem
 
     [Header("Punkty zbroi")]
     public int Armor_head;

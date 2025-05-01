@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UIElements;
 using static UnityEngine.Rendering.DebugUI;
 
 public class UnitsManager : MonoBehaviour
@@ -418,6 +419,7 @@ public class UnitsManager : MonoBehaviour
                     }
                 }
             }
+            InventoryManager.Instance.CalculateEncumbrance(stats);
 
             //Ustala początkową inicjatywę i dodaje jednostkę do kolejki inicjatywy
             stats.Initiative = stats.I + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
@@ -855,6 +857,11 @@ public class UnitsManager : MonoBehaviour
                 if (attributeName == "Flight") value /= 2;
 
                 field.SetValue(stats, value);
+
+                if (attributeName == "ExtraEncumbrance")
+                {
+                    InventoryManager.Instance.CalculateEncumbrance(stats);
+                }         
             }
             else if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() != null)
             {
