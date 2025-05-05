@@ -5,6 +5,7 @@ using System.Linq;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEditor;
+using UnityEditor.VersionControl;
 using UnityEngine;
 
 public class CombatManager : MonoBehaviour
@@ -67,6 +68,14 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _riderButton;
     [SerializeField] private UnityEngine.UI.Button _mountButton;
 
+    [SerializeField] private GameObject _criticalDeflectionPanel;
+    private string _criticalDeflection;
+    [SerializeField] private UnityEngine.UI.Button _armorDamageButton;
+
+    [SerializeField] private GameObject _distractingWeaponPanel;
+    private string _distractChoice;
+    [SerializeField] private UnityEngine.UI.Button _distractButton;
+
     private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
 
     public bool IsManualPlayerAttack;
@@ -86,6 +95,10 @@ public class CombatManager : MonoBehaviour
         _dodgeButton.onClick.AddListener(() => ParryOrDodgeButtonClick("dodge"));
         _parryButton.onClick.AddListener(() => ParryOrDodgeButtonClick("parry"));
 
+        _armorDamageButton.onClick.AddListener(() => CriticalDeflectionButtonClick("damage_armor"));
+
+        _distractButton.onClick.AddListener(() => DistractButtonClick("distract"));
+
         _riderButton.onClick.AddListener(() => RiderOrMountButtonClick("rider"));
         _mountButton.onClick.AddListener(() => RiderOrMountButtonClick("mount"));
 
@@ -104,6 +117,16 @@ public class CombatManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape) && _riderOrMountPanel.activeSelf)
         {
             RiderOrMountButtonClick("");
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape) && _grapplingActionPanel.activeSelf)
+        {
+            GrapplingActionButtonClick("");
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape) && _criticalDeflectionPanel.activeSelf)
+        {
+            CriticalDeflectionButtonClick("");
         }
     }
 
@@ -830,6 +853,21 @@ public class CombatManager : MonoBehaviour
             //Uwzględnienie talentu Czempion i Riposta
             if ((targetStats.Champion || targetStats.RiposteAttacksLeft > 0) && isMeleeAttack && (combinedSuccessLevel < 0 || (combinedSuccessLevel == 0 && skillValue < Math.Max(parryValue, dodgeValue))))
             {
+                if (targetStats.RiposteAttacksLeft > 0) targetStats.RiposteAttacksLeft--;
+
+                //Uwzględnienie cechy broni "Dekoncentrująca"
+                if (attackerWeapon.Distract && defenceSuccessLevel - attackerSuccessLevel > 0)
+                {
+                    _distractingWeaponPanel.SetActive(true);
+                    yield return new WaitUntil(() => !_distractingWeaponPanel.activeSelf);
+
+                    if (_distractChoice == "distract")
+                    {
+                        Debug.Log($"Możesz przesunąć {attackerStats.Name} o {defenceSuccessLevel - attackerSuccessLevel} metry/ów od {targetStats.Name}. Jedno pole na siatce odpowiada dwóm metrom.");
+                        yield break;
+                    }
+                }
+
                 int riposteDamage = CalculateDamage(defenceRollResult, defenceSuccessLevel - attackerSuccessLevel, targetStats, attackerStats, targetWeapon);
                 string talentName = targetStats.Champion ? "Czempion" : "Riposta";
                 Debug.Log($"{targetStats.Name} korzystając z talentu {talentName} kontratakuje i zadaje {riposteDamage} obrażeń.");
@@ -861,8 +899,6 @@ public class CombatManager : MonoBehaviour
                         }
                     }      
                 }
-
-                if (targetStats.RiposteAttacksLeft > 0) targetStats.RiposteAttacksLeft--;
             }
 
             yield break;
@@ -915,6 +951,19 @@ public class CombatManager : MonoBehaviour
             else if (attackerWeapon.Entangle)
             {
                 Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
+            }
+        }
+
+        //Uwzględnienie cechy broni "Dekoncentrująca"
+        if (attackerWeapon.Distract && combinedSuccessLevel > 0)
+        {
+            _distractingWeaponPanel.SetActive(true);
+            yield return new WaitUntil(() => !_distractingWeaponPanel.activeSelf);
+
+            if (_distractChoice == "distract")
+            {
+                Debug.Log($"Możesz przesunąć {targetStats.Name} o <color=green>{combinedSuccessLevel} metry/ów</color> od {attackerStats.Name}. Jedno pole na siatce odpowiada dwóm metrom.");
+                yield break;
             }
         }
 
@@ -1164,6 +1213,12 @@ public class CombatManager : MonoBehaviour
                 }
             }
 
+            //Uwzględnienie cechy broni "Przewracająca"
+            if(attackerWeapon != null && attackerWeapon.Trip)
+            {
+                Debug.Log($"<color=#FF7F50>Broń {attackerStats.Name} posiada cechę \"Przewracająca\". Możesz zużyć 2 przewagi i wykonać przeciwstawny test Siły i Atletyki. Udany test powali {targetStats.Name}.</color>");
+            }
+
             // Uwzględnienie cechy "Kwasowa krew"
             if (targetStats.CorrosiveBlood && !isCorrosiveBloodReaction)
             {
@@ -1239,6 +1294,11 @@ public class CombatManager : MonoBehaviour
 
         // Aktualizacja podświetlenia pól w zasięgu ruchu atakującego
         GridManager.Instance.HighlightTilesInMovementRange(attackerStats);
+    }
+
+    public void DistractButtonClick(string value)
+    {
+        _distractChoice = value;
     }
     #endregion
 
@@ -2080,7 +2140,8 @@ public class CombatManager : MonoBehaviour
         }
 
         // Pobranie pancerza dla trafionej lokalizacji
-        List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(hitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[hitLocation] : new List<Weapon>();
+        string normalizedHitLocation = NormalizeHitLocation(hitLocation);
+        List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(normalizedHitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[normalizedHitLocation] : new List<Weapon>();
 
         // Element pancerza, który został trafiony
         Weapon selectedArmor = armorByLocation
@@ -2093,6 +2154,29 @@ public class CombatManager : MonoBehaviour
         {
             Debug.Log($"{selectedArmor.Name} posiada cechę \"Nieprzebijalny\". Trafienie krytyczne jest ignorowane.");
             yield break;
+        }
+
+        if (selectedArmor != null && targetStats.TempHealth >= 0)
+        {
+            _criticalDeflectionPanel.SetActive(true);
+
+            // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
+            yield return new WaitUntil(() => !_criticalDeflectionPanel.activeSelf);
+
+            if (_criticalDeflection == "damage_armor")
+            {
+                selectedArmor.Damage++;
+                string message = $"Trafienie krytyczne jest ignorowane, ale uszkodzono {selectedArmor.Name}.";
+
+                if (selectedArmor.Damage >= selectedArmor.Armor && selectedArmor.Shield == 0 || selectedArmor.Damage >= selectedArmor.Shield && selectedArmor.Shield > 0)
+                {
+                    message += " <color=red>Ten element pancerza jest już uszkodzony tak bardzo, że stał się bezużyteczny.</color>";
+                }
+                Debug.Log(message);
+
+                InventoryManager.Instance.CheckForEquippedWeapons(targetStats.GetComponent<Unit>());
+                yield break;
+            }
         }
 
         int rollResult = 0;
@@ -2341,7 +2425,15 @@ public class CombatManager : MonoBehaviour
             targetStats.TempHealth = 0;
         }
 
-        targetStats.GetComponent<Unit>().DisplayUnitHealthPoints();
+        if(targetStats != null)
+        {
+            targetStats.GetComponent<Unit>().DisplayUnitHealthPoints();
+        }
+    }
+
+    public void CriticalDeflectionButtonClick(string value)
+    {
+        _criticalDeflection = value;
     }
     #endregion
 
@@ -2439,7 +2531,9 @@ public class CombatManager : MonoBehaviour
 
     public int CalculateArmor(Stats attackerStats, Stats targetStats, string hitLocation, int attackRollResult, Weapon attackerWeapon = null)
     {
-        int armor = NormalizeHitLocation(hitLocation) switch
+        string normalizedHitLocation = NormalizeHitLocation(hitLocation);
+
+        int armor = normalizedHitLocation switch
         {
             "head" => targetStats.Armor_head,
             "arms" => targetStats.Armor_arms,
@@ -2465,7 +2559,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // Pobranie pancerza dla trafionej lokalizacji
-        List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(hitLocation) ? inventory.ArmorByLocation[hitLocation] : new List<Weapon>();
+        List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(normalizedHitLocation) ? inventory.ArmorByLocation[normalizedHitLocation] : new List<Weapon>();
 
         // Sprawdza, czy trafienie jest trafieniem krytycznym
         bool isCriticalHit = DiceRollManager.Instance.IsDoubleDigit(attackRollResult);
@@ -2813,15 +2907,8 @@ public class CombatManager : MonoBehaviour
 
         // Wyświetlenie panelu akcji i oczekiwanie na wybór gracza
         _grapplingActionChoice = "";
-        if (_grapplingActionPanel != null)
-        {
-            _grapplingActionPanel.SetActive(true);
-        }
-        yield return new WaitUntil(() => !string.IsNullOrEmpty(_grapplingActionChoice));
-        if (_grapplingActionPanel != null)
-        {
-            _grapplingActionPanel.SetActive(false);
-        }
+        _grapplingActionPanel.SetActive(true);
+        yield return new WaitUntil(() => !_grapplingActionPanel.activeSelf);
 
         switch (_grapplingActionChoice)
         {
@@ -2903,9 +2990,7 @@ public class CombatManager : MonoBehaviour
                 break;
 
             default:
-                Debug.Log("Nie wybrano poprawnej akcji w grapplingu. Wykonuję domyślny atak.");
-                Attack(attacker, target);
-                break;
+                yield break;
         }
     }
 

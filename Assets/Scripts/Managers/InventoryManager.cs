@@ -1005,15 +1005,16 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
-    public void CheckForEquippedWeapons()
+    public void CheckForEquippedWeapons(Unit unit = null)
     {
-        if (Unit.SelectedUnit == null) return;
+        if (unit == null && Unit.SelectedUnit == null) return;
+        else if(unit == null) unit = Unit.SelectedUnit.GetComponent<Unit>();
 
         List<UnityEngine.UI.Button> allWeaponButtons = InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons;
-        Weapon[] equippedWeapons = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons;
-        List<Weapon> equippedArmors = Unit.SelectedUnit.GetComponent<Inventory>().EquippedArmors;
-        Stats unitStats = Unit.SelectedUnit.GetComponent<Stats>();
-        Inventory inventory = Unit.SelectedUnit.GetComponent<Inventory>();
+        Weapon[] equippedWeapons = unit.GetComponent<Inventory>().EquippedWeapons;
+        List<Weapon> equippedArmors = unit.GetComponent<Inventory>().EquippedArmors;
+        Stats unitStats = unit.GetComponent<Stats>();
+        Inventory inventory = unit.GetComponent<Inventory>();
 
         // Sprawdzamy, czy w ekwipunku znajduje się "Naturalny pancerz"
         bool hasNaturalArmor = equippedArmors.Any(armor => armor.Name == "Naturalny pancerz");
@@ -1082,8 +1083,11 @@ public class InventoryManager : MonoBehaviour
             }
         }
 
-        UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
-        LoadWeaponAttributes();
+        if(unit == Unit.SelectedUnit.GetComponent<Unit>())
+        {
+            UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
+            LoadWeaponAttributes();
+        }
     }
     #endregion
 

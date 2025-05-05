@@ -81,6 +81,18 @@
       "NaturalWeapon": true
     },
     {
+      "Name": "Cep bojowy",
+      "Category": "flail",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 3,
+      "Encumbrance": 1,
+      "Imprecise": true,
+      "Wrap": true,
+      "Distract:": true
+    },
+    {
       "Name": "Długi łuk",
       "Category": "bow",
       "Type": [ "ranged", "strength-based" ],
@@ -554,6 +566,17 @@
       "Blackpowder": true,
       "Damaging": true,
       "AmmoType": "Pocisk i proch"
+    },
+    {
+      "Name": "Sierpak",
+      "Category": "polearm",
+      "Type": [ "melee" ],
+      "TwoHanded": true,
+      "AttackRange": 1.5,
+      "S": 4,
+      "Encumbrance": 3,
+      "Trip": true,
+      "Defensive": true
     },
     {
       "Name": "Szabla",
