@@ -166,7 +166,7 @@ public class MovementManager : MonoBehaviour
             float elapsedTime = 0f;
             float duration = 0.2f; // Czas trwania interpolacji
 
-            while (elapsedTime < duration && unitGameObject != null)
+            while (elapsedTime < duration && unitGameObject != null && !ReinforcementLearningManager.Instance.IsLearning)
             {
                 IsMoving = true;
 
@@ -197,7 +197,7 @@ public class MovementManager : MonoBehaviour
         }
 
         //Zaznacza jako zajęte faktyczne pole, na którym jednostka zakończy ruch, a nie pole do którego próbowała dojść
-        if (GameManager.IsAutoCombatMode)
+        if (GameManager.IsAutoCombatMode || ReinforcementLearningManager.Instance.IsLearning)
         {
             AutoCombatManager.Instance.CheckForTargetTileOccupancy(unitGameObject);
         }
@@ -516,6 +516,12 @@ public class MovementManager : MonoBehaviour
             //Jeżeli do wyboru jest tylko Unik, bo nie ma wystarczającej ilości przewagi, albo tylko Przewaga, bo nie ma dostępnych akcji, to panel nie jest wyświetlany
             _retreatPanel.SetActive(advantage >= 2 && unit.CanDoAction);
 
+            if(GameManager.IsAutoCombatMode)
+            {
+                _retreatPanel.SetActive(false);
+                _retreatWay = "advantage";
+            }
+
             if (_retreatPanel.activeSelf)
             {
                 // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
@@ -527,9 +533,6 @@ public class MovementManager : MonoBehaviour
                 {
                     yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(unit.GetComponent<Stats>(), "unik", result => rollResult = result));
                     if (rollResult == 0) yield break;
-
-                    //yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(unit.GetComponent<Stats>(), "unik"));
-                    //rollResult = DiceRollManager.Instance.ManualRollResult;
                 }
                 else if (_retreatWay == "dodge")
                 {

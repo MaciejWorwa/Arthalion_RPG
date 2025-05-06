@@ -526,7 +526,7 @@ public class CombatManager : MonoBehaviour
         {
             _groupOfTargets = GetAdjacentUnits(targetStats.transform.position);
 
-            if (_groupOfTargets.Length > 1)
+            if (_groupOfTargets.Length > 1 && !GameManager.IsAutoCombatMode)
             {
                 _groupOfTargetsPanel.SetActive(true);
 
@@ -856,7 +856,7 @@ public class CombatManager : MonoBehaviour
                 if (targetStats.RiposteAttacksLeft > 0) targetStats.RiposteAttacksLeft--;
 
                 //Uwzględnienie cechy broni "Dekoncentrująca"
-                if (attackerWeapon.Distract && defenceSuccessLevel - attackerSuccessLevel > 0 && _isTrainedWeaponCategory)
+                if (attackerWeapon.Distract && defenceSuccessLevel - attackerSuccessLevel > 0 && _isTrainedWeaponCategory && !GameManager.IsAutoCombatMode)
                 {
                     _distractingWeaponPanel.SetActive(true);
                     yield return new WaitUntil(() => !_distractingWeaponPanel.activeSelf);
@@ -955,7 +955,7 @@ public class CombatManager : MonoBehaviour
         }
 
         //Uwzględnienie cechy broni "Dekoncentrująca"
-        if (attackerWeapon.Distract && combinedSuccessLevel > 0 && _isTrainedWeaponCategory)
+        if (attackerWeapon.Distract && combinedSuccessLevel > 0 && _isTrainedWeaponCategory && !GameManager.IsAutoCombatMode)
         {
             _distractingWeaponPanel.SetActive(true);
             yield return new WaitUntil(() => !_distractingWeaponPanel.activeSelf);
@@ -1683,6 +1683,7 @@ public class CombatManager : MonoBehaviour
     //Oblicza modyfikator do trafienia
     public int CalculateAttackModifier(Unit attackerUnit, Weapon attackerWeapon, Unit targetUnit, float attackDistance = 0, bool furiousAssault = false)
     {
+        if(attackerUnit == null) return 0;
         int attackModifier = DiceRollManager.Instance.RollModifier;
         DiceRollManager.Instance.ResetRollModifier();
         Stats attackerStats = attackerUnit.GetComponent<Stats>();

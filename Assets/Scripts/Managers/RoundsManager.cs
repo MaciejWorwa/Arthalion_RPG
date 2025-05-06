@@ -261,13 +261,40 @@ public class RoundsManager : MonoBehaviour
             // Jeśli jednostka to PlayerUnit i gramy w trybie ukrywania statystyk wrogów
             if (unit.CompareTag("PlayerUnit") && GameManager.IsStatsHidingMode)
             {
-                // Czeka aż jednostka zakończy swoją turę (UnitsWithActionsLeft[unit] == 0 lub unit.IsTurnFinished)
+                // Czeka aż jednostka zakończy swoją turę
                 yield return new WaitUntil(() => (unit.CanDoAction == false && unit.CanMove == false) || unit.IsTurnFinished);
                 yield return new WaitForSeconds(0.6f);
             }
             else // Jednostki wrogów lub wszystkie jednostki, jeśli nie ukrywamy ich statystyk
             {
-                AutoCombatManager.Instance.Act(unit);
+                //TYMCZASOWE - test algorytmów gentycznych
+                if (ReinforcementLearningManager.Instance.IsLearning)
+                {
+                    if (unit.CompareTag("PlayerUnit"))
+                    {
+                        AutoCombatManager.Instance.Act(unit);
+                    }
+                    else
+                    {
+                        int iterationCount = 0;
+
+                        while ((unit.CanDoAction || unit.CanMove) && !unit.IsTurnFinished && iterationCount < 5)
+                        {
+                            ReinforcementLearningManager.Instance.SimulateUnit(unit);
+                            iterationCount++;
+                        }
+                        if (iterationCount >= 5 && !unit.IsTurnFinished)
+                        {
+                            FinishTurn();
+                        }
+                    }
+                }
+                else
+                {
+                    AutoCombatManager.Instance.Act(unit);
+                }
+
+                //AutoCombatManager.Instance.Act(unit);
 
                 // Czeka, aż jednostka zakończy ruch
                 yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
@@ -282,6 +309,32 @@ public class RoundsManager : MonoBehaviour
 
         NextRoundButton.gameObject.SetActive(true);
         _useFortunePointsButton.SetActive(true);
+
+        //DO SZKOLENIA AI
+        if (ReinforcementLearningManager.Instance.IsLearning)
+        {
+            if (ReinforcementLearningManager.Instance.BothTeamsExist() == false || RoundNumber > 50)
+            {
+                // Iteruj po wszystkich jednostkach, które jeszcze żyją i są częścią drużyny Enemy
+                foreach (Unit unit in UnitsManager.Instance.AllUnits)
+                {
+                    if (unit != null && unit.CompareTag("EnemyUnit") && unit.GetComponent<Stats>().TempHealth > 0)
+                    {
+                        ReinforcementLearningManager.Instance.AddTeamWinRewardForUnit(unit);
+                    }
+                }
+
+                ReinforcementLearningManager.Instance.UpdateTeamWins();
+
+                SaveAndLoadManager.Instance.SetLoadingType(true);
+                SaveAndLoadManager.Instance.LoadGame("AIlearning");
+            }
+
+            yield return new WaitUntil(() => SaveAndLoadManager.Instance.IsLoading == false);
+
+            GridManager.Instance.CheckTileOccupancy();
+            NextRound();
+        }
     }
 
     #region Units actions
