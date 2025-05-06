@@ -412,7 +412,7 @@ public class InventoryManager : MonoBehaviour
 
         if (!SaveAndLoadManager.Instance.IsLoading)
         {
-            Debug.Log($"{unit.GetComponent<Stats>().Name} dobył {selectedWeapon.Name}.");
+            Debug.Log($"{unit.GetComponent<Stats>().Name} dobył/a {selectedWeapon.Name}.");
 
             //Aktualizuje pasek przewagi w bitwie
             int newOverall = Unit.SelectedUnit.GetComponent<Stats>().CalculateOverall();

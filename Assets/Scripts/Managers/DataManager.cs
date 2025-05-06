@@ -894,7 +894,7 @@ public class WeaponData
     public bool Damaging; // Przebijająca
     public bool Dangerous; // Niebezpieczna
     public bool Defensive; // Parujący
-    public bool Distract; // Dekoncentrujący (Powoduje cofanie się) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Distract; // Dekoncentrujący (Powoduje cofanie się)
     public bool Entangle; // Unieruchamiający  ---------------------- DZIAŁA JAKO TAKO, MOŻLIWE ŻE TRZEBA BĘDZIE POPRAWIĆ
     public bool Fast; // Szybka
     public bool Hack; // Rąbiąca
@@ -911,7 +911,7 @@ public class WeaponData
     public int Spread; // Rozrzucająca
     public bool Tiring; // Ciężka
     public bool TrapBlade; // Łamacz mieczy ---------------------- (MECHANIKA DO WPROWADZENIA, powiązać z cechą Wytrzymały (Durable) str. 292)
-    public bool Trip; // Przewracająca ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Trip; // Przewracająca
     public bool Unbreakable; // Niełamliwa ---------------------- (MECHANIKA DO WPROWADZENIA)
     public bool Undamaging; // Tępy
     public bool Unbalanced; // Niewyważona

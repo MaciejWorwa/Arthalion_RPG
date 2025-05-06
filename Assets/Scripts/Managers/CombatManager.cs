@@ -856,7 +856,7 @@ public class CombatManager : MonoBehaviour
                 if (targetStats.RiposteAttacksLeft > 0) targetStats.RiposteAttacksLeft--;
 
                 //Uwzględnienie cechy broni "Dekoncentrująca"
-                if (attackerWeapon.Distract && defenceSuccessLevel - attackerSuccessLevel > 0)
+                if (attackerWeapon.Distract && defenceSuccessLevel - attackerSuccessLevel > 0 && _isTrainedWeaponCategory)
                 {
                     _distractingWeaponPanel.SetActive(true);
                     yield return new WaitUntil(() => !_distractingWeaponPanel.activeSelf);
@@ -955,14 +955,14 @@ public class CombatManager : MonoBehaviour
         }
 
         //Uwzględnienie cechy broni "Dekoncentrująca"
-        if (attackerWeapon.Distract && combinedSuccessLevel > 0)
+        if (attackerWeapon.Distract && combinedSuccessLevel > 0 && _isTrainedWeaponCategory)
         {
             _distractingWeaponPanel.SetActive(true);
             yield return new WaitUntil(() => !_distractingWeaponPanel.activeSelf);
 
             if (_distractChoice == "distract")
             {
-                Debug.Log($"Możesz przesunąć {targetStats.Name} o <color=green>{combinedSuccessLevel} metry/ów</color> od {attackerStats.Name}. Jedno pole na siatce odpowiada dwóm metrom.");
+                Debug.Log($"Możesz przesunąć {targetStats.Name} o <color=green>{combinedSuccessLevel} m</color> od {attackerStats.Name}. Jedno pole na siatce odpowiada dwóm metrom.");
                 yield break;
             }
         }
@@ -1214,7 +1214,7 @@ public class CombatManager : MonoBehaviour
             }
 
             //Uwzględnienie cechy broni "Przewracająca"
-            if(attackerWeapon != null && attackerWeapon.Trip)
+            if(attackerWeapon != null && attackerWeapon.Trip && _isTrainedWeaponCategory)
             {
                 Debug.Log($"<color=#FF7F50>Broń {attackerStats.Name} posiada cechę \"Przewracająca\". Możesz zużyć 2 przewagi i wykonać przeciwstawny test Siły i Atletyki. Udany test powali {targetStats.Name}.</color>");
             }
@@ -2165,7 +2165,15 @@ public class CombatManager : MonoBehaviour
 
             if (_criticalDeflection == "damage_armor")
             {
-                selectedArmor.Damage++;
+                if (selectedArmor.Durable == 0) // Uwzględnienie cechy Wytrzymały
+                {
+                    selectedArmor.Damage++;
+                }
+                else
+                {
+                    selectedArmor.Durable--;
+                }
+
                 string message = $"Trafienie krytyczne jest ignorowane, ale uszkodzono {selectedArmor.Name}.";
 
                 if (selectedArmor.Damage >= selectedArmor.Armor && selectedArmor.Shield == 0 || selectedArmor.Damage >= selectedArmor.Shield && selectedArmor.Shield > 0)

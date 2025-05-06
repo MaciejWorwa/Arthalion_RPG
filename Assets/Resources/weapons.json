@@ -90,7 +90,7 @@
       "Encumbrance": 1,
       "Imprecise": true,
       "Wrap": true,
-      "Distract:": true
+      "Distract": true
     },
     {
       "Name": "Długi łuk",
@@ -194,7 +194,7 @@
       "Tiring": true,
       "Impact": true,
       "Wrap": true,
-      "Distract:": true
+      "Distract": true
     },
     {
       "Name": "Korbacz",
@@ -204,7 +204,7 @@
       "S": 5,
       "Encumbrance": 1,
       "Wrap": true,
-      "Distract:": true
+      "Distract": true
     },
     {
       "Name": "Kostur",
