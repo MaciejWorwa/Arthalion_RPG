@@ -294,11 +294,23 @@ public class RoundsManager : MonoBehaviour
                     AutoCombatManager.Instance.Act(unit);
                 }
 
+                //int iterationCount = 0;
+                //while ((unit.CanDoAction || unit.CanMove) && !unit.IsTurnFinished && iterationCount < 5)
+                //{
+                //    ReinforcementLearningManager.Instance.SimulateUnit(unit);
+                //    iterationCount++;
+                //}
+
                 //AutoCombatManager.Instance.Act(unit);
 
                 // Czeka, aż jednostka zakończy ruch
                 yield return new WaitUntil(() => MovementManager.Instance.IsMoving == false);
                 yield return new WaitForSeconds(0.6f);
+
+                //if (iterationCount >= 5 && !unit.IsTurnFinished)
+                //{
+                //    FinishTurn();
+                //}
 
                 if (!unit.IsTurnFinished && (unit.CanDoAction || unit.CanMove))
                 {
