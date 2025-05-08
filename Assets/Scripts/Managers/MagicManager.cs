@@ -780,7 +780,7 @@ public class MagicManager : MonoBehaviour
         }
 
         // Sprawdzamy zbroję
-        int armor = CombatManager.Instance.CalculateArmor(spellcasterStats, targetStats, hitLocation, rollResult);
+        int armor = CombatManager.Instance.CalculateArmor(spellcasterStats, targetStats, hitLocation, rollResult, successLevel);
 
         // Pobranie pancerza dla trafionej lokalizacji
         List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(hitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[hitLocation] : new List<Weapon>();
@@ -832,7 +832,7 @@ public class MagicManager : MonoBehaviour
 
             foreach (Unit adjacentUnit in unitsAroundTarget)
             {
-                int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(spellcasterStats, adjacentUnit.GetComponent<Stats>(), hitLocation, rollResult);
+                int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(spellcasterStats, adjacentUnit.GetComponent<Stats>(), hitLocation, rollResult, successLevel);
                 int electricDamage = (spellcasterStats.SW / 10) + UnityEngine.Random.Range(1, 11);
                 Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {electricDamage} obrażeń spowodowanych ładunkiem elektrycznym zaklęcia z Tradycji Niebios.");
 

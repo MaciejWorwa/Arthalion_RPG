@@ -80,6 +80,41 @@ public class MovementManager : MonoBehaviour
             return;
         }
 
+        // Jeśli jednostka pochwytująca inną wykonuje ruch, to pochwycenie zostane przerwane. Chyba, że jest ono w zasięgu broni, którą pochwytuje
+        if (unit.EntangledUnitId != 0)
+        {
+            Weapon attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(unit.gameObject);
+            foreach (var u in UnitsManager.Instance.AllUnits)
+            {
+                if (u.UnitId == unit.EntangledUnitId && u.Entangled > 0)
+                { 
+                    if (attackerWeapon != null && attackerWeapon.Category == "entangling")
+                    {
+                        float effectiveAttackRange = attackerWeapon.AttackRange;
+
+                        if (attackerWeapon.Type.Contains("throwing"))
+                        {
+                            effectiveAttackRange *= unit.Stats.S / 10f;
+                        }
+
+                        float distance = Vector3.Distance(unit.transform.position, selectedTile.transform.position);
+
+                        if (distance > effectiveAttackRange)
+                        {
+                            CombatManager.Instance.ReleaseEntangledUnit(unit, u, attackerWeapon);
+                        }
+                    }
+                    else
+                    {
+                        // Jeśli broń nie jest typu "entangling", zawsze rozluźniamy chwyt
+                        CombatManager.Instance.ReleaseEntangledUnit(unit, u);
+                    }
+
+                    break;
+                }
+            }
+        }
+
         // Sprawdza zasięg ruchu postaci lub wierzchowca
         int movementRange = unit.GetComponent<Stats>().TempSz;
 

@@ -134,7 +134,10 @@ public class ReinforcementLearningManager : MonoBehaviour
 
     void Start()
     {
-        LoadQTables();
+        if(IsLearning)
+        {
+            LoadQTables();
+        }
 
         // Obliczamy 2^(int)AIState.COUNT
         totalStateCombinations = 1 << ((int)AIState.COUNT);

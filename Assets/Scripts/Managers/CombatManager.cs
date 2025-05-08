@@ -251,7 +251,7 @@ public class CombatManager : MonoBehaviour
 
             if (AttackTypes["Charge"] == true && !unit.IsCharging)
             {
-                bool isEngagedInCombat = AdjacentOpponents(unit.transform.position, unit.tag).Count > 0 ? true : false;
+                bool isEngagedInCombat = AdjacentOpponents(unit.transform.position, unit.tag).Any(opponent => opponent.Prone == false && opponent.Unconscious == false);
 
                 if (isEngagedInCombat == true)
                 {
@@ -796,7 +796,7 @@ public class CombatManager : MonoBehaviour
         int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
 
         // Sprawdzenie warunku trafienia
-        bool attackSucceeded = (isRangedAttack && ((!canParry && attackerSuccessValue > 0) || combinedSuccessLevel > 0 || (canParry && combinedSuccessLevel == 0 && skillValue > parryValue))) || (isMeleeAttack && (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue))));
+        bool attackSucceeded = (isRangedAttack && ((!canParry && attackerSuccessValue >= 0) || combinedSuccessLevel > 0 || (canParry && combinedSuccessLevel == 0 && skillValue > parryValue))) || (isMeleeAttack && (combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && skillValue > Math.Max(parryValue, dodgeValue))));
 
         // Jeśli normalnie test trafienia zakończyłby się niepowodzeniem, ale dzięki premii za strzelanie do grupy udało się trafić, to przyjmujemy, że poziom sukcesu wynosi 0 (czyli trafienie minimalne).
         if (isRangedAttack && _groupTargetModifier != 0)
@@ -873,7 +873,7 @@ public class CombatManager : MonoBehaviour
 
                 //Ustalamy miejsce trafienia
                 hitLocation = DiceRollManager.Instance.IsDoubleDigit(defenceRollResult) ? DetermineHitLocation() : DetermineHitLocation(defenceRollResult);
-                int attackerArmor = CalculateArmor(targetStats, attackerStats, hitLocation, defenceRollResult, targetWeapon);
+                int attackerArmor = CalculateArmor(targetStats, attackerStats, hitLocation, defenceRollResult, defenceSuccessValue, targetWeapon);
 
                 ApplyDamageToTarget(riposteDamage, attackerArmor, targetStats, attackerStats, attacker, targetWeapon);
 
@@ -970,7 +970,7 @@ public class CombatManager : MonoBehaviour
 
         // 11) Jeśli atakujący wygrywa, zadaj obrażenia
         // Oblicz pancerz i finalne obrażenia
-        int armor = CalculateArmor(attackerStats, targetStats, hitLocation, rollOnAttack, attackerWeapon);
+        int armor = CalculateArmor(attackerStats, targetStats, hitLocation, rollOnAttack, attackerSuccessValue, attackerWeapon);
         int damage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, targetStats, attackerWeapon);
         string furiousAssaultString = attackerStats.FuriousAssault > 0 && !furiousAssault ? $" Jednostka może skorzystać z talentu Wściekły Atak i zaatakować {targetStats.Name} ponownie." : "";
         Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.{furiousAssaultString}");
@@ -1044,7 +1044,7 @@ public class CombatManager : MonoBehaviour
             foreach (Unit affectedUnit in affectedUnits)
             {
                 Stats affectedStats = affectedUnit.GetComponent<Stats>();
-                int affectedUnitArmor = CalculateArmor(attackerStats, affectedStats, hitLocation, rollOnAttack, attackerWeapon);
+                int affectedUnitArmor = CalculateArmor(attackerStats, affectedStats, hitLocation, rollOnAttack, attackerSuccessValue, attackerWeapon);
                 int affectedUnitDamage = CalculateDamage(rollOnAttack, combinedSuccessLevel, attackerStats, affectedStats, attackerWeapon);
 
                 ApplyDamageToTarget(affectedUnitDamage, affectedUnitArmor, attackerStats, affectedStats, affectedUnit, attackerWeapon);
@@ -1864,8 +1864,6 @@ public class CombatManager : MonoBehaviour
                 Debug.Log("Uwzględniono modyfikator za oślepienie atakującego. Łączny modyfikator: " + attackModifier);
             }
 
-           
-
             // Sprawdza, czy na linii strzału znajduje się przeszkoda
             RaycastHit2D[] raycastHits = Physics2D.RaycastAll(attackerUnit.transform.position, targetUnit.transform.position - attackerUnit.transform.position, attackDistance);
 
@@ -2537,7 +2535,7 @@ public class CombatManager : MonoBehaviour
         return message;
     }
 
-    public int CalculateArmor(Stats attackerStats, Stats targetStats, string hitLocation, int attackRollResult, Weapon attackerWeapon = null)
+    public int CalculateArmor(Stats attackerStats, Stats targetStats, string hitLocation, int attackRollResult, int attackerSuccessValue = 0, Weapon attackerWeapon = null)
     {
         string normalizedHitLocation = NormalizeHitLocation(hitLocation);
 
@@ -2570,7 +2568,7 @@ public class CombatManager : MonoBehaviour
         List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(normalizedHitLocation) ? inventory.ArmorByLocation[normalizedHitLocation] : new List<Weapon>();
 
         // Sprawdza, czy trafienie jest trafieniem krytycznym
-        bool isCriticalHit = DiceRollManager.Instance.IsDoubleDigit(attackRollResult);
+        bool isCriticalHit = DiceRollManager.Instance.IsDoubleDigit(attackRollResult) && attackerSuccessValue >= 0;
 
         // Uwzględnienie cechy pancerza "Częściowy"
         if (isCriticalHit || attackRollResult % 2 == 0)
@@ -3075,6 +3073,25 @@ public class CombatManager : MonoBehaviour
             }
         }
     }
+
+    public void ReleaseEntangledUnit(Unit attacker, Unit target, Weapon weapon = null)
+    {
+        target.Entangled = 0;
+        target.CanMove = true;
+        attacker.EntangledUnitId = 0;
+        ChangeAttackType();
+        UnitsManager.Instance.UpdateUnitPanel(attacker.gameObject);
+
+        if(weapon)
+        {
+            Debug.Log($"<color=#FF7F50>{attacker.Stats.Name} oddala się poza zasięg {weapon.Name} i pozwala {target.Stats.Name} uwolnić się z pochwycenia.</color>");
+        }
+        else
+        {
+            Debug.Log($"<color=#FF7F50>{attacker.Stats.Name} rozluźnia chwyt i pozwala {target.Stats.Name} uwolnić się.</color>");
+        }
+    }
+
     #endregion
 
     #region Defensive stance
