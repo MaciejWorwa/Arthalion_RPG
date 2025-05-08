@@ -128,6 +128,49 @@
       "Unstable": true
     },
     {
+      "Race": "Brzytwodziób",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 38,
+      "US": 0,
+      "S": 22,
+      "Wt": 34,
+      "I": 30,
+      "Zw": 24,
+      "Zr": 0,
+      "Int": 10,
+      "SW": 24,
+      "Ogd": 0,
+      "Sz": 2,
+      "Bestial": true,
+      "Hardy": 1,
+      "Flight": 45,
+      "StrikeMIghtyBlow": 1,
+      "Notebook": "Każdy kto otrzyma ranę od brzytwodzioba musi zdać Test Odporności +20, albo dostanie stan krwawienie. W roju ich WW wzrasta do 48, a Żywotność do 55"
+    },
+    {
+      "Race": "Brzytwogor",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 45,
+      "US": 0,
+      "S": 55,
+      "Wt": 45,
+      "I": 33,
+      "Zw": 35,
+      "Zr": 0,
+      "Int": 5,
+      "SW": 30,
+      "Ogd": 0,
+      "Sz": 7,
+      "NaturalArmor": 1,
+      "Bestial": true,
+      "Stride": true,
+      "Distracting": true,
+      "Frenzy": true,
+      "StrikeMightyBlow": 1
+    },
+    {
       "Race": "Chimera",
       "Size": 5,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -153,6 +196,25 @@
       "Bestial": true,
       "Flight": 40,
       "Notebook": "Nie może być zaskoczona ani nie dotyczy jej przewaga liczebna przeciwników"
+    },
+    {
+      "Race": "Czerw bagienny",
+      "Size": 5,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 50,
+      "US": 0,
+      "S": 60,
+      "Wt": 55,
+      "I": 10,
+      "Zw": 30,
+      "Zr": 0,
+      "Int": 30,
+      "SW": 45,
+      "Ogd": 0,
+      "Sz": 3,
+      "NaturalArmor": 2,
+      "Bestial": true,
+      "Notebook": "Może walczyć w zapasach jednocześnie z 5-cioma celami, jeśli są mniejsze od niego"
     },
     {
       "Race": "Demonetka Slaanesha",
@@ -427,6 +489,37 @@
       "NaturalArmor": 3
     },
     {
+      "Race": "Inżynier spaczenia klanu Skryre",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Pistolet", "Bułat", "Miecz" ],
+      "WW": 30,
+      "US": 45,
+      "S": 30,
+      "Wt": 30,
+      "I": 45,
+      "Zw": 35,
+      "Zr": 45,
+      "Int": 40,
+      "SW": 30,
+      "Ogd": 20,
+      "Sz": 5,
+      "NaturalArmor": 2,
+      "Athletics": 10,
+      "Dodge":  5,
+      "MeleeSerialized": [
+        {
+          "Key": "Basic",
+          "Value": 5
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Blackpowder",
+          "Value": 5
+        }
+      ]
+    },
+    {
       "Race": "Klanbrat",
       "Size": 3,
       "PrimaryWeaponNames": [ "Włócznia", "Bułat", "Krótki łuk", "Puklerz", "Miecz", "Pałka", "Łapacz" ],
@@ -502,6 +595,29 @@
       "Frenzy": true
     },
     {
+      "Race": "Kuroliszek",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 40,
+      "US": 52,
+      "S": 35,
+      "Wt": 45,
+      "I": 55,
+      "Zw": 35,
+      "Zr": 0,
+      "Int": 20,
+      "SW": 25,
+      "Ogd": 0,
+      "Sz": 5,
+      "NaturalArmor": 2,
+      "Venom": true,
+      "VenomModifier": -20,
+      "Flight": 30,
+      "Hardy": 1,
+      "Stride": true,
+      "Notebook": "Posiada petryfikujące spojrzenie"
+    },
+    {
       "Race": "Mantikora",
       "Size": 5,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -521,29 +637,6 @@
       "Distracting": true,
       "NaturalArmor": 2,
       "Flight": 12
-    },
-    {
-      "Race": "Merwyrm",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 62,
-      "US": 0,
-      "S": 65,
-      "Wt": 60,
-      "I": 45,
-      "Zw": 26,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 38,
-      "Ogd": 10,
-      "Sz": 6,
-      "ImmunityToPsychology": true,
-      "Regenerate": true,
-      "Hungry": true,
-      "NaturalArmor": 3,
-      "StrikeMightyBlow": 1,
-      "Venom": true,
-      "VenomModifier": -10
     },
     {
       "Race": "Minotaur",
@@ -612,6 +705,62 @@
       "NaturalArmor": 1,
       "Bestial": true,
       "Stride": true
+    },
+    {
+      "Race": "Nieumarły rycerz",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Miecz dwuręczny", "Półtorak", "Buzdygan", "Kiścień", "Wielki topór", "Młot bojowy", "Tarcza", "Miecz", "Topór" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Quality",
+          "Value": "Magiczna"
+        },
+        {
+          "Key": "Impale",
+          "Value": true
+        },
+        {
+          "Key": "S",
+          "Value": 5
+        }
+      ],
+      "WW": 50,
+      "US": 35,
+      "S": 45,
+      "Wt": 45,
+      "I": 38,
+      "Zw": 30,
+      "Zr": 20,
+      "Int": 35,
+      "SW": 50,
+      "Ogd": 30,
+      "Sz": 4,
+      "NaturalArmor": 4,
+      "StrikeToInjure": true,
+      "Fear": 2,
+      "Undead": true,
+      "ImmunityToPsychology": true,
+      "CombatMaster": 2,
+      "MeleeSerialized": [
+        {
+          "Key": "TwoHanded",
+          "Value": 1
+        },
+        {
+          "Key": "Polearm",
+          "Value": 1
+        },
+        {
+          "Key": "Flail",
+          "Value": 1
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Bow",
+          "Value": 1
+        }
+      ]
     },
     {
       "Race": "Nosorożnik",
@@ -757,32 +906,6 @@
       "Stride": true
     },
     {
-      "Race": "Olbrzymi wilk",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 3
-        }
-      ],
-      "WW": 35,
-      "US": 0,
-      "S": 45,
-      "Wt": 40,
-      "I": 35,
-      "Zw": 25,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 15,
-      "Ogd": 0,
-      "Sz": 4,
-      "NaturalArmor": 1,
-      "Bestial": true,
-      "Stride": true,
-      "Notebook": "Olbrzymie wilki otrzymują +10 do przewagi liczebnej. Czyli w przewadze 2:1 mają +30 zamiast +20."
-    },
-    {
       "Race": "Pegaz",
       "Size": 4,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -805,6 +928,26 @@
       "Sz": 9,
       "Stride": true,
       "Flight": 60
+    },
+    {
+      "Race": "Peryt",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 50,
+      "US": 0,
+      "S": 55,
+      "Wt": 50,
+      "I": 40,
+      "Zw": 35,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 45,
+      "Ogd": 0,
+      "Sz": 6,
+      "Bestial": true,
+      "Frenzy": true,
+      "NaturalArmor": 2,
+      "Flight": 25
     },
     {
       "Race": "Pies",
@@ -831,6 +974,35 @@
       "Stride": true
     },
     {
+      "Race": "Poganiacz klanu Moulder",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Włócznia", "Bułat", "Bicz", "Miecz", "Łapacz" ],
+      "WW": 45,
+      "US": 45,
+      "S": 40,
+      "Wt": 40,
+      "I": 50,
+      "Zw": 50,
+      "Zr": 30,
+      "Int": 40,
+      "SW": 40,
+      "Ogd": 30,
+      "Sz": 6,
+      "NaturalArmor": 1,
+      "MeleeSerialized": [
+        {
+          "Key": "Polearm",
+          "Value": 1
+        }
+      ],
+      "RangedSerialized": [
+        {
+          "Key": "Entangling",
+          "Value": 20
+        }
+      ]
+    },
+    {
       "Race": "Półgryf",
       "Size": 4,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -848,28 +1020,6 @@
       "NaturalArmor": 1,
       "Bestial": true,
       "Stride": true
-    },
-    {
-      "Race": "Razorgor",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 45,
-      "US": 0,
-      "S": 55,
-      "Wt": 45,
-      "I": 33,
-      "Zw": 35,
-      "Zr": 0,
-      "Int": 5,
-      "SW": 30,
-      "Ogd": 0,
-      "Sz": 7,
-      "NaturalArmor": 1,
-      "Bestial": true,
-      "Stride": true,
-      "Distracting": true,
-      "Frenzy": true,
-      "StrikeMightyBlow": 1
     },
     {
       "Race": "Smok",
@@ -913,6 +1063,24 @@
       ]
     },
     {
+      "Race": "Stirski szczupak",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 45,
+      "US": 0,
+      "S": 52,
+      "Wt": 50,
+      "I": 32,
+      "Zw": 38,
+      "Zr": 0,
+      "Int": 14,
+      "SW": 50,
+      "Ogd": 0,
+      "Sz": 8,
+      "NaturalArmor": 1,
+      "Bestial": true
+    },
+    {
       "Race": "Syrena",
       "Size": 3,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -936,6 +1104,24 @@
       "Notebook": "Jej szybkość w wodzie wynosi 8.\n\nKażdy kto słyszy syreni śpiew musi zdać test SW -10 albo jest traktowany jako bezbronny (utrata przytomności). Zatkanie uszu ułatwia ten test do +40"
     },
     {
+      "Race": "Szary jastrząb górski",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 35,
+      "US": 0,
+      "S": 35,
+      "Wt": 40,
+      "I": 45,
+      "Zw": 50,
+      "Zr": 0,
+      "Int": 20,
+      "SW": 55,
+      "Ogd": 0,
+      "Sz": 2,
+      "Bestial": true,
+      "Flight": 50
+    },
+    {
       "Race": "Szczurogr",
       "Size": 4,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -951,6 +1137,52 @@
       "Ogd": 15,
       "Sz": 5,
       "NaturalArmor": 1
+    },
+    {
+      "Race": "Szczurogr łamignat",
+      "Size": 5,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 40,
+      "US": 10,
+      "S": 75,
+      "Wt": 55,
+      "I": 35,
+      "Zw": 40,
+      "Zr": 20,
+      "Int": 10,
+      "SW": 20,
+      "Ogd": 10,
+      "Sz": 5,
+      "NaturalArmor": 2,
+      "Stride": true
+    },
+    {
+      "Race": "Szczurowilk",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "S",
+          "Value": 3
+        },
+        {
+          "Key": "Penetrating",
+          "Value": true
+        }
+      ],
+      "WW": 45,
+      "US": 0,
+      "S": 35,
+      "Wt": 32,
+      "I": 35,
+      "Zw": 35,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 15,
+      "Ogd": 0,
+      "Sz": 6,
+      "Stride": true,
+      "Bestial": true
     },
     {
       "Race": "Szkielet",
@@ -1122,6 +1354,29 @@
       "Hungry": true
     },
     {
+      "Race": "Wężożmij",
+      "Size": 5,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "WW": 62,
+      "US": 0,
+      "S": 65,
+      "Wt": 60,
+      "I": 45,
+      "Zw": 26,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 38,
+      "Ogd": 10,
+      "Sz": 6,
+      "ImmunityToPsychology": true,
+      "Regenerate": true,
+      "Hungry": true,
+      "NaturalArmor": 3,
+      "StrikeMightyBlow": 1,
+      "Venom": true,
+      "VenomModifier": -10
+    },
+    {
       "Race": "Widmo z kurhanu",
       "Size": 3,
       "PrimaryWeaponNames": [ "Wielki topór", "Miecz dwuręczny" ],
@@ -1146,6 +1401,34 @@
       "Ethereal": true,
       "Undead": true,
       "Unstable": true
+    },
+    {
+      "Race": "Wielki jeleń",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Penetrating",
+          "Value": true
+        },
+        {
+          "Key": "Impale",
+          "Value": true
+        }
+      ],
+      "WW": 55,
+      "US": 0,
+      "S": 45,
+      "Wt": 40,
+      "I": 30,
+      "Zw": 30,
+      "Zr": 0,
+      "Int": 20,
+      "SW": 40,
+      "Ogd": 0,
+      "Sz": 7,
+      "Stride": true,
+      "Bestial": true
     },
     {
       "Race": "Wielki orzeł",
@@ -1176,6 +1459,32 @@
       "Flight": 60
     },
     {
+      "Race": "Wielki wilk",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "S",
+          "Value": 3
+        }
+      ],
+      "WW": 35,
+      "US": 0,
+      "S": 45,
+      "Wt": 40,
+      "I": 35,
+      "Zw": 25,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 15,
+      "Ogd": 0,
+      "Sz": 4,
+      "NaturalArmor": 1,
+      "Bestial": true,
+      "Stride": true,
+      "Notebook": "Olbrzymie wilki otrzymują +10 do przewagi liczebnej. Czyli w przewadze 2:1 mają +30 zamiast +20."
+    },
+    {
       "Race": "Wilk",
       "Size": 3,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
@@ -1199,6 +1508,36 @@
       "NaturalArmor": 1,
       "Bestial": true,
       "Stride": true
+    },
+    {
+      "Race": "Wilkoskóry",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Quality",
+          "Value": "Magiczna"
+        }
+      ],
+      "WW": 60,
+      "US": 0,
+      "S": 54,
+      "Wt": 58,
+      "I": 55,
+      "Zw": 48,
+      "Zr": 30,
+      "Int": 35,
+      "SW": 50,
+      "Ogd": 30,
+      "Sz": 7,
+      "NaturalArmor": 1,
+      "StrikeMightyBlow": 1,
+      "Regeneration": true,
+      "Hardy": 1,
+      "Frenzy": true,
+      "Stride": true,
+      "Fear": 2,
+      "Notebook": "Wilkoskóry jest zawsze w szale bojowym"
     },
     {
       "Race": "Wojownik Chaosu",
