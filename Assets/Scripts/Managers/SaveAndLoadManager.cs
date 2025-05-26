@@ -43,6 +43,7 @@ public class SaveAndLoadManager : MonoBehaviour
 
     public bool IsLoading;
     public bool IsOnlyUnitsLoading;
+    public bool IsOnlyMapLoading;
     public string CurrentGameName;
 
     #region Saving methods
@@ -94,7 +95,7 @@ public class SaveAndLoadManager : MonoBehaviour
 
         if (allUnits.Count < 1)
         {
-            Debug.Log($"<color=red>Zapis nieudany. Aby zapisać grę, musisz stworzyć chociaż jedną postać.</color>");
+            Debug.Log($"<color=red>Zapis nieudany. Aby zapisać grę, musisz umieścić na polu bitwy chociaż jedną jednostkę.</color>");
             return;
         }
 
@@ -313,9 +314,10 @@ public class SaveAndLoadManager : MonoBehaviour
     #region Loading methods
 
     //Ustala, czy wczytujemy całą grę, czy jedynie jednostki
-    public void SetLoadingType(bool value)
+    public void SetLoadingType(string value)
     {
-        IsOnlyUnitsLoading = value;
+        IsOnlyUnitsLoading = value == "units" ? true : false;
+        IsOnlyMapLoading = value == "map" ? true : false;
     }
 
     public void FilterList()
@@ -413,7 +415,7 @@ public class SaveAndLoadManager : MonoBehaviour
         }
 
         //Automatycznie zapisuje aktualną grę przed wczytaniem innej
-        if (GameManager.IsAutosaveMode && CurrentGameName != null && CurrentGameName.Length > 0)
+        if (GameManager.IsAutosaveMode && CurrentGameName != null && CurrentGameName.Length > 0 && !IsOnlyMapLoading && !IsOnlyUnitsLoading)
         {
             SaveGame(CurrentGameName);
         }
@@ -425,21 +427,24 @@ public class SaveAndLoadManager : MonoBehaviour
 
         IsLoading = true;
 
-        //Odznaczenie zaznaczonej postaci
-        if (Unit.SelectedUnit != null)
+        if(IsOnlyMapLoading != true)
         {
-            Unit.SelectedUnit.GetComponent<Unit>().SelectUnit();
-        }
-
-        // Kopiuje listę jednostek do nowej listy, aby móc bezpiecznie modyfikować oryginalną listę
-        List<Unit> unitsToRemove = new List<Unit>(UnitsManager.Instance.AllUnits);
-
-        // Usuwa wszystkie obecne na polu bitwy jednostki
-        foreach (var unit in unitsToRemove)
-        {
-            if (unit != null)
+            //Odznaczenie zaznaczonej postaci
+            if (Unit.SelectedUnit != null)
             {
-                UnitsManager.Instance.DestroyUnit(unit.gameObject);
+                Unit.SelectedUnit.GetComponent<Unit>().SelectUnit();
+            }
+
+            // Kopiuje listę jednostek do nowej listy, aby móc bezpiecznie modyfikować oryginalną listę
+            List<Unit> unitsToRemove = new List<Unit>(UnitsManager.Instance.AllUnits);
+
+            // Usuwa wszystkie obecne na polu bitwy jednostki
+            foreach (var unit in unitsToRemove)
+            {
+                if (unit != null)
+                {
+                    UnitsManager.Instance.DestroyUnit(unit.gameObject);
+                }
             }
         }
 
@@ -449,7 +454,10 @@ public class SaveAndLoadManager : MonoBehaviour
             LoadMap();
         }
 
-        StartCoroutine(LoadAllUnitsWithDelay(saveFolderPath));
+        if (IsOnlyMapLoading != true)
+        {
+            StartCoroutine(LoadAllUnitsWithDelay(saveFolderPath));
+        }
 
         if (_loadGamePanel != null)
         {
@@ -837,6 +845,11 @@ public class SaveAndLoadManager : MonoBehaviour
         if (_loadGamePanel != null)
         {
             _loadGamePanel.SetActive(false);
+        }
+
+        if (IsOnlyMapLoading)
+        {
+            Debug.Log($"<color=green>Wczytano mapę: {CurrentGameName}</color>");
         }
     }
     #endregion

@@ -81,6 +81,11 @@ public class ReinforcementLearningManager : MonoBehaviour
     [Tooltip("Szansa na losową akcję (eksploracja)")]
     public float Epsilon = 0.2f;
 
+    public float EpsilonStart = 1f;
+    public float EpsilonEnd = 0.05f;
+    public int EpsilonDecayEpochs = 500;
+    private int currentEpoch = 0;
+
     [Header("Logging Parameters")]
     [Tooltip("Number of actions per epoch before calculating average reward.")]
     public int ActionsPerEpoch = 1000;
@@ -95,7 +100,8 @@ public class ReinforcementLearningManager : MonoBehaviour
 
     private const int HISTORY_LIMIT = 10;
     private Dictionary<Unit, Queue<(int state, int action, string race)>> unitActionHistory = new Dictionary<Unit, Queue<(int, int, string)>>();
-    private const float TEAM_WIN_REWARD = 100f;
+    private const float WIN_REWARD = 100f;
+    private const float LOSS_REWARD = -20f;
 
     [SerializeField] private int _playerWins;
     [SerializeField] private int _enemyWins;
@@ -120,6 +126,18 @@ public class ReinforcementLearningManager : MonoBehaviour
 
     public bool HasHitTarget; // oznacza, że jednostka trafiła przeciwnika. Potrzebne do dawania za to nagrody
 
+    private PrioritizedReplayBuffer replayBuffer;
+    private Dictionary<string, float[,]> eligibilityTrace;
+    public float Lambda = 0.8f;  // śledzenie śladu
+    public int ReplayBatchSize = 64;
+    public int ReplayStartSize = 1000;  // zacznij replay dopiero po tylu przejściach
+
+    private float ComputePotential(bool[] states)
+    {
+        // przykładowa: karanie odległości od najbliższego wroga
+        return -(states[(int)AIState.IsBeyondAttackRange] ? 1f : 0f);
+    }
+
     void Awake()
     {
         if (Instance == null)
@@ -141,6 +159,9 @@ public class ReinforcementLearningManager : MonoBehaviour
 
         // Obliczamy 2^(int)AIState.COUNT
         totalStateCombinations = 1 << ((int)AIState.COUNT);
+
+        replayBuffer = new PrioritizedReplayBuffer(10000);
+        eligibilityTrace = new Dictionary<string, float[,]>();
     }
 
     void Update()
@@ -161,7 +182,39 @@ public class ReinforcementLearningManager : MonoBehaviour
     {
         Debug.unityLogger.logEnabled = !Debug.unityLogger.logEnabled;
     }
+    private void TrainFromReplay()
+    {
+        var batch = replayBuffer.Sample(ReplayBatchSize);
+        foreach (var t in batch)
+        {
+            var q = GetQTable(t.RaceName);
+            // inicjalizacja śladu jeśli brak
+            if (!eligibilityTrace.ContainsKey(t.RaceName))
+                eligibilityTrace[t.RaceName] = new float[q.GetLength(0), q.GetLength(1)];
+            var e = eligibilityTrace[t.RaceName];
 
+            // wylicz error TD
+            float maxQNext = 0f;
+            for (int a = 0; a < ACTION_COUNT; a++) maxQNext = Mathf.Max(maxQNext, q[t.NextState, a]);
+            float target = t.Reward + Gamma * maxQNext;
+            float error = target - q[t.State, t.Action];
+
+            // update śladu i Q
+            e[t.State, t.Action] += 1f;
+            for (int s = 0; s < q.GetLength(0); s++)
+            {
+                for (int a = 0; a < q.GetLength(1); a++)
+                {
+                    q[s, a] += Alpha * error * e[s, a];
+                    e[s, a] *= Gamma * Lambda;
+                }
+            }
+
+            // zaktualizuj priorytet
+            int idx = replayBuffer.buffer.FindIndex(x => x.State == t.State && x.Action == t.Action);
+            if (idx >= 0) replayBuffer.priorities[idx] = Math.Abs(error) + 0.01f;
+        }
+    }
     // ======================================================================
     //             REJESTRACJA / POBIERANIE TABLICY Q DLA RASY
     // ======================================================================
@@ -582,26 +635,21 @@ public class ReinforcementLearningManager : MonoBehaviour
     {
         if (unit == null) return;
         Stats stats = unit.GetComponent<Stats>();
-        if (stats == null) return;
-        if (stats.TempHealth < 0) return; // już martwy?
-        
-        // (A) Zbierz info o potencjalnych celach
-        TargetsInfo info = GatherTargetsInfo(unit);
+        if (stats == null || stats.TempHealth < 0) return; // martwy
 
-        // Oblicz bazowe stany
+        // (A) Zbierz info o celach i wyznacz stan bazowy
+        TargetsInfo info = GatherTargetsInfo(unit);
         Unit defaultTarget = info.Closest;
         bool[] baseStates = DetermineStates(unit, defaultTarget);
         int baseStateIndex = EncodeState(baseStates);
 
-        // (B) Przygotuj kontekst do decyzji, wypełniając wszystkie pola z baseStates
+        // (B) Przygotuj kontekst decyzji
         ActionContext ctx = new ActionContext
         {
             Unit = unit,
             RaceName = stats.Race,
             StateIndex = baseStateIndex,
-            //WeaponIsLoaded = (InventoryManager.Instance.ChooseWeaponToAttack(unit.gameObject)?.ReloadLeft == 0),
 
-            // zamiast na sztywno false/true, weź z baseStates
             HasRanged = baseStates[(int)AIState.HasRangedWeapon],
             IsInMelee = baseStates[(int)AIState.IsInMelee],
             IsBeyondAttackRange = baseStates[(int)AIState.IsBeyondAttackRange],
@@ -622,61 +670,74 @@ public class ReinforcementLearningManager : MonoBehaviour
             Info = info
         };
 
-        // (C) Wybór akcji
+        // (C) Wybór i wykonanie akcji
         ActionChoice choice = ChooseValidActionEpsilonGreedy(ctx);
-        int chosenActionId = choice.ActionId;
-        Unit chosenTarget = choice.ChosenTarget;
+        int actionId = choice.ActionId;
+        Unit target = choice.ChosenTarget;
         bool[] oldStates = choice.ChosenStates;
+        int oldState = EncodeState(oldStates);
 
-        // Zakoduj "stary stan" do Q-learningu
-        int oldStateIndex = EncodeState(oldStates);
-
-        // Zapisz historię akcji dla jednostki
-        if (!unitActionHistory.ContainsKey(unit)) {
+        // Historia dla terminal reward
+        if (!unitActionHistory.ContainsKey(unit))
             unitActionHistory[unit] = new Queue<(int, int, string)>();
-        }
-        var historyQueue = unitActionHistory[unit];
-        historyQueue.Enqueue((oldStateIndex, chosenActionId, ctx.RaceName));
-        if (historyQueue.Count > HISTORY_LIMIT) {
-            historyQueue.Dequeue(); // usuń najstarszą akcję, jeśli przekroczono limit
-        }
+        var history = unitActionHistory[unit];
+        history.Enqueue((oldState, actionId, ctx.RaceName));
+        if (history.Count > HISTORY_LIMIT)
+            history.Dequeue();
 
-        ActionUsageCount[ctx.RaceName][oldStateIndex, chosenActionId]++;
+        // (D) Wykonaj akcję i policz reward
+        int prevHP = stats.TempHealth;
+        float reward = PerformParameterAction(actionId, unit, info, prevHP);
 
-        // (D) Wykonaj akcję (jedną!), nalicz reward
-        int oldHP = stats.TempHealth;
-        float reward = PerformParameterAction(chosenActionId, unit, info, oldHP);
+        // Potential-based shaping
+        float phiOld = ComputePotential(oldStates);
+        bool[] newStates = DetermineStates(unit, target);
+        float phiNew = ComputePotential(newStates);
+        reward += Gamma * phiNew - phiOld;
 
-        // Zbieranie nagród do logowania
+        // Logowanie nagród
         currentEpochReward += reward;
         actionsThisEpoch++;
 
-        // (E) Po wykonaniu akcji obliczamy nowy stan (dla *tego samego* celu chosenTarget)
-        bool[] newStates = DetermineStates(unit, chosenTarget);
-        int newStateIndex = EncodeState(newStates);
+        // (E) Dodaj transition do Replay z priorytetem
+        int nextState = EncodeState(newStates);
+        float initPrio = replayBuffer.Count > 0 ? replayBuffer.priorities.Max() : 1f;
+        var trans = new Transition
+        {
+            RaceName = ctx.RaceName,
+            State = oldState,
+            Action = actionId,
+            Reward = reward,
+            NextState = nextState,
+            Priority = initPrio
+        };
+        replayBuffer.Add(trans);
 
-        // (F) Update Q
-        UpdateQ(ctx.RaceName, oldStateIndex, chosenActionId, reward, newStateIndex);
+        // (F) Aktualizacja Q: on-line lub batch z priorytetami i λ-traces
+        if (replayBuffer.Count >= ReplayStartSize)
+        {
+            TrainFromReplay();
+        }
+        else
+        {
+            UpdateQ(ctx.RaceName, oldState, actionId, reward, nextState);
+        }
 
-        // (G) W tym momencie kończymy. *Nie* wywołujemy rekurencji. 
-        // Zamiast rekurencji, pozwalamy zewnętrznemu kodowi (np. RoundsManager) wywołać SimulateUnitOneAction() ponownie,
-        // jeśli jednostka nadal ma wolne akcje w tej turze.
-
-        // (H) Sprawdzamy koniec epoki
+        // (G) Koniec epoki? Logi, decay ε i reset nagród
         if (actionsThisEpoch >= ActionsPerEpoch)
         {
-            float averageReward = currentEpochReward / actionsThisEpoch;
-            epochRewards.Add(averageReward);
-            Debug.Log($"Epoch completed. Average Reward: {averageReward:F2}");
+            float avgReward = currentEpochReward / actionsThisEpoch;
+            epochRewards.Add(avgReward);
+            Debug.Log($"Epoch completed. Avg Reward: {avgReward:F2}");
 
             currentEpochReward = 0f;
             actionsThisEpoch = 0;
 
-            //Zmniejsz Epsilon
-            Epsilon *= 0.99f;
-            Epsilon = Mathf.Max(Epsilon, 0.05f);
+            currentEpoch++;
+            float t = Mathf.Min(1f, (float)currentEpoch / EpsilonDecayEpochs);
+            Epsilon = Mathf.Lerp(EpsilonStart, EpsilonEnd, t);
 
-            SaveAverageReward(averageReward);
+            SaveAverageReward(avgReward);
             SaveQTables();
         }
     }
@@ -968,21 +1029,19 @@ public class ReinforcementLearningManager : MonoBehaviour
         return reward;
     }
 
-    public void AddTeamWinRewardForUnit(Unit unit)
+    public void GiveTerminalRewardToAll(bool didAIWin)
     {
-        if (!unitActionHistory.ContainsKey(unit)) return;
-
-        var historyQueue = unitActionHistory[unit];
-
-        foreach (var record in historyQueue)
+        float shaped = didAIWin ? WIN_REWARD : LOSS_REWARD;
+        foreach (var queue in unitActionHistory.Values)
         {
-            float[,] qTable = GetQTable(record.race);
-            int stateIndex = record.state;
-            int actionId = record.action;
-
-            // Dodajemy pełen reward do Q dla tej akcji; można zastosować mniejszy procent
-            qTable[stateIndex, actionId] += TEAM_WIN_REWARD * 0.01f;
+            foreach (var (state, action, race) in queue)
+            {
+                var q = GetQTable(race);
+                q[state, action] += shaped;
+            }
         }
+        SaveQTables();
+        unitActionHistory.Clear();
     }
 
     public TargetsInfo GatherTargetsInfo(Unit currentUnit)

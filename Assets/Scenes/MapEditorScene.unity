@@ -40462,6 +40462,7 @@ MonoBehaviour:
   _sortByDateToggle: {fileID: 1409317329}
   IsLoading: 0
   IsOnlyUnitsLoading: 0
+  IsOnlyMapLoading: 0
   CurrentGameName: 
 --- !u!1 &821398189
 GameObject:
@@ -73925,7 +73926,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1740977063}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.08014025
+  m_Size: 0.08014023
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

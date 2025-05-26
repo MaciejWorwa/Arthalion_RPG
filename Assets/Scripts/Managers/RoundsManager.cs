@@ -325,23 +325,29 @@ public class RoundsManager : MonoBehaviour
         //DO SZKOLENIA AI
         if (ReinforcementLearningManager.Instance.IsLearning)
         {
-            if (ReinforcementLearningManager.Instance.BothTeamsExist() == false || RoundNumber > 50)
+            // Sprawdź, czy któraś z drużyn już nie istnieje lub przekroczono limit tur
+            bool battleEnded = !ReinforcementLearningManager.Instance.BothTeamsExist() || RoundNumber > 50;
+            if (battleEnded)
             {
-                // Iteruj po wszystkich jednostkach, które jeszcze żyją i są częścią drużyny Enemy
-                foreach (Unit unit in UnitsManager.Instance.AllUnits)
-                {
-                    if (unit != null && unit.CompareTag("EnemyUnit") && unit.GetComponent<Stats>().TempHealth > 0)
-                    {
-                        ReinforcementLearningManager.Instance.AddTeamWinRewardForUnit(unit);
-                    }
-                }
+                // Wylicz zwycięzcę: true jeśli gracz wciąż ma jednostki, a enemy nie
+                bool playerUnitsExist = UnitsManager.Instance.AllUnits.Any(u =>
+                    u != null && u.CompareTag("PlayerUnit") && u.GetComponent<Stats>().TempHealth > 0);
+                bool enemyUnitsExist = UnitsManager.Instance.AllUnits.Any(u =>
+                    u != null && u.CompareTag("EnemyUnit") && u.GetComponent<Stats>().TempHealth > 0);
+                bool didAIWin = !playerUnitsExist && enemyUnitsExist;
 
+                // Terminalna nagroda dla wszystkich zapisanych akcji
+                ReinforcementLearningManager.Instance.GiveTerminalRewardToAll(didAIWin);
+
+                // Zaktualizuj licznik zwycięstw w UI
                 ReinforcementLearningManager.Instance.UpdateTeamWins();
 
-                SaveAndLoadManager.Instance.SetLoadingType(true);
+                // Wczytaj ponownie scenę/stan rozpoczynający kolejne epizody
+                SaveAndLoadManager.Instance.SetLoadingType("units");
                 SaveAndLoadManager.Instance.LoadGame("AIlearning");
             }
 
+            // Czekaj na zakończenie ładowania, potem leci dalej
             yield return new WaitUntil(() => SaveAndLoadManager.Instance.IsLoading == false);
 
             GridManager.Instance.CheckTileOccupancy();
