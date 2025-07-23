@@ -12,13 +12,13 @@ public class Ammo
     public bool? Accurate = null; // Celny
     public bool? Penetrating = null; // Przekłuwający
     public bool? Impale = null; // Nadziewający
-    public int? Slash = null; // Sieczny --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodać wywołanie funkcji, takie jak np. w input fieldzie Accurate)
+    public int? Slash = null; // Sieczny --------------------- do wprowadzenia (do input fielda w editWeaponPanel nalezy dodać wywołanie funkcji, takie jak np. w input fieldzie Accurate)
     public bool? Undamaging = null; // Tępy
     public bool? Imprecise = null; // Nieprecyzyjna
     public bool? Dangerous = null; // Niebezpieczna
     public bool? Pummel = null; // Ogłuszający
     public bool? Impact = null; // Druzgoczący
-    public int? Spread = null; // Rozrzucająca --------------------- do wprowadzenia (do inpput fielda w editWeaponPanel nalezy dodać wywołanie funkcji, takie jak np. w input fieldzie Accurate)
+    public int? Spread = null; // Rozrzucająca --------------------- do wprowadzenia (do input fielda w editWeaponPanel nalezy dodać wywołanie funkcji, takie jak np. w input fieldzie Accurate)
     public bool? Precise = null; // Precyzyjna
     public int? Blast = null; // Wybuchowa
 
@@ -49,7 +49,6 @@ public class Ammo
         Blast = blast;
     }
 
-    // TO POSIADA PRZYKŁADOWO WPISANE WARTOŚCI. NALEŻY TO UZUPEŁNIĆ RZECZYWISTYMI WARTOŚCIAMI
     public static readonly Dictionary<string, Ammo> Ammos = new Dictionary<string, Ammo>
     {
         { "Brak", new Ammo("Brak") },

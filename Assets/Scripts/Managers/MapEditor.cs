@@ -227,9 +227,6 @@ public class MapEditor : MonoBehaviour
 
         BoxCollider2D boxCollider = MapElementUI.SelectedElement.GetComponent<BoxCollider2D>();
 
-        //Debug.Log(" MapElementUI.SelectedElement.name " + MapElementUI.SelectedElement.name);
-        //Debug.Log("wymiary box collider: " + boxCollider.size.x + " , " + boxCollider.size.y);
-
         // Aktualizowanie zajętości pól
         GridManager.Instance.CheckTileOccupancy();
 
@@ -460,7 +457,6 @@ public class MapEditor : MonoBehaviour
             {
                 if (!colliders[i].GetComponent<MapElement>().IsCollider && RemovedPositions.Count > 0) return;
 
-                Debug.Log(gameObject.name);
                 AllElements.Remove(gameObject);
                 Destroy(colliders[i].gameObject);
 

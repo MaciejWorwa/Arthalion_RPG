@@ -188,7 +188,7 @@ public class AutoCombatManager : MonoBehaviour
 
         int movementRange = unit.IsMounted && unit.Mount != null ? unit.Mount.GetComponent<Stats>().TempSz : unit.Stats.TempSz;
 
-        if ((!weapon.Type.Contains("ranged")) && path.Count <= movementRange * 2 && path.Count >= movementRange / 2 && unit.CanDoAction && unit.CanMove && !unit.Prone) // Jeśli rywal jest w zasięgu szarży to wykonuje szarżę
+        if ((!weapon.Type.Contains("ranged")) && path.Count <= movementRange * 2 && path.Count >= movementRange / 2f && unit.CanDoAction && unit.CanMove && !unit.Prone) // Jeśli rywal jest w zasięgu szarży to wykonuje szarżę
         {
             Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} szarżuje na {closestOpponent.GetComponent<Stats>().Name}.</color>");
 

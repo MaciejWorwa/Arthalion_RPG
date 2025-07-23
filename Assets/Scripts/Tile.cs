@@ -39,7 +39,12 @@ public class Tile : MonoBehaviour
 
         HighlightTile();
 
-        if(Unit.SelectedUnit != null && !MovementManager.Instance.IsMoving && !MagicManager.IsTargetSelecting && !GameManager.IsAutoCombatMode && (Unit.SelectedUnit.GetComponent<Unit>().CanMove || Unit.SelectedUnit.GetComponent<Unit>().IsRunning))
+        if (_renderer.material.color == _highlightRangeColor 
+            && Unit.SelectedUnit != null
+            && !MovementManager.Instance.IsMoving 
+            && !MagicManager.IsTargetSelecting 
+            && !GameManager.IsAutoCombatMode 
+            && (Unit.SelectedUnit.GetComponent<Unit>().CanMove || Unit.SelectedUnit.GetComponent<Unit>().IsRunning || Unit.SelectedUnit.GetComponent<Unit>().IsFlying))
         {
             MovementManager.Instance.HighlightPath(Unit.SelectedUnit, this.gameObject);
         }
@@ -159,7 +164,9 @@ public class Tile : MonoBehaviour
         foreach (var tile in GridManager.Instance.Tiles)
         {
             if (tile._renderer.material.color == tile._highlightRangeColor)
+            {
                 tile._renderer.material.color = tile._rangeColor;
+            }
         }
     }
 
