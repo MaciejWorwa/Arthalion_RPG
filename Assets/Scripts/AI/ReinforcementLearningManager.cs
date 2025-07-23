@@ -124,8 +124,6 @@ public class ReinforcementLearningManager : MonoBehaviour
     // Lista lub zbiór wytrenowanych ras
     private HashSet<string> _trainedRaces = new HashSet<string>();
 
-    public bool HasHitTarget; // oznacza, że jednostka trafiła przeciwnika. Potrzebne do dawania za to nagrody
-
     private PrioritizedReplayBuffer replayBuffer;
     private Dictionary<string, float[,]> eligibilityTrace;
     public float Lambda = 0.8f;  // śledzenie śladu
@@ -589,13 +587,14 @@ public class ReinforcementLearningManager : MonoBehaviour
             float chargeRange = stats.TempSz * 2;
             //Ścieżka ruchu szarżującego
             GameObject targetTile = CombatManager.Instance.GetTileAdjacentToTarget(unit.gameObject, target.gameObject);
-            Vector2 targetTilePosition = Vector2.zero;
+            
             if(targetTile == null)
             {
                 states[(int)AIState.IsInChargeRange] = false;
             }
             else
             {
+                Vector2 targetTilePosition = targetTile.transform.position;
                 List<Vector2> path = MovementManager.Instance.FindPath(unit.transform.position, targetTilePosition);
                 if(path == null || path.Count == 0)
                 {
@@ -974,9 +973,8 @@ public class ReinforcementLearningManager : MonoBehaviour
         int newHP = target.GetComponent<Stats>().TempHealth;
 
         int damageReward = oldHP - newHP;
-        int hitReward = HasHitTarget ? 2 : 0;
 
-        return damageReward + hitReward; // Nagroda równa różnicy w HP przeciwnika
+        return damageReward; // Nagroda równa różnicy w HP przeciwnika
     }
 
     private void ChangeWeapon(Unit unit, string chosenWeaponType)

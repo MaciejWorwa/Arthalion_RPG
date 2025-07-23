@@ -1,6 +1,6 @@
 # WFRP_4ed_Battle
 
-A comprehensive simulator based on the mechanics of the role-playing game **Warhammer Fantasy Role Play 4nd Edition**, designed to automate and streamline combats.
+A comprehensive simulator based on the mechanics of the role-playing game **Warhammer Fantasy Role Play 4th Edition**, designed to automate and streamline combats.
 With a focus on ease of use and flexibility, the simulator supports a wide range of customization options, enabling players to recreate diverse battle scenarios while preserving the core mechanics of the tabletop experience.
 
 # Setup
@@ -65,7 +65,7 @@ When you start the game, you enter the **Map Editor**. Here, you can customize t
 
 ## Camera Controls
 
-- **Panning**: Hold the middle mouse button and drag to pan the camera.
+- **Panning**: Hold the middle mouse button and drag to pan the camera. Alternatively, you can hold **Alt** and use the arrow keys on your keyboard.
 - **Zooming**: Use the scroll wheel to zoom in and out for a closer or broader view.
 
 ## Starting Battle Mode
