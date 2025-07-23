@@ -505,7 +505,7 @@
       "Sz": 5,
       "NaturalArmor": 2,
       "Athletics": 10,
-      "Dodge":  5,
+      "Dodge": 5,
       "MeleeSerialized": [
         {
           "Key": "Basic",
@@ -1079,6 +1079,36 @@
       "Sz": 8,
       "NaturalArmor": 1,
       "Bestial": true
+    },
+    {
+      "Race": "Straszna Paszcza",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "S",
+          "Value": 5
+        },
+        {
+          "Key": "Penetrating",
+          "Value": true
+        }
+      ],
+      "WW": 45,
+      "US": 30,
+      "S": 55,
+      "Wt": 55,
+      "I": 15,
+      "Zw": 20,
+      "Zr": 0,
+      "Int": 15,
+      "SW": 35,
+      "Ogd": 0,
+      "Sz": 3,
+      "NaturalArmor": 3,
+      "Bestial": true,
+      "Belligerent": true,
+      "Notebook": "Może zionąć śluzem o obrażeniach +5. Jak jej obrażenia przekroczą bWT x2 ofiary to może ją połknąć (pochwycenie). Wtedy przeciwstawny test siły (jednostka mniejsza rozmiarem musi rzucić fuksa aby wygrać). Pochwycona postać w każdej turze dostaje 10 obrażeń (odejmujemy zbroje i bWT). Aby się wydostać do przeciwstawny test siły, jak się nie uda, ofiara trafia do przełyku. Wydostanie się z przełyku wymaga zadania 20 ran. Można to zrobić tylko krótką bronią i ma się +20 do trafienia. Co rundę w przełyku dostaje się 10 obrażeń bez uwzględnienia zbroi. Obrażenia Strasznej Paszczy ignorują zbroję i pokrywają przeciwników śluzem. Wymagany jest test Zwinności +20 aby wykonać wysiłek fizyczny będąc pokrytym śluzem, albo się postać otrzymuje stan powalenia. Straszna Paszcza może ryć w ziemi poruszając się z szybkością 15."
     },
     {
       "Race": "Syrena",

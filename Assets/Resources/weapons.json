@@ -218,6 +218,16 @@
       "Defensive": true
     },
     {
+      "Name": "Krasnoludzki kilof",
+      "Category": "twohanded",
+      "Type": [ "melee" ],
+      "AttackRange": 1.5,
+      "S": 6,
+      "Encumbrance": 3,
+      "Damaging": true,
+      "Impale": true
+    },
+    {
       "Name": "Krasnoludzka kusza",
       "Category": "crossbow",
       "Type": [ "ranged" ],

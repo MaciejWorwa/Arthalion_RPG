@@ -74,6 +74,6 @@ public class Ammo
 
     internal static bool TryGetValue(string ammoType, out Ammo effect)
     {
-        throw new NotImplementedException();
+        return Ammos.TryGetValue(ammoType, out effect);
     }
 }
