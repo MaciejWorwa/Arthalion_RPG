@@ -1,6 +1,6 @@
 # WFRP_4ed_Battle
 
-A comprehensive simulator based on the mechanics of the role-playing game **Warhammer Fantasy Role Play 4nd Edition**, designed to automate and streamline large-scale battles.
+A comprehensive simulator based on the mechanics of the role-playing game **Warhammer Fantasy Role Play 4nd Edition**, designed to automate and streamline combats.
 With a focus on ease of use and flexibility, the simulator supports a wide range of customization options, enabling players to recreate diverse battle scenarios while preserving the core mechanics of the tabletop experience.
 
 # Setup
