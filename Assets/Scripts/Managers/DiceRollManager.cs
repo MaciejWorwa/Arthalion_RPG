@@ -94,20 +94,10 @@ public class DiceRollManager : MonoBehaviour
     }
 
     // Funkcja sprawdzająca, czy liczba ma dwie identyczne cyfry
-    public bool IsDoubleDigit(int number)
+    public bool IsDoubleDigit(int number1, int number2)
     {
-        // Jeśli wynik to dokładnie 100, również spełnia warunek
-        if (number == 100) return true;
-
-        // Sprawdzenie dla liczb dwucyfrowych
-        if (number >= 10 && number <= 99)
-        {
-            int tens = number / 10;  // Cyfra dziesiątek
-            int ones = number % 10; // Cyfra jedności
-            return tens == ones;    // Sprawdzenie, czy cyfry są takie same
-        }
-
-        return false;
+        if (number1 == number2) return true;
+        else return false;
     }
 
     public void SetRollModifier(GameObject gameObject)
@@ -117,16 +107,15 @@ public class DiceRollManager : MonoBehaviour
 
         if (gameObject.GetComponent<UnityEngine.UI.Slider>() != null)
         {
-            int roundedValue = Mathf.RoundToInt(_modifierSlider.value) * 10; // Mnożenie wartości slidera x10
-            _modifierInputField.text = roundedValue.ToString();
-            RollModifier = roundedValue;
+            _modifierInputField.text = _modifierSlider.value.ToString();
+            RollModifier = (int)_modifierSlider.value;
         }
         else
         {
             if (int.TryParse(_modifierInputField.text, out int value))
             {
-                value = Mathf.Clamp(value, -30, 60);
-                _modifierSlider.SetValueWithoutNotify(Mathf.RoundToInt(value / 10f)); // Dopasowanie wartości slidera bez wywołania eventu
+                value = Mathf.Clamp(value, -10, 10);
+                _modifierSlider.SetValueWithoutNotify(Mathf.RoundToInt(value)); // Dopasowanie wartości slidera bez wywołania eventu
                 RollModifier = value;
             }
             else
@@ -148,11 +137,37 @@ public class DiceRollManager : MonoBehaviour
     }
 
     #region Attributes and skills tests
-    public int[] TestSkill(string attributeName, Stats stats, string skillName = null, int modifier = 0, int rollResult = 0)
+    public int TestSkill(string attributeName, Stats stats, string skillName = null, int modifier = 0, int roll1 = 0, int roll2 = 0, int skillRoll = 0, int difficultyLevel = 0)
     {
-        if (rollResult == 0)
+        // Pobieranie wartości umiejętności na podstawie nazwy
+        int skillValue = 0;
+        if (skillName != null)
         {
-            rollResult = UnityEngine.Random.Range(1, 101);
+            var field = typeof(Stats).GetField(skillName);
+            if (field != null)
+            {
+                skillValue = (int)field.GetValue(stats);
+            }
+        }
+
+        // Wyniki rzutów
+        if (roll1 == 0 || roll2 == 0)
+        {
+            roll1 = UnityEngine.Random.Range(1, 11);
+            roll2 = UnityEngine.Random.Range(1, 11);
+
+            switch (skillValue)
+            {
+                case 1:
+                    skillRoll = UnityEngine.Random.Range(1, 5);
+                    break;
+                case 2:
+                    skillRoll = UnityEngine.Random.Range(1, 7);
+                    break;
+                case 3:
+                    skillRoll = UnityEngine.Random.Range(1, 9);
+                    break;
+            }
         }
 
         // Uwzględnienie modyfikatora z panelu jednostki
@@ -161,130 +176,79 @@ public class DiceRollManager : MonoBehaviour
             modifier += RollModifier;
         }
 
-        // Pobieranie wartości umiejętności na podstawie nazwy
-        int skillValue = 0;
-        if (skillName != null)
-        {
-            // Jeśli skillName dotyczy broni białej lub dystansowej, pobierz go ze słownika
-            if (Enum.TryParse(skillName, out MeleeCategory meleeCategory) && stats.Melee.ContainsKey(meleeCategory))
-            {
-                skillValue = stats.GetSkillModifier(stats.Melee, meleeCategory);
-            }
-            else if (Enum.TryParse(skillName, out RangedCategory rangedCategory) && stats.Ranged.ContainsKey(rangedCategory))
-            {
-                skillValue = stats.GetSkillModifier(stats.Ranged, rangedCategory);
-            }
-            else
-            {
-                var field = typeof(Stats).GetField(skillName);
-                if (field != null)
-                {
-                    skillValue = (int)field.GetValue(stats);
-                }
-            }
-        }
-
-        // Pobieranie wartości atrybutu na podstawie nazwy
+        // Pobieranie wartości cechy na podstawie nazwy
         int attributeValue = 0;
         var attributeField = typeof(Stats).GetField(attributeName);
         if (attributeField != null)
         {
             attributeValue = (int)attributeField.GetValue(stats);
-
-            // Modyfikator za przeciążenie
-            if (attributeName == "Zw")
-            {
-                int encumbrancePenalty = 0;
-                if (stats.MaxEncumbrance - stats.CurrentEncumbrance < 0 && stats.CurrentEncumbrance < stats.MaxEncumbrance * 2)
-                {
-                    encumbrancePenalty = 10;
-                }
-                else if (stats.MaxEncumbrance - stats.CurrentEncumbrance < 0 && stats.CurrentEncumbrance < stats.MaxEncumbrance * 3)
-                {
-                    encumbrancePenalty = 20;
-                }
-
-                // Sprawdzamy, czy Zw nie spadnie poniżej 10
-                if (attributeValue - encumbrancePenalty < 10)
-                {
-                    encumbrancePenalty = attributeValue - 10;
-                }
-
-                modifier -= encumbrancePenalty;
-
-                if(encumbrancePenalty != 0)
-                {
-                    Debug.Log($"Modyfikator do Zwinności {stats.Name} za przeciążenie: {encumbrancePenalty}.");
-                }
-            }
         }
         
-        if (stats.GetComponent<Unit>().Fatiqued > 0) modifier -= stats.GetComponent<Unit>().Fatiqued * 10; // Modyfikator za wyczerpanie
-        else if (stats.GetComponent<Unit>().Poison > 0) modifier -= 10; // Modyfikator za truciznę
+        //if (stats.GetComponent<Unit>().Fatiqued > 0) modifier -= stats.GetComponent<Unit>().Fatiqued * 10; // Modyfikator za wyczerpanie
+        //else if (stats.GetComponent<Unit>().Poison > 0) modifier -= 10; // Modyfikator za truciznę
 
-        // Modyfikator za dekoncentrującego przeciwnika w pobliżu
-        foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
-        {
-            Unit unit = entry.Key;
-            Stats distractingStats = unit.GetComponent<Stats>();
-            if (distractingStats.Distracting && !ReferenceEquals(distractingStats, stats) && !unit.CompareTag(stats.tag))
-            {
-                float radius = (distractingStats.Wt / 10) / 2f;
-                float distance = Vector2.Distance(unit.transform.position, stats.transform.position);
+        //// Modyfikator za dekoncentrującego przeciwnika w pobliżu
+        //foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
+        //{
+        //    Unit unit = entry.Key;
+        //    Stats distractingStats = unit.GetComponent<Stats>();
+        //    if (distractingStats.Distracting && !ReferenceEquals(distractingStats, stats) && !unit.CompareTag(stats.tag))
+        //    {
+        //        float radius = (distractingStats.Wt / 10) / 2f;
+        //        float distance = Vector2.Distance(unit.transform.position, stats.transform.position);
 
-                if (distance <= radius)
-                {
-                    modifier -= 20;
-                    Debug.Log($"{stats.Name} jest zdekoncentrowany przez {distractingStats.Name}.");
-                    break; // tylko raz -20, nawet jeśli więcej jednostek dekoncentruje
-                }
-            }
-        }
+        //        if (distance <= radius)
+        //        {
+        //            modifier -= 20;
+        //            Debug.Log($"{stats.Name} jest zdekoncentrowany przez {distractingStats.Name}.");
+        //            break; // tylko raz -20, nawet jeśli więcej jednostek dekoncentruje
+        //        }
+        //    }
+        //}
 
-        if (modifier > 60) modifier = 60; // Górny limit modyfikatora
-        if (modifier < -30) modifier = -30; // Dolny limit modyfikatora
+        //if (modifier > 60) modifier = 60; // Górny limit modyfikatora
+        //if (modifier < -30) modifier = -30; // Dolny limit modyfikatora
 
-        int successValue = skillValue + attributeValue + modifier - rollResult;
-        int successLevel = (skillValue + attributeValue + modifier) / 10 - rollResult / 10;
 
-        // Określenie koloru na podstawie poziomu sukcesu
-        string successLevelColor = successValue >= 0 ? "green" : "red";
+        int finalScore = roll1 + roll2 + skillRoll + attributeValue + modifier;
 
-        // Tworzenie stringa dla modyfikatora
-        string modifierString = modifier != 0 ? $" Modyfikator: {modifier}," : "";
+        string statName = skillName != null ? skillName : attributeName;
+        string modifierString = modifier != 0 ? $" Inne modyfikatory: {modifier}." : "";
+        string skillDiceString = skillValue != 0 ? $" + {skillRoll}" : "";
+        string difficultyLevelString = difficultyLevel != 0 ? $"/{difficultyLevel}" : "";
+
+        // Określenie koloru na podstawie sukcesu
+        string color = finalScore >= difficultyLevel ? "green" : "red";
 
         // Wyświetlenie wyniku
-        if (skillName != null)
-        {
-            Debug.Log($"{stats.Name} rzuca na {skillName}: {rollResult}. Wartość umiejętności: {skillValue + attributeValue}.{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>.");
-        }
-        else
-        {
-            Debug.Log($"{stats.Name} rzuca na {attributeName}: {rollResult}. Wartość cechy: {attributeValue}.{modifierString} Poziomy sukcesu: <color={successLevelColor}>{successLevel}</color>.");
-        }
+        Debug.Log($"{stats.Name} rzuca na {statName}: {roll1} + {roll2}{skillDiceString} = {roll1 + roll2 + skillRoll}. Modyfikator z cechy: {attributeValue}.{modifierString} Łączny wynik: <color={color}>{finalScore}{difficultyLevelString}</color>.");
 
-        //Pech i szczęście
-        if (IsDoubleDigit(rollResult))
+
+        if(difficultyLevel != 0)
         {
-            if (successValue >= 0)
+            //Pech i szczęście
+            if (IsDoubleDigit(roll1, roll2))
             {
-                Debug.Log($"{stats.Name} wyrzucił <color=green>FUKSA</color>!");
+                if (finalScore >= difficultyLevel)
+                {
+                    Debug.Log($"{stats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
 
-                //Aktualizuje osiągnięcia
-                stats.FortunateEvents++;
-            }
-            else
-            {
-                Debug.Log($"{stats.Name} wyrzucił <color=red>PECHA</color>!");
+                    //Aktualizuje osiągnięcia
+                    stats.FortunateEvents++;
+                }
+                else
+                {
+                    Debug.Log($"{stats.Name} wyrzucił <color=red>PECHA</color>!");
 
-                //Aktualizuje osiągnięcia
-                stats.UnfortunateEvents++;
+                    //Aktualizuje osiągnięcia
+                    stats.UnfortunateEvents++;
+                }
             }
         }
 
         ResetRollModifier();
 
-        return new int[] { successValue, successLevel };
+        return finalScore;
     }
     #endregion
 }

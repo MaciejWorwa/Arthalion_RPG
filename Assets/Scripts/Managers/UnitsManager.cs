@@ -348,7 +348,7 @@ public class UnitsManager : MonoBehaviour
             //Losuje początkowe statystyki dla każdej jednostki
             if (!IsSavedUnitsManaging)
             {
-                stats.RollForBaseStats();
+                stats.SetBaseStats();
             }
 
             // Dodaje do ekwipunku początkową broń adekwatną dla danej jednostki i wyposaża w nią
@@ -422,7 +422,7 @@ public class UnitsManager : MonoBehaviour
             InventoryManager.Instance.CalculateEncumbrance(stats);
 
             //Ustala początkową inicjatywę i dodaje jednostkę do kolejki inicjatywy
-            stats.Initiative = stats.I + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
+            stats.Initiative = stats.P + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
 
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit);
         }
@@ -562,8 +562,8 @@ public class UnitsManager : MonoBehaviour
             rollResult = UnityEngine.Random.Range(1, 101);
         }
 
-        int[] rollResults = DiceRollManager.Instance.TestSkill("SW", stats, null, 20, rollResult);
-        if (rollResults[0] < 0)
+        int rollResults = DiceRollManager.Instance.TestSkill("SW", stats, null, 20, rollResult);
+        if (rollResults < 0)
         {
             Debug.Log($"<color=red>{stats.Name} traci następną turę, ucztując na martwym ciele {deadBodyStats.Name}. Pamiętaj, aby to uwzględnić.</color>");
         }
@@ -735,7 +735,7 @@ public class UnitsManager : MonoBehaviour
             //Losuje początkowe statystyki dla człowieka, elfa, krasnoluda i niziołka
             if (stats.Id <= 4 && !IsSavedUnitsManaging)
             {
-                stats.RollForBaseStats();
+                stats.SetBaseStats();
                 unit.GetComponent<Unit>().DisplayUnitHealthPoints();
             }
 
@@ -743,10 +743,10 @@ public class UnitsManager : MonoBehaviour
             stats.TempHealth = stats.MaxHealth;
 
             // Aktualizuje udźwig
-            stats.MaxEncumbrance = (stats.S + stats.Wt) / 10 + stats.StrongBack + (stats.Sturdy * 2);
+            stats.MaxEncumbrance = 6 + stats.S;
 
             //Ustala inicjatywę i aktualizuje kolejkę inicjatywy
-            stats.Initiative = stats.I + UnityEngine.Random.Range(1, 11);
+            stats.Initiative = stats.P + UnityEngine.Random.Range(1, 11);
             InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(unit.GetComponent<Unit>());
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit.GetComponent<Unit>());
             InitiativeQueueManager.Instance.UpdateInitiativeQueue();
@@ -780,7 +780,7 @@ public class UnitsManager : MonoBehaviour
         Stats stats = unit.GetComponent<Stats>();
 
         //Ustala nową inicjatywę
-        stats.Initiative = stats.I + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
+        stats.Initiative = stats.P + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
 
         //Uwzględnienie kary do Zręczności za pancerz
         if (stats.Armor_head >= 3 || stats.Armor_torso >= 3 || stats.Armor_arms >= 3 || stats.Armor_legs >= 3)
@@ -789,7 +789,7 @@ public class UnitsManager : MonoBehaviour
         }
 
         //Aktualizuje kolejkę inicjatywy
-        InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] = stats.I;
+        InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] = stats.P;
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
         UpdateUnitPanel(unit);
@@ -904,7 +904,7 @@ public class UnitsManager : MonoBehaviour
             {
                 stats.CalculateMaxHealth();
                 unit.DisplayUnitHealthPoints();
-                stats.MaxEncumbrance = (stats.S + stats.Wt) / 10 + stats.StrongBack + (stats.Sturdy * 2);
+                stats.MaxEncumbrance = 6 + stats.S;
             }
             else if (attributeName == "Hardy" || attributeName == "SW") // Talent Twardziel
             {
@@ -1279,8 +1279,8 @@ public class UnitsManager : MonoBehaviour
             rollResult = UnityEngine.Random.Range(1, 101);
         }
 
-        int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
-        int successLevel = test[1];
+        int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
+        int successLevel = test;
 
         // Zaktualizowanie listy wszystkich jednostek, których się boi
         foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
@@ -1340,9 +1340,9 @@ public class UnitsManager : MonoBehaviour
             rollResult = UnityEngine.Random.Range(1, 101);
         }
 
-        int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
-        int successValue = test[0];
-        int successLevel = test[1];
+        int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
+        int successValue = test;
+        int successLevel = test;
 
         if(successValue > 0)
         {

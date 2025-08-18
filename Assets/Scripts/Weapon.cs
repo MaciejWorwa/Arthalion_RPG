@@ -78,7 +78,7 @@ public class Weapon : MonoBehaviour
     public int Blast; // Wybuchowa
     public bool Damaging; // Przebijająca
     public bool Dangerous; // Niebezpieczna
-    public bool Defensive; // Parujący
+    public int Defensive; // Parujący
     public bool Distract; // Dekoncentrujący (Powoduje cofanie się)
     public bool Entangle; // Unieruchamiający ---------------------- DZIAŁA JAKO TAKO, MOŻLIWE ŻE TRZEBA BĘDZIE POPRAWIĆ
     public bool Fast; // Szybka
@@ -159,7 +159,7 @@ public class Weapon : MonoBehaviour
         Blast = 0;
         Damaging = false;
         Dangerous = false;
-        Defensive = false;
+        Defensive = 0;
         Distract = false;
         Durable = 0;
         Entangle = false;

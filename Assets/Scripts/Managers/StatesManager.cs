@@ -46,16 +46,15 @@ public class StatesManager : MonoBehaviour
         Stats stats = unit.GetComponent<Stats>();
 
         // Obrażenia od ognia
-        int damage = unit.Ablaze - 1 + UnityEngine.Random.Range(1, 11);
+        int damage = UnityEngine.Random.Range(1, 7);
 
         // Znalezienie najmniejszej wartości pancerza spośród wszystkich części ciała
         int minArmor = Mathf.Min(stats.Armor_head, stats.Armor_arms, stats.Armor_torso, stats.Armor_legs);
 
-        Debug.Log($"Obrazenia od ognia: {unit.Ablaze - 1} + k10. Łącznie {damage}");
-        Debug.Log($"Najmniejsza wartość pancerza: {minArmor} Bonus z Wytrzymałości: {stats.Wt / 10}");
+        Debug.Log($"Obrazenia od ognia: {damage}");
 
-        stats.TempHealth -= Mathf.Max(1, damage - minArmor - stats.Wt / 10);
-        Debug.Log($"<color=#FF7F50>{stats.Name} traci {Mathf.Max(1, damage - minArmor - stats.Wt / 10)} punktów żywotności w wyniku podpalenia.</color>");
+        stats.TempHealth -= damage;
+        Debug.Log($"<color=#FF7F50>{stats.Name} traci {damage} punktów żywotności w wyniku podpalenia.</color>");
         unit.DisplayUnitHealthPoints();
     }
 
@@ -102,7 +101,7 @@ public class StatesManager : MonoBehaviour
                 Debug.Log($"<color=#FF7F50>{stats.Name} wykonuje rzut obronny przed śmiercią w wyniku krwawienia. Wynik rzutu: {rollResult} Modyfikator: {-rollDifficulty}. {stats.Name} nadal żyje.</color>");
             }
 
-            if (DiceRollManager.Instance.IsDoubleDigit(rollResult))
+            if (DiceRollManager.Instance.IsDoubleDigit(rollResult, rollResult))
             {
                 Debug.Log($"<color=#FF7F50>{stats.Name} wyrzucił/a dublet. Krwawienie zmniejsza się o 1 poziom.</color>");
                 unit.Bleeding--;
@@ -130,15 +129,15 @@ public class StatesManager : MonoBehaviour
                 if (rollResult == 0) yield break;
             }
 
-            int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
+            int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
 
-            if (test[0] > 0 && stats.StoutHearted > 0)
+            if (test > 0 && stats.StoutHearted > 0)
             {
-                test[1] += stats.StoutHearted;
-                Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{test[1]}</color> za talent \"Waleczne Serce.\"");
+                test += stats.StoutHearted;
+                Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{test}</color> za talent \"Waleczne Serce.\"");
             }
 
-            int successLevel = test[1];
+            int successLevel = test;
 
             if (successLevel > 0)
             {
@@ -178,7 +177,7 @@ public class StatesManager : MonoBehaviour
                 if (rollResult == 0) yield break;
             }
 
-            int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", unit.PoisonTestModifier + 10, rollResult)[1];
+            int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", unit.PoisonTestModifier + 10, rollResult);
             if (successLevel > 0)
             {
                 unit.Poison = Mathf.Max(0, unit.Poison - successLevel);
@@ -253,7 +252,7 @@ public class StatesManager : MonoBehaviour
                 if (rollResult == 0) yield break;
             }
 
-            int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[1];
+            int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult);
             if (successLevel > 0)
             {
                 unit.Stunned = Mathf.Max(0, unit.Stunned - successLevel);

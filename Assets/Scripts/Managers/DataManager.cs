@@ -192,10 +192,6 @@ public class DataManager : MonoBehaviour
                 var targetField = typeof(Stats).GetField(field.Name, BindingFlags.Instance | BindingFlags.Public);
                 targetField?.SetValue(statsToUpdate, field.GetValue(statsData));
             }
-
-            // Wczytanie umiejętności w walce każdą kategorią broni
-            statsToUpdate.Melee = statsData.MeleeSerialized.ToDictionary(x => Enum.Parse<MeleeCategory>(x.Key), x => x.Value);
-            statsToUpdate.Ranged = statsData.RangedSerialized.ToDictionary(x => Enum.Parse<RangedCategory>(x.Key), x => x.Value);
         }
 
         _searchInputFieldForUnits.text = "";
@@ -584,6 +580,8 @@ public class UnitData
     public bool IsRetreating; // Wycofuje się
     public bool IsFrenzy; // Jest w trakcie szału bojowego
 
+    public bool Scared; // Strach
+
     public int Ablaze; // Podpalenie
     public int Bleeding; // Krwawienie
     public int Blinded; // Oślepienie
@@ -667,30 +665,28 @@ public class StatsData
 
     public List<PairString> PrimaryWeaponAttributes = new List<PairString>();
     public List<string> PrimaryWeaponNames = new List<string>();
-    public int WW;
-    public int US;
+
+    [Header("Cechy")]
     public int S;
-    public int Wt;
-    public int I;
+    public int K;
     public int Zw;
     public int Zr;
     public int Int;
+    public int P;
+    public int Ch;
     public int SW;
-    public int Ogd;
-    public int Sz;
 
+    [Header("Cechy drugorzędowe")]
+    public int Sz;
     public int TempSz;
     public int MaxHealth;
     public int TempHealth;
-    public int CriticalWounds;
-    public int CorruptionPoints; // Punkty Zepsucia
+    public int CriticalWounds; // Ilość Ran Krytycznych
     public int SinPoints; // Punkty Grzechu (istotne dla kapłanów)
-    public int PP;
-    public int PS;
-    public int Resolve; // Punkty Determinacji
-    public int Resilience; // Punkty Bohatera
-    public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
-    public int Initiative;
+    public int PL; // Punkty Losu
+    public int PB; // Punkty Bohatera
+    public int ExtraPoints; // Dodatkowe punkty do rozdania między PL a PB
+    public int Initiative; // Inicjatywa
     public int CurrentEncumbrance; // Aktualne obciążenie ekwipunkiem
     public int MaxEncumbrance; // Maksymalny udźwig
     public int ExtraEncumbrance; // Dodatkowe obciążenie za przedmioty niebędące uzbrojeniem
@@ -700,17 +696,20 @@ public class StatsData
     public int Armor_torso;
     public int Armor_legs;
 
+
     [Header("Umiejętności")]
-    public int Athletics; // Atletyka
+    public int Athletics;
     public int Channeling; // Splatanie magii
     public int Cool; // Opanowanie
     public int Dodge; // Unik
     public int Endurance; // Odporność
     public int MagicLanguage; // Język magiczny
+    public int MeleeCombat; // Walka Wręcz
+    public int RangedCombat; // Walka Dystansowa
+    public int Spellcasting; // Rzucanie zaklęć
     public int Pray; // Modlitwa
-    public List<Pair> MeleeSerialized = new List<Pair>();
-    public List<Pair> RangedSerialized = new List<Pair>();
-
+    public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
+    public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Talenty")]
     public int AethyricAttunement; // Zmysł Magii
@@ -727,7 +726,7 @@ public class StatsData
     public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
-    public int Hardy; // Twardziel
+    public bool Hardy; // Wytrzymały
     public int HolyHatred; // Święta nienawiść
     public int Implacable; // Nieubłagany
     public int InstinctiveDiction; // Precyzyjne inkantowanie
@@ -823,10 +822,6 @@ public class StatsData
             }
         }
 
-        // Konwersja słowników w formie list
-        MeleeSerialized = stats.Melee.Select(kvp => new Pair { Key = kvp.Key.ToString(), Value = kvp.Value }).ToList();
-        RangedSerialized = stats.Ranged.Select(kvp => new Pair { Key = kvp.Key.ToString(), Value = kvp.Value }).ToList();
-
         // Ręczna konwersja aktywnych efektów zaklęć
         if (stats.ActiveSpellEffects != null && stats.ActiveSpellEffects.Count > 0)
         {
@@ -893,7 +888,7 @@ public class WeaponData
     public int Blast; // Wybuchowa
     public bool Damaging; // Przebijająca
     public bool Dangerous; // Niebezpieczna
-    public bool Defensive; // Parujący
+    public int Defensive; // Parujący
     public bool Distract; // Dekoncentrujący (Powoduje cofanie się)
     public bool Entangle; // Unieruchamiający  ---------------------- DZIAŁA JAKO TAKO, MOŻLIWE ŻE TRZEBA BĘDZIE POPRAWIĆ
     public bool Fast; // Szybka

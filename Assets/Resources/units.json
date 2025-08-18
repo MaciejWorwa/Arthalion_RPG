@@ -9,20 +9,8 @@
         "Topór",
         "Młot jednoręczny"
       ],
-      "WW": 20,
-      "US": 20,
-      "S": 20,
-      "Wt": 20,
-      "I": 20,
-      "Zw": 20,
-      "Zr": 20,
-      "Int": 20,
-      "SW": 20,
-      "Ogd": 20,
       "Sz": 4,
-      "PP": 2,
-      "Resilience": 2,
-      "ExtraPoints": 2
+      "ExtraPoints": 4
     },
     {
       "Race": "Elf",

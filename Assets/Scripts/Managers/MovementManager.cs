@@ -466,7 +466,7 @@ public class MovementManager : MonoBehaviour
 
             //Oblicza obecną szybkość
             stats.TempSz *= modifier;
-            stats.TempSz += DiceRollManager.Instance.TestSkill("Zw", stats, "Athletics", 20, rollResult)[1] / 2;
+            stats.TempSz += DiceRollManager.Instance.TestSkill("Zw", stats, "Athletics", 20, rollResult) / 2;
 
             //Uwzględnia talent Szybkobiegacz
             stats.TempSz += stats.Sprinter;
@@ -647,7 +647,7 @@ public class MovementManager : MonoBehaviour
                         rollOnAttack = UnityEngine.Random.Range(1, 101);
                     }
                     Debug.Log("attacker " + attacker);
-                    int skillValue = attackerStats.WW + attackerStats.GetSkillModifier(attackerStats.Melee, meleeSkill);
+                    int skillValue = attackerStats.Zr;
                     int attackModifier = CombatManager.Instance.CalculateAttackModifier(attacker, attackerWeapon, unit, 0, false);
 
                     int[] results = CombatManager.Instance.CalculateSuccessLevel(attackerWeapon, rollOnAttack, skillValue, true, attackModifier);

@@ -232,14 +232,14 @@ public class SaveAndLoadManager : MonoBehaviour
         File.WriteAllText(gridManagerPath, gridManagerJsonData);
     }
 
-    public void SaveFortunePoints(string savesFolderName, Stats stats, int PS)
+    public void SaveFortunePoints(string savesFolderName, Stats stats, int PL)
     {
         string unitName = stats.Name;
 
         string statsPath = Path.Combine(Application.persistentDataPath, savesFolderName, unitName + "_stats.json");
 
         StatsData statsData = new StatsData(stats);
-        statsData.PS = PS;
+        statsData.PL = PL;
 
         string statsJsonData = JsonUtility.ToJson(statsData, true);
         File.WriteAllText(statsPath, statsJsonData);
@@ -560,10 +560,6 @@ public class SaveAndLoadManager : MonoBehaviour
             LoadComponentDataWithReflection<WeaponData, Weapon>(unitGameObject, weaponFilePath);
 
             unitGameObject.GetComponent<Unit>().FearedUnits = new HashSet<Unit>(unitData.FearedUnitIds.Select(id => UnitsManager.Instance.AllUnits.FirstOrDefault(u => u.UnitId == id)).Where(u => u != null));
-
-            // Wczytanie umiejętności w walce każdą kategorią broni
-            unitGameObject.GetComponent<Stats>().Melee = statsData.MeleeSerialized.ToDictionary(x => Enum.Parse<MeleeCategory>(x.Key), x => x.Value);
-            unitGameObject.GetComponent<Stats>().Ranged = statsData.RangedSerialized.ToDictionary(x => Enum.Parse<RangedCategory>(x.Key), x => x.Value);
 
             //Dodaje jednostkę do kolejki inicjatywy
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unitGameObject.GetComponent<Unit>());

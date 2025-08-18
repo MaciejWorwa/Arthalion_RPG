@@ -77,9 +77,6 @@ public class RoundsManager : MonoBehaviour
 
             Stats stats = unit.GetComponent<Stats>();
 
-            //Stosuje zdolności specjalne różnych jednostek (np. regeneracja żywotności trolla)
-            stats.CheckForSpecialRaceAbilities();
-
             if (stats.Unstable) unstableUnits.Add(unit);
 
             unit.IsTurnFinished = false;
@@ -418,20 +415,12 @@ public class RoundsManager : MonoBehaviour
             stats = Unit.LastSelectedUnit.GetComponent<Stats>();
         }
 
-        if (stats.PS == 0)
-        {
-            Debug.Log($"{stats.Name} nie posiada Punktów Szczęścia, co skutkuje zwiększeniem Punktów Zepsucia. Wykonaj akcję ponownie.");
-            stats.CorruptionPoints++;
-        }
-        else
-        {
-            Debug.Log($"{stats.Name} zużywa Punkt Szczęścia. Wykonaj akcję ponownie.");
-            stats.PS--;
-        }
+        Debug.Log($"{stats.Name} zużywa Punkt Losu. Wykonaj akcję ponownie.");
+        stats.PL--;
 
         _isFortunePointSpent = true;
 
-        SaveAndLoadManager.Instance.SaveFortunePoints("autosave", stats, stats.PS);
+        SaveAndLoadManager.Instance.SaveFortunePoints("autosave", stats, stats.PL);
         SaveAndLoadManager.Instance.LoadGame("autosave");
 
         _useFortunePointsButton.SetActive(false);

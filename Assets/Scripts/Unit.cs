@@ -22,6 +22,8 @@ public class Unit : MonoBehaviour
     public bool IsFrenzy; // Jest w trakcie szału bojowego
 
     [Header("Stany")]
+    public bool Scared; // Strach
+
     public int Ablaze; // Podpalenie
     public int Bleeding; // Krwawienie
     public int Blinded; // Oślepienie

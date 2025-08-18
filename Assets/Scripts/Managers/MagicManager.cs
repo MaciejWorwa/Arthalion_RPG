@@ -147,20 +147,20 @@ public class MagicManager : MonoBehaviour
             // Modyfikator za zbroję i talent Zmysł Magii
             int modifier = CalculateArmorModifier(stats);
 
-            int[] test = DiceRollManager.Instance.TestSkill("SW", stats, "Channeling", modifier, rollResult);
+            int test = DiceRollManager.Instance.TestSkill("SW", stats, "Channeling", modifier, rollResult);
 
             // Talent Zmysł Magii
-            if (test[0] >= 0 && stats.AethyricAttunement > 0)
+            if (test >= 0 && stats.AethyricAttunement > 0)
             {
-                test[1] += stats.AethyricAttunement;
-                Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{test[1]}</color> za talent \"Zmysł Magii.\"");
+                test += stats.AethyricAttunement;
+                Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{test}</color> za talent \"Zmysł Magii.\"");
             }
 
-            unit.ChannelingModifier = Math.Max(0, unit.ChannelingModifier + test[1]);
+            unit.ChannelingModifier = Math.Max(0, unit.ChannelingModifier + test);
 
             Debug.Log($"Poziomy sukcesu zebrane w wyniku splatania magii: <color=#4dd2ff>{unit.ChannelingModifier}</color>");
 
-            CheckForChaosManifestation(stats, rollResult, test[0], test[1], "Channeling");
+            CheckForChaosManifestation(stats, rollResult, test, "Channeling");
         }
     }
     #endregion
@@ -263,39 +263,26 @@ public class MagicManager : MonoBehaviour
         }
 
         // Test języka magicznego na rzucanie zaklęcia lub test modlitwy na rzucanie cudu lub błogosławieństwa
-        int[] castingTest = spell.Arcane == "Cuda" || spell.Arcane == "Błogosławieństwa" ? DiceRollManager.Instance.TestSkill("Ogd", stats, "Pray", modifier, rollResult) : DiceRollManager.Instance.TestSkill("Int", stats, "MagicLanguage", modifier, rollResult);
+        int castingTest = spell.Arcane == "Cuda" || spell.Arcane == "Błogosławieństwa" ? DiceRollManager.Instance.TestSkill("Ogd", stats, "Pray", modifier, rollResult) : DiceRollManager.Instance.TestSkill("Int", stats, "MagicLanguage", modifier, rollResult);
 
-        // Talent Precyzyjne Inkantowanie
-        if (castingTest[0] >= 0 && stats.InstinctiveDiction > 0 && spell.Arcane != "Cuda" && spell.Arcane != "Błogosławieństwa")
-        {
-            castingTest[1] += stats.InstinctiveDiction;
-            Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{castingTest[1]}</color> za talent \"Precyzyjne Inkantowanie.\"");
-        }
 
         int castingNumberRequired = _grimuarToggle.isOn ? spell.CastingNumber * 2 : spell.CastingNumber;
 
-        int successLevels = spell.Arcane == "Błogosławieństwa" || spell.Arcane == "Cuda" ? castingTest[1] : castingTest[1] + unit.ChannelingModifier;
+        int successLevels = spell.Arcane == "Błogosławieństwa" || spell.Arcane == "Cuda" ? castingTest : castingTest + unit.ChannelingModifier;
         string color = successLevels >= castingNumberRequired ? "green" : "red"; // Zielony, jeśli >= CastingNumber, inaczej czerwony
         Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color={color}>{successLevels}/{castingNumberRequired}</color>.");
 
         bool spellFailed = castingNumberRequired - successLevels > 0;
         Debug.Log(spellFailed ? $"Rzucanie zaklęcia {spell.Name} nie powiodło się." : $"Zaklęcie {spell.Name} zostało splecione pomyślnie.");
 
-        if (unit.ChannelingModifier > 0 && spellFailed) //Jeśli czarodziej splatał wcześniej magię i zaklęcie nie powiodło się, występuję manifestacja Chaosu (od nadmiaru zebranej magii)
-        {
-            CheckForChaosManifestation(stats, rollResult, castingTest[0], castingTest[1], spell.Arcane == "Cuda" || spell.Arcane == "Błogosławieństwa" ? "Pray" : "MagicLanguage", castingNumberRequired - successLevels, true);
-        }
-        else // Standardowe sprawdzenie warunków manifestacji
-        {
-            CheckForChaosManifestation(stats, rollResult, castingTest[0], castingTest[1], spell.Arcane == "Cuda" || spell.Arcane == "Błogosławieństwa" ? "Pray" : "MagicLanguage", castingNumberRequired - successLevels);
-        }
+        CheckForChaosManifestation(stats, rollResult, castingTest, spell.Arcane == "Cuda" || spell.Arcane == "Błogosławieństwa" ? "Pray" : "MagicLanguage", castingNumberRequired - successLevels);
 
         // Zresetowanie zaklęcia
         ResetSpellCasting();
         unit.ChannelingModifier = 0;
 
         // Krytyczne rzucenie zaklęcia
-        if (DiceRollManager.Instance.IsDoubleDigit(rollResult) && rollResult <= stats.Int + stats.MagicLanguage)
+        if (DiceRollManager.Instance.IsDoubleDigit(rollResult, rollResult) && rollResult <= stats.Int + stats.MagicLanguage)
         {
             StartCoroutine(CriticalCastingRoll(spell, spellFailed));
         }
@@ -341,7 +328,7 @@ public class MagicManager : MonoBehaviour
 
             //Sprawdza dystans
             _spellDistance = CombatManager.Instance.CalculateDistance(Unit.SelectedUnit, target);
-            float baseStat = spell.Arcane == "Cuda" ? stats.Ogd : stats.SW;
+            float baseStat = spell.Arcane == "Cuda" ? stats.Ch : stats.SW;
             float spellRange = spell.Range == 1.5f || spell.Arcane == "Błogosławieństwa" ? spell.Range : spell.Range * baseStat / 2f; // Zazwyczaj zasięg zaklęcia jest zależny od Siły Woli lub Ogłady czarodzieja. Czary dotykowe mają zasięg równy 1.5f
             Debug.Log($"Dystans: {_spellDistance}. Zasięg zaklęcia: {spellRange}");
 
@@ -389,16 +376,16 @@ public class MagicManager : MonoBehaviour
                     touchRollResult = UnityEngine.Random.Range(1, 101);
                 }
 
-                int[] attackerTest = DiceRollManager.Instance.TestSkill("WW", stats, MeleeCategory.Brawling.ToString(), 0, touchRollResult);
+                int attackerTest = DiceRollManager.Instance.TestSkill("WW", stats, MeleeCategory.Brawling.ToString(), 0, touchRollResult);
 
                 // Talent Ruchliwe Dłonie
-                if (attackerTest[0] >= 0 && stats.FastHands > 0)
+                if (attackerTest >= 0 && stats.FastHands > 0)
                 {
-                    attackerTest[1] += stats.FastHands;
-                    Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{attackerTest[1]}</color> za talent \"Ruchliwe Dłonie.\"");
+                    attackerTest += stats.FastHands;
+                    Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{attackerTest}</color> za talent \"Ruchliwe Dłonie.\"");
                 }
 
-                int attackerSuccessLevel = attackerTest[1];
+                int attackerSuccessLevel = attackerTest;
 
                 CombatManager.Instance.DefenceResults = new int[2];
                 int defenceSuccessValue = 0;
@@ -436,11 +423,11 @@ public class MagicManager : MonoBehaviour
 
                     // Obliczamy sumaryczną wartość parowania i uniku
                     MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
-                    parryValue = targetStats.WW + targetStats.GetSkillModifier(targetStats.Melee, targetMeleeSkill) + parryModifier;
+                    parryValue = targetStats.Zr + parryModifier;
                     dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
 
                     // Funkcja obrony
-                    yield return StartCoroutine(CombatManager.Instance.Defense(targetUnit, targetStats, stats, attackerWeapon, weaponUsedForParry, targetMeleeSkill, parryValue, dodgeValue, parryModifier, dodgeModifier, canParry, canDodge));
+                    yield return StartCoroutine(CombatManager.Instance.Defense(targetUnit, targetStats, stats, attackerWeapon, weaponUsedForParry, parryValue, dodgeValue, parryModifier, dodgeModifier, canParry));
 
                     defenceSuccessValue = CombatManager.Instance.DefenceResults[0];
                     defenceSuccessLevel = CombatManager.Instance.DefenceResults[1];
@@ -450,7 +437,7 @@ public class MagicManager : MonoBehaviour
                 int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
 
                 // Sprawdzenie warunku trafienia
-                bool attackSucceeded = combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && stats.WW + stats.GetSkillModifier(stats.Melee, MeleeCategory.Brawling) > Math.Max(parryValue, dodgeValue));
+                bool attackSucceeded = combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && stats.Zr > Math.Max(parryValue, dodgeValue));
 
                 if (!attackSucceeded)
                 {
@@ -476,7 +463,7 @@ public class MagicManager : MonoBehaviour
             // Próba rozproszenia zaklęcia
             if (dispeller != null && !_dispellDone && _criticalCastingString != "anti_dispell")
             {
-                StartCoroutine(Dispell(dispeller, spell, castingTest[1], result =>
+                StartCoroutine(Dispell(dispeller, spell, castingTest, result =>
                 {
                     successLevelAfterDispell = result;
                 }));
@@ -485,7 +472,7 @@ public class MagicManager : MonoBehaviour
             }
             else
             {
-                successLevelAfterDispell = castingTest[1];
+                successLevelAfterDispell = castingTest;
             }
 
             while (_dispellPanel.activeSelf)
@@ -550,7 +537,7 @@ public class MagicManager : MonoBehaviour
         if (spell.Duration != 0 && spell.Type.Contains("buff"))
         {
             // Obliczenie czasu trwania efektu – przykładowo modyfikowany przez Siłę Woli (SW) lub Ogładę
-            int baseStat = spell.Arcane == "Cuda" ? spellcasterStats.Ogd : spellcasterStats.SW;
+            int baseStat = spell.Arcane == "Cuda" ? spellcasterStats.Ch : spellcasterStats.SW;
             int effectDuration = spell.Type.Contains("constant-duration") || spell.Arcane == "Błogosławieństwa" ? spell.Duration : spell.Duration * (baseStat / 10);
 
             // Przygotowanie słownika modyfikacji – iterujemy po liście atrybutów, które zaklęcie ma zmieniać
@@ -612,9 +599,9 @@ public class MagicManager : MonoBehaviour
             }
 
             // Test obronny przy użyciu TestSkill
-            int[] skillTestResults = DiceRollManager.Instance.TestSkill(attributeName, targetStats, skillName, 0, saveRollResult);
+            int skillTestResults = DiceRollManager.Instance.TestSkill(attributeName, targetStats, skillName, 0, saveRollResult);
 
-            if (skillTestResults[0] < 0)
+            if (skillTestResults < 0)
             {
                 Debug.Log($"{targetStats.Name} nie udało się przeciwstawić zaklęciu.");
             }
@@ -738,7 +725,7 @@ public class MagicManager : MonoBehaviour
         Debug.Log($"Poziom sukcesu {spellcasterStats.Name}: {successLevel}. Siła zaklęcia: {spell.Strength}");
 
         //Ustalamy miejsce trafienia
-        string unnormalizedHitLocation = !String.IsNullOrEmpty(CombatManager.Instance.HitLocation) ? CombatManager.Instance.HitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollResult) ? CombatManager.Instance.DetermineHitLocation() : CombatManager.Instance.DetermineHitLocation(rollResult));
+        string unnormalizedHitLocation = !String.IsNullOrEmpty(CombatManager.Instance.HitLocation) ? CombatManager.Instance.HitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollResult, rollResult) ? CombatManager.Instance.DetermineHitLocation() : CombatManager.Instance.DetermineHitLocation(rollResult));
         string hitLocation = CombatManager.Instance.NormalizeHitLocation(unnormalizedHitLocation);
 
         if(spell.Arcane == "Cuda" && spellcasterStats.HolyHatred > 0)
@@ -780,7 +767,7 @@ public class MagicManager : MonoBehaviour
         }
 
         // Sprawdzamy zbroję
-        int armor = CombatManager.Instance.CalculateArmor(spellcasterStats, targetStats, hitLocation, rollResult, successLevel);
+        int armor = CombatManager.Instance.CalculateArmor(spellcasterStats, targetStats, hitLocation, rollResult);
 
         // Pobranie pancerza dla trafionej lokalizacji
         List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(hitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[hitLocation] : new List<Weapon>();
@@ -832,7 +819,7 @@ public class MagicManager : MonoBehaviour
 
             foreach (Unit adjacentUnit in unitsAroundTarget)
             {
-                int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(spellcasterStats, adjacentUnit.GetComponent<Stats>(), hitLocation, rollResult, successLevel);
+                int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(spellcasterStats, adjacentUnit.GetComponent<Stats>(), hitLocation, rollResult);
                 int electricDamage = (spellcasterStats.SW / 10) + UnityEngine.Random.Range(1, 11);
                 Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {electricDamage} obrażeń spowodowanych ładunkiem elektrycznym zaklęcia z Tradycji Niebios.");
 
@@ -881,9 +868,9 @@ public class MagicManager : MonoBehaviour
         // Modyfikator za zbroję
         int modifier = CalculateArmorModifier(targetStats);
 
-        int[] dispellTest = DiceRollManager.Instance.TestSkill("Int", targetStats, "MagicLanguage", modifier, rollResult);
+        int dispellTest = DiceRollManager.Instance.TestSkill("Int", targetStats, "MagicLanguage", modifier, rollResult);
 
-        int combinedSuccessLevel = casterSuccessLevel - dispellTest[1];
+        int combinedSuccessLevel = casterSuccessLevel - dispellTest;
 
         if (RoundsManager.RoundNumber != 0)
         {
@@ -1155,17 +1142,17 @@ public class MagicManager : MonoBehaviour
     }
 
     #region Chaos manifestation
-    public void CheckForChaosManifestation(Stats stats, int rollResult, int successValue, int successLevel, string skillName, int castingNumberLeft = 0, bool value = false)
+    public void CheckForChaosManifestation(Stats stats, int rollResult, int successValue, string skillName, int castingNumberLeft = 0, bool value = false)
     {
         Unit unit = stats.GetComponent<Unit>();
         bool isSuccessful = successValue >= 0;
-        bool hasDouble = DiceRollManager.Instance.IsDoubleDigit(rollResult);
+        bool hasDouble = DiceRollManager.Instance.IsDoubleDigit(rollResult, rollResult);
         bool hasZeroOnes = rollResult % 10 == 0;
 
         if (skillName == "Pray" && ((!isSuccessful && hasDouble) || (rollResult % 10 <= stats.SinPoints))) // Pech na modlitwę
         {
             int roll = UnityEngine.Random.Range(1, 101);
-            int modifier = Math.Max(Math.Max(0, (-successLevel) * 10), Math.Max(0, castingNumberLeft * 10));
+            int modifier = Math.Max(Math.Max(0, (-successValue) * 10), Math.Max(0, castingNumberLeft * 10));
             int finalRoll = !isSuccessful && hasDouble ? roll + modifier : roll;
 
             if (modifier != 0)
@@ -1180,7 +1167,7 @@ public class MagicManager : MonoBehaviour
         else if ((isSuccessful && hasDouble && !((stats.AethyricAttunement > 0 && skillName == "Channeling") || (stats.InstinctiveDiction > 0 && skillName == "MagicLanguage"))) || (!isSuccessful && (hasDouble || hasZeroOnes)) || value == true) // Pech na Splatanie lub Język magiczny
         {
             int roll = UnityEngine.Random.Range(1, 101);
-            int modifier = Math.Max(Math.Max(0, (-successLevel) * 10), Math.Max(0, castingNumberLeft * 10));
+            int modifier = Math.Max(Math.Max(0, (-successValue) * 10), Math.Max(0, castingNumberLeft * 10));
             int finalRoll = roll + modifier;
 
             if (modifier != 0)

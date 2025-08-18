@@ -6,13 +6,11 @@ using UnityEngine;
 
 public enum SizeCategory
 {
-    Tiny = 0,      // drobny
-    Little = 1,    // niewielki
-    Small = 2,         // mały
-    Average = 3,       // średni
-    Large = 4,         // duży
-    Enormous = 5,       // wielki
-    Monstrous = 6   // monstrualny
+    Little = 0,    // drobny
+    Small = 1,         // mały
+    Average = 2,       // średni
+    Big = 3,         // duży
+    Large = 4       // wielki
 }
 
 public class Stats : MonoBehaviour
@@ -34,17 +32,15 @@ public class Stats : MonoBehaviour
     public List<string> PrimaryWeaponNames = new List<string>();
     public List<PairString> PrimaryWeaponAttributes = new List<PairString>();
 
-    [Header("Atrybuty")]
-    public int WW;
-    public int US;
+    [Header("Cechy")]
     public int S;
-    public int Wt;
-    public int I;
+    public int K;
     public int Zw;
     public int Zr;
     public int Int;
+    public int P;
+    public int Ch;
     public int SW;
-    public int Ogd;
 
     [Header("Cechy drugorzędowe")]
     public int Sz;
@@ -52,14 +48,11 @@ public class Stats : MonoBehaviour
     public int MaxHealth;
     public int TempHealth;
     public int CriticalWounds; // Ilość Ran Krytycznych
-    public int CorruptionPoints; // Punkty Zepsucia
     public int SinPoints; // Punkty Grzechu (istotne dla kapłanów)
-    public int PS;
-    public int PP;
-    public int Resolve; // Punkty Determinacji
-    public int Resilience; // Punkty Bohatera
-    public int ExtraPoints; // Dodatkowe punkty do rozdania między PP a Resilience
-    public int Initiative; // Inicjatywa w walce
+    public int PL; // Punkty Losu
+    public int PB; // Punkty Bohatera
+    public int ExtraPoints; // Dodatkowe punkty do rozdania między PL a PB
+    public int Initiative; // Inicjatywa
     public int CurrentEncumbrance; // Aktualne obciążenie ekwipunkiem
     public int MaxEncumbrance; // Maksymalny udźwig
     public int ExtraEncumbrance; // Dodatkowe obciążenie za przedmioty niebędące uzbrojeniem
@@ -77,6 +70,9 @@ public class Stats : MonoBehaviour
     public int Dodge; // Unik
     public int Endurance; // Odporność
     public int MagicLanguage; // Język magiczny
+    public int MeleeCombat; // Walka Wręcz
+    public int RangedCombat; // Walka Dystansowa
+    public int Spellcasting; // Rzucanie zaklęć
     public int Pray; // Modlitwa
     public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
@@ -96,7 +92,7 @@ public class Stats : MonoBehaviour
     public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
     public int FuriousAssault; // Wściekły atak
     public int Gunner; // Artylerzysta
-    public int Hardy; // Twardziel
+    public bool Hardy; // Wytrzymały
     public int HolyHatred; // Święta nienawiść
     public int Implacable; // Nieubłagany
     public int InstinctiveDiction; // Precyzyjne inkantowanie
@@ -180,46 +176,22 @@ public class Stats : MonoBehaviour
         Overall = CalculateOverall();
     }
 
-    public void RollForBaseStats()
+    public void SetBaseStats()
     {
-        WW = RollStat(WW);
-        US = RollStat(US);
-        S = RollStat(S);
-        Wt = RollStat(Wt);
-        I = RollStat(I);
-        Zw = RollStat(Zw);
-        Zr = RollStat(Zr);
-        Int = RollStat(Int);
-        SW = RollStat(SW);
-        Ogd = RollStat(Ogd);
-
         CalculateMaxHealth();
 
         // Rozdzielanie punktów ExtraPoints losowo pomiędzy PP i Resilience
         for (int i = 0; i < ExtraPoints; i++)
         {
             if (UnityEngine.Random.value < 0.5f)
-                PP++;
+                PL++;
             else
-                Resilience++;
+                PB++;
         }
         ExtraPoints = 0;
 
-        PS = PP;
-        Resolve = Resilience; // Punkty Determinacji są Równe Punktom Bohatera
-
         // Aktualizuje udźwig
-        MaxEncumbrance = (S + Wt) / 10 + StrongBack + (Sturdy * 2);
-    }
-    private int RollStat(int statsValue)
-    {
-        if (statsValue == 0) return 0; // Jeśli wartość początkowa to 0, pozostaje 0
-        if (statsValue < 10) return UnityEngine.Random.Range(1, 11); // Jeśli statystyka < 10, ustalamy wartość na 1-10
-
-        int rollResult = UnityEngine.Random.Range(2, 21); // Losowanie 2-20
-        if (Id > 4) statsValue -= 10; // Jeśli Id > 4 (czyli nie jest to człowiek, kranoslud, elf ani niziołek), odejmujemy 10
-
-        return statsValue + rollResult;
+        MaxEncumbrance = Math.Min(1, 6 + S);
     }
 
     public void CalculateMaxHealth(bool isSizeChange = false)
@@ -229,23 +201,19 @@ public class Stats : MonoBehaviour
         // Sprawdzamy, czy SW wynosi 0, w takim przypadku używamy S zamiast SW
         int effectiveSW = (SW == 0) ? S : SW;
 
-        if (Size == SizeCategory.Tiny)
+        if (Size == SizeCategory.Little)
             MaxHealth = 1;
-        else if (Size == SizeCategory.Little)
-            MaxHealth = Wt / 10;
         else if (Size == SizeCategory.Small)
-            MaxHealth = 2 * (Wt / 10) + effectiveSW / 10;
+            MaxHealth = 10 + S + K;
         else if (Size == SizeCategory.Average)
-            MaxHealth = S / 10 + 2 * (Wt / 10) + effectiveSW / 10;
+            MaxHealth = 12 + S + K;
+        else if (Size == SizeCategory.Big)
+            MaxHealth = 18 + S + K;
         else if (Size == SizeCategory.Large)
-            MaxHealth = (S / 10 + 2 * (Wt / 10) + effectiveSW / 10) * 2;
-        else if (Size == SizeCategory.Enormous)
-            MaxHealth = (S / 10 + 2 * (Wt / 10) + effectiveSW / 10) * 4;
-        else if (Size == SizeCategory.Monstrous)
-            MaxHealth = (S / 10 + 2 * (Wt / 10) + effectiveSW / 10) * 8;
+            MaxHealth = 2 * (18 + S + K);
 
-        // Uwzględnienie talentu Twardziel
-        MaxHealth += Hardy * (Wt / 10);
+        // Uwzględnienie cechy specjalnej Wytrzymały
+        if (Hardy == true) MaxHealth *= 2;
 
         if (isSizeChange)
         {
@@ -262,7 +230,6 @@ public class Stats : MonoBehaviour
         }
     }
 
-
     public void ChangeUnitSize(int newSize)
     {
         if (!Enum.IsDefined(typeof(SizeCategory), newSize)) return; // Sprawdzenie poprawności wartości
@@ -273,11 +240,6 @@ public class Stats : MonoBehaviour
         if (newSizeCategory == previousSize) return;
 
         int sizeDifference = newSize - (int)previousSize;
-
-        // Aktualizacja statystyk zgodnie z różnicą w rozmiarze
-        S = Mathf.Max(0, S + sizeDifference * 10);
-        Wt = Mathf.Max(0, Wt + sizeDifference * 10);
-        Zw = Mathf.Max(0, Zw - sizeDifference * 5); // Większy rozmiar = mniejsza zręczność
 
         // Aktualizacja rozmiaru
         Size = newSizeCategory;
@@ -306,105 +268,31 @@ public class Stats : MonoBehaviour
     }
 
 
-    // Pobieranie modyfikatora za umiejętność dla danej kategorii broni
-    public int GetSkillModifier<T>(Dictionary<T, int> modifiers, T category) where T : Enum
-    {
-        if (modifiers.TryGetValue(category, out int modifier))
-        {
-            return modifier;
-        }
-
-        // Domyślny modyfikator (jeśli kategoria nie istnieje w słowniku)
-        return 0;
-    }
-
-    public void CheckForSpecialRaceAbilities()
-    {
-        // Zdolność regeneracji
-        if (Regeneration)
-        {
-            int rollResult = UnityEngine.Random.Range(1, 11);
-            int currentWounds;
-
-            if (TempHealth < MaxHealth)
-            {
-                currentWounds = MaxHealth - TempHealth;
-            }
-            else return;
-
-            int woundsToHeal = 0;
-
-            if (TempHealth == 0)
-            {
-                if (rollResult >= 8)
-                {
-                    woundsToHeal = 1;
-                }
-                else return;
-            }
-            else
-            {
-                woundsToHeal = rollResult < currentWounds ? rollResult : currentWounds;
-            }
-
-            TempHealth += woundsToHeal;
-                
-            if (rollResult == 10 && CriticalWounds > 0)
-            {
-                CriticalWounds--;
-                Debug.Log($"{Name} zregenerował/a 1 ranę krytyczną.");
-            }
-
-            this.GetComponent<Unit>().DisplayUnitHealthPoints();
-            Debug.Log($"{Name} zregenerował/a {woundsToHeal} żywotności.");
-        }
-    }
-
     public int CalculateOverall()
     {
         // Sumowanie wszystkich cech głównych
-        int primaryStatsSum = WW + US + S + Wt + I + Zw + Zr + Int + SW + Ogd;
+        int primaryStatsSum = S + K + Zw + Zr + Int + P + Ch + SW;
         //Debug.Log("primaryStatsSum " + primaryStatsSum);
 
-        // Uwzględnienie rozmiaru (większy rozmiar = większy mnożnik)
-        float sizeMultiplier = Mathf.Pow(2f, 1f + (int)Size) / 10; // Każdy poziom rozmiaru zwiększa overall
-        //Debug.Log("sizeMultiplier " + sizeMultiplier);
+        //// Uwzględnienie rozmiaru (większy rozmiar = większy mnożnik)
+        //float sizeMultiplier = Mathf.Pow(2f, 1f + (int)Size) / 10; // Każdy poziom rozmiaru zwiększa overall
+        ////Debug.Log("sizeMultiplier " + sizeMultiplier);
 
-        // Sumowanie zbroi i wytrzymałości
-        int totalArmor = Armor_head + Armor_arms + Armor_torso + Armor_legs + (Wt / 10 * 4);
+        // Sumowanie zbroi
+        int totalArmor = Armor_head + Armor_arms + Armor_torso + Armor_legs;
         //Debug.Log("totalArmor " + totalArmor);
 
         // Uwzględnienie umiejętności
-        int skillSum = Athletics + Channeling + Dodge;
+        int skillSum = MeleeCombat + RangedCombat + Athletics + Spellcasting + Dodge;
         //Debug.Log("skillSum " + skillSum);
 
-        // Sumowanie umiejętności broni białej
-        if (Melee != null)
-        {
-            skillSum += Melee.Values.Sum();
-            //Debug.Log("Melee.Values.Sum() " + Melee.Values.Sum());
-        }
-
-        // Sumowanie umiejętności broni dystansowej
-        if (Ranged != null)
-        {
-            skillSum += Ranged.Values.Sum();
-            //Debug.Log("Ranged.Values.Sum() " + Ranged.Values.Sum());
-        }
 
         // Uwzględnienie mocy broni
         int weaponPower = 0;
         Weapon weapon = InventoryManager.Instance.ChooseWeaponToAttack(this.gameObject);
         if (weapon != null)
         {
-            if (weapon.Type.Contains("ranged"))
-            {
-                weaponPower += weapon.S * 8;
-            }
-            else if (weapon.Type.Contains("melee"))
-            {
-                weaponPower += weapon.S + (S / 10 * 8);
-            }
+            weaponPower += weapon.S * 8;
             //Debug.Log("weaponPower " + weaponPower);
         }
 
@@ -416,8 +304,8 @@ public class Stats : MonoBehaviour
 
         //Debug.Log("activeTalentsCount " + activeTalentsCount);
 
-        // Obliczanie Overall z uwzględnieniem mnożnika rozmiaru
-        int overall = Mathf.RoundToInt(((primaryStatsSum / 3) + weaponPower + MaxHealth + Sz + totalArmor * 2 + activeTalentsCount + skillSum / 3) * sizeMultiplier);
+        // Obliczanie Overall z uwzględnieniem mnożnika rozmiar
+        int overall = Mathf.RoundToInt(primaryStatsSum + weaponPower + MaxHealth + Sz + totalArmor + activeTalentsCount + skillSum); // * sizeMultiplier);
 
         //Debug.Log($"Overall {Name} to {overall}");
 
