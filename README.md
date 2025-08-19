@@ -1,7 +1,6 @@
-# WFRP_4ed_Battle
+# Artahlion RPG
 
-A comprehensive simulator based on the mechanics of the role-playing game **Warhammer Fantasy Role Play 4th Edition**, designed to automate and streamline combats.
-With a focus on ease of use and flexibility, the simulator supports a wide range of customization options, enabling players to recreate diverse battle scenarios while preserving the core mechanics of the tabletop experience.
+Description
 
 # Setup
 
@@ -105,7 +104,7 @@ Press **Esc** to open the main menu, where you can access **Settings**. By defau
 3. **Automatic Unit Selection** (Ctrl+Q): Units are selected in initiative order.
 4. **Automatic Defense** (Ctrl+D): Units automatically decide to parry or dodge attacks. When disabled, players choose to block, dodge, or take the damage.
 5. **Automatic Dice Rolls** (Ctrl+R): Disable to allow players to use physical dice; manual outcomes can then be entered.
-6. **Include Fear Mechanics** (Ctrl+T): When enabled, the mechanics of Fear and Terror are applied.
+6. **Include Fear Mechanics** (Ctrl+T): When enabled, the mechanics of Fear are applied.
 7. **Friendly Fire** (Ctrl+F): Enables attacking allied units.
 8. **Enemy Stats Hiding Mode** (Ctrl+I): Hides the statistics panel of enemy units when they are selected.
 9. **Unit Name Hiding Mode** (Ctrl+N): Hides the names of units on their tokens.
