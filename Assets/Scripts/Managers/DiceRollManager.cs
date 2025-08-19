@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using TMPro;
+using Unity.Mathematics;
 using UnityEngine;
 
 public class DiceRollManager : MonoBehaviour
@@ -29,17 +30,35 @@ public class DiceRollManager : MonoBehaviour
     }
 
     // Zmienne do przechowywania wyniku
-    public int ManualRollResult;
     public bool IsWaitingForRoll;
+
+    // Wyniki rzutów
+    private int Roll1;
+    private int Roll2;
+    private int SkillRoll;
+
+    [SerializeField] private TMP_InputField _roll1InputField;
+    [SerializeField] private TMP_InputField _roll2InputField;
+    [SerializeField] private TMP_InputField _skillRollInputField;
+    [SerializeField] private GameObject _applyRollResultPanel;
 
     public int RollModifier = 0;
     private bool _isRollModifierUpdating = false;
-
     [SerializeField] private UnityEngine.UI.Slider _modifierSlider;
     [SerializeField] private TMP_InputField _modifierInputField;
 
-    [SerializeField] private GameObject _applyRollResultPanel;
-    [SerializeField] private TMP_InputField _rollInputField;
+    // --- KONTEKST OCZEKUJĄCEGO TESTU ---
+    private Stats _pendingStats;
+    private string _pendingAttributeName;
+    private string _pendingSkillName;
+    private int _pendingModifier;
+    private int _pendingDifficultyLevel;
+    private Action<int[]> _pendingCallback;
+    private string _pendingRollContext;
+
+    // wynik gotowy do odebrania przez korutynę
+    private int[] _pendingResult;
+
 
     void Update()
     {
@@ -49,49 +68,101 @@ public class DiceRollManager : MonoBehaviour
         }
     }
 
-    public IEnumerator WaitForRollValue(Stats stats, string rollContext, Action<int> callback)
+    public IEnumerator WaitForRollValue(
+        Stats stats,
+        string rollContext,
+        string attributeName,
+        string skillName = null,
+        int modifier = 0,
+        int difficultyLevel = 0,
+        Action<int[]> callback = null)
     {
-        // Czekaj, aż inne rzuty się zakończą
-        while (_applyRollResultPanel.activeSelf)
-        {
+        // Jeśli inny panel jest aktywny — poczekaj
+        while (_applyRollResultPanel != null && _applyRollResultPanel.activeSelf)
             yield return null;
-        }
 
-        ManualRollResult = 0;
+        // Ustaw kontekst oczekującego testu
+        _pendingStats = stats;
+        _pendingAttributeName = attributeName;
+        _pendingSkillName = skillName;
+        _pendingModifier = modifier;
+        _pendingDifficultyLevel = difficultyLevel;
+        _pendingCallback = callback;
+        _pendingRollContext = rollContext;
+        _pendingResult = null;
+        IsWaitingForRoll = true;
 
+        // UI
         if (_applyRollResultPanel != null)
         {
             _applyRollResultPanel.SetActive(true);
-            _applyRollResultPanel.GetComponentInChildren<TMP_Text>().text = $"Wpisz wynik rzutu {stats.Name} na {rollContext}.";
+            var label = _applyRollResultPanel.GetComponentInChildren<TMP_Text>();
+            if (label != null)
+                label.text = $"Wpisz wyniki rzutów {stats.Name} na {rollContext}.";
         }
 
-        if (_rollInputField != null)
-        {
-            _rollInputField.text = "";
-        }
+        if (_roll1InputField != null) _roll1InputField.text = "";
+        if (_roll2InputField != null) _roll2InputField.text = "";
+        if (_skillRollInputField != null) _skillRollInputField.text = "";
 
-        while (ManualRollResult == 0 || _applyRollResultPanel.activeSelf)
-        {
+        // Czekaj aż OnSubmitRoll policzy TestSkill i zapisze _pendingResult
+        while (_pendingResult == null)
             yield return null;
-        }
 
+        // Schowaj panel i zwróć wynik
         if (_applyRollResultPanel != null)
-        {
             _applyRollResultPanel.SetActive(false);
-        }
 
-        callback?.Invoke(ManualRollResult);
+        IsWaitingForRoll = false;
+
+        _pendingCallback?.Invoke(_pendingResult);
+
+        // Sprzątanie kontekstu
+        _pendingStats = null;
+        _pendingAttributeName = null;
+        _pendingSkillName = null;
+        _pendingCallback = null;
+        _pendingRollContext = null;
     }
 
     public void OnSubmitRoll()
     {
-        if (_rollInputField != null && int.TryParse(_rollInputField.text, out int result))
+        if (_roll1InputField == null || _roll2InputField == null || _skillRollInputField == null)
+            return;
+
+        if (!int.TryParse(_roll1InputField.text, out int r1) ||
+                !int.TryParse(_roll2InputField.text, out int r2))
         {
-            ManualRollResult = result;
-            IsWaitingForRoll = false; // Przerywamy oczekiwanie
-            _rollInputField.text = ""; // Czyścimy pole
+            Debug.Log($"<color=red>Należy wpisać wynik obu kości k10.</color>");
+            return;
         }
+
+        // skillRoll jest opcjonalny — puste lub nieparsowalne = 0
+        int r3 = 0;
+        if (!string.IsNullOrWhiteSpace(_skillRollInputField.text))
+            int.TryParse(_skillRollInputField.text, out r3);
+
+        // Uruchom właściwy test z podanymi rzutami
+        _pendingResult = TestSkill(
+            stats: _pendingStats,
+            rollContext: _pendingRollContext,
+            attributeName: _pendingAttributeName,      // może być null
+            skillName: _pendingSkillName,
+            modifier: _pendingModifier,
+            roll1: r1,
+            roll2: r2,
+            skillRoll: r3,                  // może być 0 — wtedy po prostu się doliczy 0
+            difficultyLevel: _pendingDifficultyLevel
+        );
+
+        // Czyść inputy
+        _roll1InputField.text = "";
+        _roll2InputField.text = "";
+        _skillRollInputField.text = "";
+
+        _applyRollResultPanel.SetActive(false);
     }
+
 
     // Funkcja sprawdzająca, czy liczba ma dwie identyczne cyfry
     public bool IsDoubleDigit(int number1, int number2)
@@ -137,118 +208,93 @@ public class DiceRollManager : MonoBehaviour
     }
 
     #region Attributes and skills tests
-    public int TestSkill(string attributeName, Stats stats, string skillName = null, int modifier = 0, int roll1 = 0, int roll2 = 0, int skillRoll = 0, int difficultyLevel = 0)
+    public int[] TestSkill(
+     Stats stats,
+     string rollContext,              // kontekst do logów
+     string attributeName,            // może być null
+     string skillName = null,
+     int modifier = 0,
+     int difficultyLevel = 0,
+     int roll1 = 0,
+     int roll2 = 0,
+     int skillRoll = 0)
     {
-        // Pobieranie wartości umiejętności na podstawie nazwy
+        // Pobieranie wartości umiejętności
         int skillValue = 0;
-        if (skillName != null)
+        if (!string.IsNullOrEmpty(skillName))
         {
             var field = typeof(Stats).GetField(skillName);
             if (field != null)
-            {
                 skillValue = (int)field.GetValue(stats);
-            }
         }
 
-        // Wyniki rzutów
-        if (roll1 == 0 || roll2 == 0)
+        // Losowanie kości tylko jeśli nie podano gotowych wyników
+        if (roll1 == 0)
         {
             roll1 = UnityEngine.Random.Range(1, 11);
             roll2 = UnityEngine.Random.Range(1, 11);
 
             switch (skillValue)
             {
-                case 1:
-                    skillRoll = UnityEngine.Random.Range(1, 5);
-                    break;
-                case 2:
-                    skillRoll = UnityEngine.Random.Range(1, 7);
-                    break;
-                case 3:
-                    skillRoll = UnityEngine.Random.Range(1, 9);
+                case 1: skillRoll = UnityEngine.Random.Range(1, 5); break;  // k4
+                case 2: skillRoll = UnityEngine.Random.Range(1, 7); break;  // k6
+                case 3: skillRoll = UnityEngine.Random.Range(1, 9); break;  // k8
+                default:
+                    // brak kostki umiejętności
                     break;
             }
         }
 
-        // Uwzględnienie modyfikatora z panelu jednostki
+        // Modyfikator z panelu jednostki
         if (RollModifier != 0)
-        {
             modifier += RollModifier;
-        }
 
-        // Pobieranie wartości cechy na podstawie nazwy
+        // Pobieranie wartości CECHY — bezpiecznie, gdy attributeName == null
         int attributeValue = 0;
-        var attributeField = typeof(Stats).GetField(attributeName);
-        if (attributeField != null)
+        if (!string.IsNullOrEmpty(attributeName))
         {
-            attributeValue = (int)attributeField.GetValue(stats);
+            var attributeField = typeof(Stats).GetField(attributeName);
+            if (attributeField != null)
+                attributeValue = (int)attributeField.GetValue(stats);
         }
-        
-        //if (stats.GetComponent<Unit>().Fatiqued > 0) modifier -= stats.GetComponent<Unit>().Fatiqued * 10; // Modyfikator za wyczerpanie
-        //else if (stats.GetComponent<Unit>().Poison > 0) modifier -= 10; // Modyfikator za truciznę
-
-        //// Modyfikator za dekoncentrującego przeciwnika w pobliżu
-        //foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
-        //{
-        //    Unit unit = entry.Key;
-        //    Stats distractingStats = unit.GetComponent<Stats>();
-        //    if (distractingStats.Distracting && !ReferenceEquals(distractingStats, stats) && !unit.CompareTag(stats.tag))
-        //    {
-        //        float radius = (distractingStats.Wt / 10) / 2f;
-        //        float distance = Vector2.Distance(unit.transform.position, stats.transform.position);
-
-        //        if (distance <= radius)
-        //        {
-        //            modifier -= 20;
-        //            Debug.Log($"{stats.Name} jest zdekoncentrowany przez {distractingStats.Name}.");
-        //            break; // tylko raz -20, nawet jeśli więcej jednostek dekoncentruje
-        //        }
-        //    }
-        //}
-
-        //if (modifier > 60) modifier = 60; // Górny limit modyfikatora
-        //if (modifier < -30) modifier = -30; // Dolny limit modyfikatora
-
 
         int finalScore = roll1 + roll2 + skillRoll + attributeValue + modifier;
 
-        string statName = skillName != null ? skillName : attributeName;
+        if(string.IsNullOrEmpty(rollContext))
+        {
+            rollContext = !string.IsNullOrEmpty(skillName) ? skillName :
+                          !string.IsNullOrEmpty(attributeName) ? attributeName : "";
+        }
+
         string modifierString = modifier != 0 ? $" Inne modyfikatory: {modifier}." : "";
-        string skillDiceString = skillValue != 0 ? $" + {skillRoll}" : "";
+        string attrString = attributeValue != 0 ? $" Modyfikator z cechy: {attributeValue}." : "";
         string difficultyLevelString = difficultyLevel != 0 ? $"/{difficultyLevel}" : "";
 
-        // Określenie koloru na podstawie sukcesu
-        string color = finalScore >= difficultyLevel ? "green" : "red";
+        string color = (difficultyLevel == 0 || finalScore >= difficultyLevel) ? "green" : "red";
 
-        // Wyświetlenie wyniku
-        Debug.Log($"{stats.Name} rzuca na {statName}: {roll1} + {roll2}{skillDiceString} = {roll1 + roll2 + skillRoll}. Modyfikator z cechy: {attributeValue}.{modifierString} Łączny wynik: <color={color}>{finalScore}{difficultyLevelString}</color>.");
+        string roll1Str = $"<color=#4dd2ff>{roll1}</color>";
+        string roll2Str = $"<color=#4dd2ff>{roll2}</color>";
+        string skillRollStr = skillRoll != 0 ? $" + <color=#FF7F50>{skillRoll}</color>" : "";
 
+        Debug.Log($"{stats.Name} rzuca na {rollContext}: {roll1Str} + {roll2Str}{skillRollStr} = <color=#4dd2ff>{roll1 + roll2 + skillRoll}</color>." + $"{attrString}{modifierString} Łączny wynik: <color={color}>{finalScore}{difficultyLevelString}</color>.");
 
-        if(difficultyLevel != 0)
+        if (difficultyLevel != 0 && IsDoubleDigit(roll1, roll2))
         {
-            //Pech i szczęście
-            if (IsDoubleDigit(roll1, roll2))
+            if (finalScore >= difficultyLevel)
             {
-                if (finalScore >= difficultyLevel)
-                {
-                    Debug.Log($"{stats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
-
-                    //Aktualizuje osiągnięcia
-                    stats.FortunateEvents++;
-                }
-                else
-                {
-                    Debug.Log($"{stats.Name} wyrzucił <color=red>PECHA</color>!");
-
-                    //Aktualizuje osiągnięcia
-                    stats.UnfortunateEvents++;
-                }
+                Debug.Log($"{stats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
+                stats.FortunateEvents++;
+            }
+            else
+            {
+                Debug.Log($"{stats.Name} wyrzucił <color=red>PECHA</color>!");
+                stats.UnfortunateEvents++;
             }
         }
 
         ResetRollModifier();
-
-        return finalScore;
+        return new int[] { roll1, roll2, skillRoll, finalScore };
     }
+
     #endregion
 }

@@ -2,12 +2,9 @@
   "Units": [
     {
       "Race": "Człowiek",
-      "Size": 3,
+      "Size": 2,
       "PrimaryWeaponNames": [
-        "Buzdygan",
-        "Miecz",
-        "Topór",
-        "Młot jednoręczny"
+        "Miecz"
       ],
       "Sz": 4,
       "ExtraPoints": 4

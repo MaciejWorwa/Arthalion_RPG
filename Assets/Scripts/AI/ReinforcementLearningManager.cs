@@ -778,11 +778,6 @@ public class ReinforcementLearningManager : MonoBehaviour
         }
 
         // 3) Specjalne akcje:
-        if (aType == AttackType.DefensiveStance)
-        {
-            CombatManager.Instance.DefensiveStance();
-            return reward;
-        }
         if (aType == AttackType.Aim)
         {
             CombatManager.Instance.SetAim();

@@ -501,9 +501,9 @@ public class UnitsManager : MonoBehaviour
         {
             foreach (var u in AllUnits)
             {
-                if (u.UnitId == unit.GetComponent<Unit>().EntangledUnitId && u.Entangled > 0)
+                if (u.UnitId == unit.GetComponent<Unit>().EntangledUnitId && u.Entangled)
                 {
-                    u.Entangled = 0;
+                    u.Entangled = false;
                 }
             }
         }
@@ -538,7 +538,7 @@ public class UnitsManager : MonoBehaviour
             // Uwzględnia cechę Żarłoczny
             if (unit.LastAttackerStats.Hungry)
             {
-                StartCoroutine(HungryTrait(unit.LastAttackerStats, stats));
+                //StartCoroutine(HungryTrait(unit.LastAttackerStats, stats));
             }
         }
 
@@ -548,26 +548,26 @@ public class UnitsManager : MonoBehaviour
         _removeUnitButton.GetComponent<UnityEngine.UI.Image>().color = Color.white;
     }
 
-    private IEnumerator HungryTrait(Stats stats, Stats deadBodyStats)
-    {
-        int rollResult = 0;
-        // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
-        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
-        {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli", result => rollResult = result));
-            if (rollResult == 0) yield break;
-        }
-        else
-        {
-            rollResult = UnityEngine.Random.Range(1, 101);
-        }
+    //private IEnumerator HungryTrait(Stats stats, Stats deadBodyStats)
+    //{
+    //    int rollResult = 0;
+    //    // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
+    //    if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+    //    {
+    //        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli", result => rollResult = result));
+    //        if (rollResult == 0) yield break;
+    //    }
+    //    else
+    //    {
+    //        rollResult = UnityEngine.Random.Range(1, 101);
+    //    }
 
-        int rollResults = DiceRollManager.Instance.TestSkill("SW", stats, null, 20, rollResult);
-        if (rollResults < 0)
-        {
-            Debug.Log($"<color=red>{stats.Name} traci następną turę, ucztując na martwym ciele {deadBodyStats.Name}. Pamiętaj, aby to uwzględnić.</color>");
-        }
-    }
+    //    int rollResults = DiceRollManager.Instance.TestSkill("SW", stats, null, 20, rollResult)[2];
+    //    if (rollResults < 0)
+    //    {
+    //        Debug.Log($"<color=red>{stats.Name} traci następną turę, ucztując na martwym ciele {deadBodyStats.Name}. Pamiętaj, aby to uwzględnić.</color>");
+    //    }
+    //}
 
     public void RemoveUnitFromList(GameObject confirmPanel)
     {
@@ -744,6 +744,7 @@ public class UnitsManager : MonoBehaviour
 
             // Aktualizuje udźwig
             stats.MaxEncumbrance = 6 + stats.S;
+            InventoryManager.Instance.DisplayEncumbrance(stats);
 
             //Ustala inicjatywę i aktualizuje kolejkę inicjatywy
             stats.Initiative = stats.P + UnityEngine.Random.Range(1, 11);
@@ -805,120 +806,89 @@ public class UnitsManager : MonoBehaviour
         // Pobiera nazwę cechy z nazwy obiektu InputField (bez "_input")
         string attributeName = textInput.name.Replace("_input", "");
 
-        // 1. Sprawdzamy, czy mamy do czynienia z umiejętnością z tablicy Melee
-        if (attributeName.StartsWith("Melee_"))
-        {
-            string categoryName = attributeName.Replace("Melee_", "");
-            if (Enum.TryParse<MeleeCategory>(categoryName, out var category))
-            {
-                // Pobiera wartość z pola tekstowego
-                int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int meleeValue)
-                            ? meleeValue
-                            : 0;
+        // Szukamy zwykłego pola w klasie Stats
+        FieldInfo field = stats.GetType().GetField(attributeName);
 
-                // Ustawia w słowniku
-                stats.Melee[category] = value;
+        // Jeżeli pole nie istnieje, kończymy metodę
+        if (field == null)
+        {
+            Debug.Log($"Nie znaleziono pola '{attributeName}' w klasie Stats.");
+            return;
+        }
+
+        // Zależnie od typu pola...
+        if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() == null)
+        {
+            // int przez InputField
+            int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int inputValue)
+                        ? inputValue
+                        : 0;
+
+            if (attributeName == "Flight") value /= 2;
+
+            field.SetValue(stats, value);
+
+            if (attributeName == "ExtraEncumbrance")
+            {
+                InventoryManager.Instance.CalculateEncumbrance(stats);
+            }         
+        }
+        else if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() != null)
+        {
+            // int przez Slider
+            int value = (int)textInput.GetComponent<UnityEngine.UI.Slider>().value;
+            field.SetValue(stats, value);
+        }
+        else if (field.FieldType == typeof(bool))
+        {
+            bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn;
+            field.SetValue(stats, boolValue);
+        }
+        else if (field.FieldType == typeof(string))
+        {
+            string value = textInput.GetComponent<TMP_InputField>().text;
+            field.SetValue(stats, value);
+        }
+        else if (field.FieldType.IsEnum && textInput.GetComponent<TMP_Dropdown>() != null)
+        {
+            // Obsługa TMP_Dropdown dla enumów
+            TMP_Dropdown dropdown = textInput.GetComponent<TMP_Dropdown>();
+            Array enumValues = Enum.GetValues(field.FieldType);
+
+            if (dropdown.value >= 0 && attributeName == "Size")
+            {
+                stats.ChangeUnitSize(dropdown.value);
+            }
+            else if (dropdown.value >= 0 && dropdown.value < enumValues.Length)
+            {
+                object selectedEnumValue = enumValues.GetValue(dropdown.value);
+                field.SetValue(stats, selectedEnumValue);
             }
         }
-        // 2. Albo umiejętność z tablicy Ranged
-        else if (attributeName.StartsWith("Ranged_"))
-        {
-            string categoryName = attributeName.Replace("Ranged_", "");
-            if (Enum.TryParse<RangedCategory>(categoryName, out var category))
-            {
-                int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int rangedValue)
-                            ? rangedValue
-                            : 0;
-
-                stats.Ranged[category] = value;
-            }
-        }
-        // 3. A jeżeli to nie Melee_ ani Ranged_, wtedy korzystamy z refleksji
         else
         {
-            // Szukamy zwykłego pola w klasie Stats
-            FieldInfo field = stats.GetType().GetField(attributeName);
+            Debug.Log($"Nie udało się zmienić wartości cechy '{attributeName}'.");
+        }
 
-            // Jeżeli pole nie istnieje, kończymy metodę
-            if (field == null)
-            {
-                Debug.Log($"Nie znaleziono pola '{attributeName}' w klasie Stats.");
-                return;
-            }
-
-            // Zależnie od typu pola...
-            if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() == null)
-            {
-                // int przez InputField
-                int value = int.TryParse(textInput.GetComponent<TMP_InputField>().text, out int inputValue)
-                            ? inputValue
-                            : 0;
-
-                if (attributeName == "Flight") value /= 2;
-
-                field.SetValue(stats, value);
-
-                if (attributeName == "ExtraEncumbrance")
-                {
-                    InventoryManager.Instance.CalculateEncumbrance(stats);
-                }         
-            }
-            else if (field.FieldType == typeof(int) && textInput.GetComponent<UnityEngine.UI.Slider>() != null)
-            {
-                // int przez Slider
-                int value = (int)textInput.GetComponent<UnityEngine.UI.Slider>().value;
-                field.SetValue(stats, value);
-            }
-            else if (field.FieldType == typeof(bool))
-            {
-                bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn;
-                field.SetValue(stats, boolValue);
-            }
-            else if (field.FieldType == typeof(string))
-            {
-                string value = textInput.GetComponent<TMP_InputField>().text;
-                field.SetValue(stats, value);
-            }
-            else if (field.FieldType.IsEnum && textInput.GetComponent<TMP_Dropdown>() != null)
-            {
-                // Obsługa TMP_Dropdown dla enumów
-                TMP_Dropdown dropdown = textInput.GetComponent<TMP_Dropdown>();
-                Array enumValues = Enum.GetValues(field.FieldType);
-
-                if (dropdown.value >= 0 && attributeName == "Size")
-                {
-                    stats.ChangeUnitSize(dropdown.value);
-                }
-                else if (dropdown.value >= 0 && dropdown.value < enumValues.Length)
-                {
-                    object selectedEnumValue = enumValues.GetValue(dropdown.value);
-                    field.SetValue(stats, selectedEnumValue);
-                }
-            }
-            else
-            {
-                Debug.Log($"Nie udało się zmienić wartości cechy '{attributeName}'.");
-            }
-
-            if (attributeName == "S" || attributeName == "Wt" || attributeName == "StrongBack" || attributeName == "Sturdy")
-            {
-                stats.CalculateMaxHealth();
-                unit.DisplayUnitHealthPoints();
-                stats.MaxEncumbrance = 6 + stats.S;
-            }
-            else if (attributeName == "Hardy" || attributeName == "SW") // Talent Twardziel
-            {
-                stats.CalculateMaxHealth();
-                unit.DisplayUnitHealthPoints();
-            }
-            else if(attributeName == "NaturalArmor")
-            {
-                InventoryManager.Instance.CheckForEquippedWeapons();
-            }
-            else if (attributeName == "Name")
-            {
-                unit.DisplayUnitName();
-            }
+        if (attributeName == "S" || attributeName == "K")
+        {
+            stats.CalculateMaxHealth();
+            unit.DisplayUnitHealthPoints();
+            stats.MaxEncumbrance = 6 + stats.S;
+            InventoryManager.Instance.DisplayEncumbrance(stats);
+        }
+        else if (attributeName == "Hardy" || attributeName == "SW") // Talent Twardziel
+        {
+            stats.CalculateMaxHealth();
+            unit.DisplayUnitHealthPoints();
+        }
+        else if(attributeName == "NaturalArmor")
+        {
+            InventoryManager.Instance.CheckForEquippedWeapons();
+        }
+        else if (attributeName == "Name")
+        {
+            unit.DisplayUnitName();
         }
 
         UpdateUnitPanel(Unit.SelectedUnit);
@@ -1000,8 +970,6 @@ public class UnitsManager : MonoBehaviour
 
         RoundsManager.Instance.DisplayActionsLeft();
 
-        CombatManager.Instance.UpdateFrenzyButtonColor();
-        CombatManager.Instance.UpdateDefensiveStanceButtonColor();
         CombatManager.Instance.UpdateAimButtonColor();
         MountsManager.Instance.UpdateMountButtonColor();
 
@@ -1053,27 +1021,6 @@ public class UnitsManager : MonoBehaviour
         {
             string attributeName = inputField.name.Replace("_input", "");
             Stats stats = unit.GetComponent<Stats>();
-
-            if (attributeName.StartsWith("Melee_"))
-            {
-                string categoryName = attributeName.Replace("Melee_", "");
-                if (Enum.TryParse<MeleeCategory>(categoryName, out var category))
-                {
-                    int meleeValue = stats.Melee.ContainsKey(category) ? stats.Melee[category] : 0;
-                    SetInputFieldValue(inputField, meleeValue);
-                }
-                continue;
-            }
-            else if (attributeName.StartsWith("Ranged_"))
-            {
-                string categoryName = attributeName.Replace("Ranged_", "");
-                if (Enum.TryParse<RangedCategory>(categoryName, out var category))
-                {
-                    int rangedValue = stats.Ranged.ContainsKey(category) ? stats.Ranged[category] : 0;
-                    SetInputFieldValue(inputField, rangedValue);
-                }
-                continue;
-            }
 
             FieldInfo field = stats.GetType().GetField(attributeName);
             if (field == null)
@@ -1213,7 +1160,7 @@ public class UnitsManager : MonoBehaviour
     {
         foreach (Unit unit in checkingUnits)
         {
-            if (unit.IsFearTestPassed || unit.Broken > 0) continue;
+            if (unit.Scared) continue;
 
             int highestTerrorValue = 0;
             Unit highestTerrorUnit = null;
@@ -1225,7 +1172,7 @@ public class UnitsManager : MonoBehaviour
             {
                 int sizeDifference = opponent.GetComponent<Stats>().Size - unit.GetComponent<Stats>().Size;
 
-                if ((sizeDifference > 1 || opponent.GetComponent<Stats>().Terror > 0) && !unit.IsTerrorTestPassed)
+                if ((sizeDifference > 1 || opponent.GetComponent<Stats>().Terror > 0))
                 {
                     int value = sizeDifference > opponent.GetComponent<Stats>().Terror ? sizeDifference : opponent.GetComponent<Stats>().Terror;
 
@@ -1247,115 +1194,104 @@ public class UnitsManager : MonoBehaviour
                     }
                 }
             }
-
-            if (highestTerrorUnit != null)
-            {
-                unit.FearedUnits.Add(highestTerrorUnit);
-                StartCoroutine(TerrorRoll(unit, highestTerrorUnit.GetComponent<Stats>().Name, highestTerrorValue));
-            }
-            else if (highestFearUnit != null)
-            {
-                unit.FearedUnits.Add(highestFearUnit);
-                StartCoroutine(FearRoll(unit, highestFearUnit.GetComponent<Stats>().Name, 1));
-            }
         }
     }
 
-    public IEnumerator FearRoll(Unit unit, string opponentName, int value = 0)
-    {
-        if (unit.IsFearTestPassed || unit.GetComponent<Stats>().ImmunityToPsychology) yield break;
-        if (unit.GetComponent<Stats>().Belligerent && (unit.CompareTag("PlayerUnit") && InitiativeQueueManager.Instance.PlayersAdvantage > InitiativeQueueManager.Instance.EnemiesAdvantage) || (unit.CompareTag("EnemyUnit") && InitiativeQueueManager.Instance.PlayersAdvantage < InitiativeQueueManager.Instance.EnemiesAdvantage)) yield break;
+    //public IEnumerator FearRoll(Unit unit, string opponentName, int value = 0)
+    //{
+    //    if (unit.IsFearTestPassed || unit.GetComponent<Stats>().ImmunityToPsychology) yield break;
+    //    if (unit.GetComponent<Stats>().Belligerent && (unit.CompareTag("PlayerUnit") && InitiativeQueueManager.Instance.PlayersAdvantage > InitiativeQueueManager.Instance.EnemiesAdvantage) || (unit.CompareTag("EnemyUnit") && InitiativeQueueManager.Instance.PlayersAdvantage < InitiativeQueueManager.Instance.EnemiesAdvantage)) yield break;
 
-        int rollResult = 0;
-        Stats stats = unit.GetComponent<Stats>();
+    //    int rollResult = 0;
+    //    Stats stats = unit.GetComponent<Stats>();
 
-        if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
-        {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie (strach)", result => rollResult = result));
-            if (rollResult == 0) yield break;
-        }
-        else
-        {
-            rollResult = UnityEngine.Random.Range(1, 101);
-        }
+    //    if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
+    //    {
+    //        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie (strach)", result => rollResult = result));
+    //        if (rollResult == 0) yield break;
+    //    }
+    //    else
+    //    {
+    //        rollResult = UnityEngine.Random.Range(1, 101);
+    //    }
 
-        int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
-        int successLevel = test;
+    //    int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult)[2];
+    //    int successLevel = test;
 
-        // Zaktualizowanie listy wszystkich jednostek, których się boi
-        foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
-        {
-            if(pair.Key == null) continue;
+    //    // Zaktualizowanie listy wszystkich jednostek, których się boi
+    //    foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
+    //    {
+    //        if(pair.Key == null) continue;
 
-            if (!pair.Key.CompareTag(unit.tag))
-            {
-                if ((pair.Key.GetComponent<Stats>().Fear != 0 && pair.Key.GetComponent<Stats>().Fear > successLevel) || (pair.Key.GetComponent<Stats>().Size > stats.Size && pair.Key.GetComponent<Stats>().Size - stats.Size > successLevel))
-                {
-                    unit.FearedUnits.Add(pair.Key);
-                }
-                else if (unit.FearedUnits.Contains(pair.Key))
-                {
-                    unit.FearedUnits.Remove(pair.Key);
-                }
-            }
-        }
+    //        if (!pair.Key.CompareTag(unit.tag))
+    //        {
+    //            if ((pair.Key.GetComponent<Stats>().Fear != 0 && pair.Key.GetComponent<Stats>().Fear > successLevel) || (pair.Key.GetComponent<Stats>().Size > stats.Size && pair.Key.GetComponent<Stats>().Size - stats.Size > successLevel))
+    //            {
+    //                unit.FearedUnits.Add(pair.Key);
+    //            }
+    //            else if (unit.FearedUnits.Contains(pair.Key))
+    //            {
+    //                unit.FearedUnits.Remove(pair.Key);
+    //            }
+    //        }
+    //    }
 
-        if (value != 0) unit.FearLevel = value;
+    //    if (value != 0) unit.FearLevel = value;
 
-        unit.FearLevel = Math.Max(0, unit.FearLevel - successLevel);
+    //    unit.FearLevel = Math.Max(0, unit.FearLevel - successLevel);
 
-        // Upewnia się, że FearLevel nie przekroczy wartości value
-        unit.FearLevel = Math.Min(unit.FearLevel, value);
+    //    // Upewnia się, że FearLevel nie przekroczy wartości value
+    //    unit.FearLevel = Math.Min(unit.FearLevel, value);
 
-        // Tworzenie stringa z nazwami przeciwników, których jednostka się boi
-        string opponentsNames = unit.FearedUnits.Count > 0 ? string.Join(", ", unit.FearedUnits.Where(u => u != null).Select(u => u.GetComponent<Stats>().Name)) : "";
+    //    // Tworzenie stringa z nazwami przeciwników, których jednostka się boi
+    //    string opponentsNames = unit.FearedUnits.Count > 0 ? string.Join(", ", unit.FearedUnits.Where(u => u != null).Select(u => u.GetComponent<Stats>().Name)) : "";
 
-        if (unit.FearLevel == 0)
-        {
-            Debug.Log($"<color=#FF7F50>{stats.Name} zdał/a test strachu przed: {opponentName}.</color>");
-            unit.IsFearTestPassed = true;
-        }
-        else
-        {
-            Debug.Log($"<color=#FF7F50>{stats.Name} nie zdał/a testu strachu przed: {opponentsNames}. Pozostałe poziomy strachu: {unit.FearLevel}</color>");
-            Debug.Log($"<color=#FF7F50>Zbliżenie się źródła strachu lub próba zbliżenia się do niego wymaga wykonania Testu Opanowania +0. Wykonaj go samodzielnie. Niezdany test zwiększa poziom paniki o 1.</color>");
-        }
-    }
+    //    if (unit.FearLevel == 0)
+    //    {
+    //        Debug.Log($"<color=#FF7F50>{stats.Name} zdał/a test strachu przed: {opponentName}.</color>");
+    //        unit.IsFearTestPassed = true;
+    //    }
+    //    else
+    //    {
+    //        Debug.Log($"<color=#FF7F50>{stats.Name} nie zdał/a testu strachu przed: {opponentsNames}. Pozostałe poziomy strachu: {unit.FearLevel}</color>");
+    //        Debug.Log($"<color=#FF7F50>Zbliżenie się źródła strachu lub próba zbliżenia się do niego wymaga wykonania Testu Opanowania +0. Wykonaj go samodzielnie. Niezdany test zwiększa poziom paniki o 1.</color>");
+    //    }
+    //}
 
-    public IEnumerator TerrorRoll(Unit unit, string opponentName, int value)
-    {
-        if (unit.IsTerrorTestPassed || unit.GetComponent<Stats>().ImmunityToPsychology) yield break;
-        if(unit.GetComponent<Stats>().Belligerent && (unit.CompareTag("PlayerUnit") && InitiativeQueueManager.Instance.PlayersAdvantage > InitiativeQueueManager.Instance.EnemiesAdvantage) || (unit.CompareTag("EnemyUnit") && InitiativeQueueManager.Instance.PlayersAdvantage < InitiativeQueueManager.Instance.EnemiesAdvantage)) yield break;
+    //public IEnumerator TerrorRoll(Unit unit, string opponentName, int value)
+    //{
+    //    if (unit.IsTerrorTestPassed || unit.GetComponent<Stats>().ImmunityToPsychology) yield break;
+    //    if(unit.GetComponent<Stats>().Belligerent && (unit.CompareTag("PlayerUnit") && InitiativeQueueManager.Instance.PlayersAdvantage > InitiativeQueueManager.Instance.EnemiesAdvantage) || (unit.CompareTag("EnemyUnit") && InitiativeQueueManager.Instance.PlayersAdvantage < InitiativeQueueManager.Instance.EnemiesAdvantage)) yield break;
         
-        int rollResult = 0;
-        Stats stats = unit.GetComponent<Stats>();
+    //    int rollResult = 0;
+    //    Stats stats = unit.GetComponent<Stats>();
 
-        if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
-        {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie (groza)", result => rollResult = result));
-            if (rollResult == 0) yield break;
-        }
-        else
-        {
-            rollResult = UnityEngine.Random.Range(1, 101);
-        }
+    //    if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
+    //    {
+    //        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie (groza)", result => rollResult = result));
+    //        if (rollResult == 0) yield break;
+    //    }
+    //    else
+    //    {
+    //        rollResult = UnityEngine.Random.Range(1, 101);
+    //    }
 
-        int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult);
-        int successValue = test;
-        int successLevel = test;
+    //    int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult)[2];
+    //    int successValue = test;
+    //    int successLevel = test;
 
-        if(successValue > 0)
-        {
-            unit.IsTerrorTestPassed = true;
-            Debug.Log($"<color=#FF7F50>{stats.Name} zdał/a test grozy przed {opponentName}. Następuje test strachu.</color>");
-            StartCoroutine(FearRoll(unit, opponentName, value));
-        }
-        else
-        {
-            unit.Broken += value - successLevel;
-            Debug.Log($"<color=#FF7F50>{stats.Name} nie zdał/a test grozy przed {opponentName}. Poziom paniki wzrasta o {value - successLevel}</color>");
-        }
-    }
+    //    if(successValue > 0)
+    //    {
+    //        unit.IsTerrorTestPassed = true;
+    //        Debug.Log($"<color=#FF7F50>{stats.Name} zdał/a test grozy przed {opponentName}. Następuje test strachu.</color>");
+    //        StartCoroutine(FearRoll(unit, opponentName, value));
+    //    }
+    //    else
+    //    {
+    //        unit.Broken += value - successLevel;
+    //        Debug.Log($"<color=#FF7F50>{stats.Name} nie zdał/a test grozy przed {opponentName}. Poziom paniki wzrasta o {value - successLevel}</color>");
+    //    }
+    //}
     #endregion
 
     public bool BothTeamsExist()

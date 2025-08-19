@@ -288,15 +288,7 @@ public class AutoCombatManager : MonoBehaviour
         //Resetuje szybkość jednostki
         StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
 
-        if (unit.CanDoAction)
-        {
-            //Przyjmuje pozycję obronną
-            CombatManager.Instance.DefensiveStance();
-        }
-        else
-        {
-            RoundsManager.Instance.FinishTurn();
-        }
+        RoundsManager.Instance.FinishTurn();
     }
 
     public void CheckForTargetTileOccupancy(GameObject unit)

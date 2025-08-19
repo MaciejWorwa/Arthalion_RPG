@@ -70,14 +70,23 @@ public class Stats : MonoBehaviour
     public int Dodge; // Unik
     public int Endurance; // Odporność
     public int MagicLanguage; // Język magiczny
+
+
     public int MeleeCombat; // Walka Wręcz
     public int RangedCombat; // Walka Dystansowa
     public int Spellcasting; // Rzucanie zaklęć
+
+
+
     public int Pray; // Modlitwa
     public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Talenty")]
+    public int Pitiless; // Bezlitosny
+    public int SurvivalInstinct; // Instynkt Przetrwania
+
+
     public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
@@ -191,15 +200,12 @@ public class Stats : MonoBehaviour
         ExtraPoints = 0;
 
         // Aktualizuje udźwig
-        MaxEncumbrance = Math.Min(1, 6 + S);
+        MaxEncumbrance = Math.Max(1, 6 + S);
     }
 
     public void CalculateMaxHealth(bool isSizeChange = false)
     {
         int previousMaxHealth = MaxHealth;
-
-        // Sprawdzamy, czy SW wynosi 0, w takim przypadku używamy S zamiast SW
-        int effectiveSW = (SW == 0) ? S : SW;
 
         if (Size == SizeCategory.Little)
             MaxHealth = 1;
@@ -214,6 +220,8 @@ public class Stats : MonoBehaviour
 
         // Uwzględnienie cechy specjalnej Wytrzymały
         if (Hardy == true) MaxHealth *= 2;
+
+        if (MaxHealth < 1) MaxHealth = 1;
 
         if (isSizeChange)
         {
@@ -252,9 +260,9 @@ public class Stats : MonoBehaviour
 
     public void ChangeTokenSize(int size)
     {
-        if (size > 3)
+        if (size > 2)
         {
-            float tokenSizeModifier = 1f + (size - 3) * 0.25f;
+            float tokenSizeModifier = 1f + (size - 2) * 0.25f;
             transform.localScale = new Vector3(tokenSizeModifier, tokenSizeModifier, 1f);
         }
         else if (size < 2)

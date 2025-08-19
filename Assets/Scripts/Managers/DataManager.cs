@@ -580,42 +580,30 @@ public class UnitData
     public bool IsRetreating; // Wycofuje się
     public bool IsFrenzy; // Jest w trakcie szału bojowego
 
-    public bool Scared; // Strach
-
-    public int Ablaze; // Podpalenie
+    public bool Ablaze; // Podpalenie
     public int Bleeding; // Krwawienie
-    public int Blinded; // Oślepienie
-    public int Broken; // Panika
-    public int Deafened; // Ogłuszenie
-    public int Entangled; // Pochwycenie
-    public int Fatiqued; // Wyczerpanie
+    public bool Blinded; // Oślepienie
+    public bool Entangled; // Pochwycenie
     public int Poison; // Zatrucie
-    public int PoisonTestModifier; // Modyfikator do testów przeciw zatruciu (zależny od mocy trucizny)
     public bool Prone; // Powalenie
-    public int Stunned; // Oszołomienie
-    public bool Surprised; // Zaskoczenie
+    public bool Scared; // Strach
     public bool Unconscious; // Utrata Przytomności
 
     public int EntangledUnitId; // Cel unieruchomienia
-    public int FeintedUnitId; // Cel finty
 
-    public bool IsFearTestPassed; // Zdał test strachu
-    public bool IsTerrorTestPassed; // Zdał test grozy
-    public int FearLevel; // Poziom strachu
-    public List<int> FearedUnitIds = new List<int>(); // Lista Id jednostek, których się boi
+    //public bool IsFearTestPassed; // Zdał test strachu
+    //public bool IsTerrorTestPassed; // Zdał test grozy
+    //public int FearLevel; // Poziom strachu
+    //public List<int> FearedUnitIds = new List<int>(); // Lista Id jednostek, których się boi
 
     //STARE
     public int SpellDuration; // Czas trwania zaklęcia mającego wpływ na tą jednostkę
 
     public int AimingBonus;
-    public int ChannelingModifier; // Poziom mocy zebrany poprzez splatanie magii
-    public int DefensiveBonus;
-    public int FeintModifier; // Modyfikator za fintę
 
     public bool CanMove;
     public bool CanAttack;
     public bool CanCastSpell;
-    public bool CanDispell;
 
     public int MountId;
     public bool IsMounted; // Zmienna określająca, czy jednostka w danej chwili dosiada wierzchowca, czy nie
@@ -644,12 +632,6 @@ public class UnitData
         position[0] = unit.gameObject.transform.position.x;
         position[1] = unit.gameObject.transform.position.y;
         position[2] = unit.gameObject.transform.position.z;
-
-        // Zapisanie jednostek, których ta jednostka się boi
-        if (unit.FearedUnits != null)
-        {
-            FearedUnitIds = unit.FearedUnits.Select(fu => fu.UnitId).ToList();
-        }
     }
 }
 
@@ -712,6 +694,9 @@ public class StatsData
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Talenty")]
+    public int Pitiless; // Bezlitosny
+    public int SurvivalInstinct; // Instynkt Przetrwania
+
     public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność

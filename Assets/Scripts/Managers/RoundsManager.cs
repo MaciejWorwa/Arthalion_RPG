@@ -85,23 +85,18 @@ public class RoundsManager : MonoBehaviour
             unit.CanMove = true;
             MovementManager.Instance.SetCanMoveToggle(true);
 
-            if (unit.Stunned > 0)
-            {
-                unit.CanDoAction = false;
-            }
             if (unit.Unconscious)
             {
                 unit.CanDoAction = false;
                 unit.CanMove = false;
             }
-            if (unit.Entangled > 0)
+            if (unit.Entangled)
             {
                 unit.CanMove = false;
             }
             if (stats.MagicLanguage > 0)
             {
                 unit.CanCastSpell = true;
-                unit.CanDispell = true;
             }
 
             //if (unit.SpellDuration > 0)
@@ -125,7 +120,7 @@ public class RoundsManager : MonoBehaviour
 
                 foreach (var u in UnitsManager.Instance.AllUnits)
                 {
-                    if (u.UnitId == unit.EntangledUnitId && u.Entangled > 0)
+                    if (u.UnitId == unit.EntangledUnitId && u.Entangled)
                     {
                         entangledUnitExist = true;
                     }
@@ -135,30 +130,6 @@ public class RoundsManager : MonoBehaviour
                 {
                     unit.EntangledUnitId = 0;
                 }
-            }
-
-            // Dla jednostek z talentem Waleczne Serce wykonujemy dodatkową próbę opanownia paniki
-            if (stats.StoutHearted > 0 && unit.Broken > 0)
-            {
-                StartCoroutine(StatesManager.Instance.Broken(unit));
-            }
-
-            // Dla jednostek z talentem Atak wyprzedzający resetujemy pulę ataków
-            if (stats.ReactionStrike > 0)
-            {
-                stats.ReactionStrikesLeft = stats.ReactionStrike;
-            }
-
-            // Dla jednostek z talentem Riposta resetujemy pulę ataków
-            if (stats.Riposte > 0)
-            {
-                stats.RiposteAttacksLeft = stats.Riposte;
-            }
-
-            // Dla jednostek w Szale Bojowym resetujemy pulę ataków
-            if (unit.IsFrenzy)
-            {
-                stats.FrenzyAttacksLeft = 2;
             }
 
             //Aktualizuje osiągnięcia
@@ -360,12 +331,6 @@ public class RoundsManager : MonoBehaviour
 
             //Zresetowanie szarży lub biegu, jeśli były aktywne (po zużyciu jednej akcji szarża i bieg nie mogą być możliwe)
             //MovementManager.Instance.UpdateMovementRange(1);
-
-            //Resetuje pozycję obronną, jeśli była aktywna
-            if (unit.GetComponent<Unit>().DefensiveBonus != 0)
-            {
-                CombatManager.Instance.DefensiveStance();
-            }
 
             //W przypadku ręcznego zadawania obrażeń, czekamy na wpisanie wartości obrażeń przed zmianą jednostki (jednostka jest wtedy zmieniana w funkcji ExecuteAttack w CombatManager)
             if (!CombatManager.Instance.IsManualPlayerAttack && !unit.CanMove && !unit.CanDoAction)

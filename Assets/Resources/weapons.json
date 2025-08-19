@@ -333,7 +333,7 @@
       "Category": "basic",
       "Type": [ "melee" ],
       "AttackRange": 1.5,
-      "S": 4,
+      "Damage": 2,
       "Encumbrance": 1
     },
     {

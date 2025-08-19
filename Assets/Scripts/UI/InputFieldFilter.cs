@@ -27,15 +27,6 @@ public class InputFieldFilter : MonoBehaviour
 
     private char ValidateInput(string text, int charIndex, char addedChar)
     {
-        //if (_isAttributeInput)
-        //{
-        //    // Dozwolone cyfry, max 2 znaki, maksymalnie 99
-        //    if (char.IsDigit(addedChar) && (text.Length < 2 || (text == "9" && addedChar <= '9')))
-        //    {
-        //        return addedChar;
-        //    }
-        //    return '\0';
-        //}
         if (_isAttributeInput)
         {
             if (char.IsDigit(addedChar))
@@ -104,7 +95,7 @@ public class InputFieldFilter : MonoBehaviour
     {
         if (int.TryParse(input, out int value))
         {
-            value = Mathf.Clamp(value, 1, 100);
+            value = Mathf.Clamp(value, 1, 20);
             _inputField.text = value.ToString();
         }
     }

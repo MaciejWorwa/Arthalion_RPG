@@ -19,47 +19,35 @@ public class Unit : MonoBehaviour
     public bool IsCharging; // Szarżuje
     public bool IsFlying; // Leci
     public bool IsRetreating; // Wycofuje się
-    public bool IsFrenzy; // Jest w trakcie szału bojowego
 
     [Header("Stany")]
-    public bool Scared; // Strach
 
-    public int Ablaze; // Podpalenie
+    public bool Ablaze; // Podpalenie
     public int Bleeding; // Krwawienie
-    public int Blinded; // Oślepienie
-    public int Broken; // Panika
-    public int Deafened; // Ogłuszenie
-    public int Entangled; // Pochwycenie
-    public int Fatiqued; // Wyczerpanie
+    public bool Blinded; // Oślepienie
+    public bool Entangled; // Pochwycenie
     public int Poison; // Zatrucie
-    public int PoisonTestModifier; // Modyfikator do testów przeciw zatruciu (zależny od mocy trucizny)
     public bool Prone; // Powalenie
-    public int Stunned; // Oszołomienie
-    public bool Surprised; // Zaskoczenie
+    public bool Scared; // Strach
     public bool Unconscious; // Utrata Przytomności
 
     public int EntangledUnitId; // Cel unieruchomienia
-    public int FeintedUnitId; // Cel finty
 
-    public bool IsFearTestPassed; // Zdał test strachu
-    public bool IsTerrorTestPassed; // Zdał test grozy
-    public int FearLevel; // Poziom strachu
-    public HashSet<Unit> FearedUnits = new HashSet<Unit>(); // Lista jednostek, których się boi
+    //public bool IsFearTestPassed; // Zdał test strachu
+    //public bool IsTerrorTestPassed; // Zdał test grozy
+    //public int FearLevel; // Poziom strachu
+    //public HashSet<Unit> FearedUnits = new HashSet<Unit>(); // Lista jednostek, których się boi
 
     //STARE
     public int SpellDuration; // Czas trwania zaklęcia mającego wpływ na tą jednostkę
 
     [Header("Modyfikatory")]
     public int AimingBonus;
-    public int ChannelingModifier; // Poziom mocy zebrany poprzez splatanie magii
-    public int DefensiveBonus;
-    public int FeintModifier; // Modyfikator za fintę
 
     [Header("Dostępne działania")]
     public bool CanMove = true;
     public bool CanDoAction = true;
     public bool CanCastSpell = false;
-    public bool CanDispell = false;
 
     public Stats Stats;
     public TMP_Text NameDisplay;
@@ -226,11 +214,6 @@ public class Unit : MonoBehaviour
 
         //Zaznacza lub odznacza jednostkę na kolejce inicjatywy
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
-
-        if (Broken > 0)
-        {
-            Debug.Log($"<color=#FF7F50>{Stats.Name} jest w stanie paniki. Poziom paniki: {Broken}</color>");
-        }
 
         //Zresetowanie rzucania zaklęć
         MagicManager.Instance.ResetSpellCasting();

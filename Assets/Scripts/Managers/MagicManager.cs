@@ -128,40 +128,6 @@ public class MagicManager : MonoBehaviour
 
         //Wykonuje akcję
         RoundsManager.Instance.DoAction(unit);
-
-        StartCoroutine(ChannelingMagicCoroutine());
-        IEnumerator ChannelingMagicCoroutine()
-        {
-            int rollResult = 0;
-
-            if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
-            {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "splatanie magii", result => rollResult = result));
-                if (rollResult == 0) yield break;
-            }
-            else
-            {
-                rollResult = UnityEngine.Random.Range(1, 101);
-            }
-
-            // Modyfikator za zbroję i talent Zmysł Magii
-            int modifier = CalculateArmorModifier(stats);
-
-            int test = DiceRollManager.Instance.TestSkill("SW", stats, "Channeling", modifier, rollResult);
-
-            // Talent Zmysł Magii
-            if (test >= 0 && stats.AethyricAttunement > 0)
-            {
-                test += stats.AethyricAttunement;
-                Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{test}</color> za talent \"Zmysł Magii.\"");
-            }
-
-            unit.ChannelingModifier = Math.Max(0, unit.ChannelingModifier + test);
-
-            Debug.Log($"Poziomy sukcesu zebrane w wyniku splatania magii: <color=#4dd2ff>{unit.ChannelingModifier}</color>");
-
-            CheckForChaosManifestation(stats, rollResult, test, "Channeling");
-        }
     }
     #endregion
 
@@ -222,64 +188,31 @@ public class MagicManager : MonoBehaviour
         _dispellDone = false;
 
         int rollResult = 0;
+        int[] castingTest = null;
         if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, spell.Arcane == "Cuda" || spell.Arcane == "Błogosławieństwa" ? "modlitwę" : "język magiczny", result => rollResult = result));
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "Rzucanie Zaklęć", "SW", "Spellcasting", callback: result => castingTest = result));
+            if (castingTest == null) yield break;
         }
         else
         {
-            rollResult = UnityEngine.Random.Range(1, 101);
+            castingTest = DiceRollManager.Instance.TestSkill(stats, "Rzucanie Zaklęć", "SW", "Spellcasting");
         }
+        rollResult = castingTest[3];
 
         // Modyfikator za zbroję
         int modifier = CalculateArmorModifier(stats);
 
-        // Modyfikator za poziomy podpalenia w pobliżu (tylko dla Tradycji Ognia)
-        if (_aqshyToggle.isOn)
-        {
-            int totalAblaze = 0; // Zmienna do sumowania wartości poziomów podpaleń
-            float maxDistance = (stats.SW / 10) / 2f; // Maksymalny zasięg uwzględniający modyfikator za podpalenia
-            foreach (var entry in InitiativeQueueManager.Instance.InitiativeQueue)
-            {
-                Unit u = entry.Key;
-                Stats unitStats = u.GetComponent<Stats>();
+        string color = rollResult >= spell.CastingNumber ? "green" : "red"; // Zielony, jeśli >= CastingNumber, inaczej czerwony
+        Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color={color}>{rollResult}/{spell.CastingNumber}</color>.");
 
-                // Sprawdzamy, czy jednostka ma Ablaze większe niż 0 i znajduje się w odpowiednim zasięgu od rzucającego zaklęcie
-                if (u.Ablaze > 0 && !ReferenceEquals(unitStats, stats))
-                {
-                    float distance = Vector2.Distance(u.transform.position, stats.transform.position);
-                    if (distance <= maxDistance)
-                    {
-                        totalAblaze += u.Ablaze;
-                    }
-                }
-            }
-
-            if (totalAblaze > 0)
-            {
-                modifier += totalAblaze * 10;
-                Debug.Log($"Modyfikator z Tradycji Ognia za podpalenia w pobliżu: {totalAblaze * 10}.");
-            }
-        }
-
-        // Test języka magicznego na rzucanie zaklęcia lub test modlitwy na rzucanie cudu lub błogosławieństwa
-        int castingTest = spell.Arcane == "Cuda" || spell.Arcane == "Błogosławieństwa" ? DiceRollManager.Instance.TestSkill("Ogd", stats, "Pray", modifier, rollResult) : DiceRollManager.Instance.TestSkill("Int", stats, "MagicLanguage", modifier, rollResult);
-
-
-        int castingNumberRequired = _grimuarToggle.isOn ? spell.CastingNumber * 2 : spell.CastingNumber;
-
-        int successLevels = spell.Arcane == "Błogosławieństwa" || spell.Arcane == "Cuda" ? castingTest : castingTest + unit.ChannelingModifier;
-        string color = successLevels >= castingNumberRequired ? "green" : "red"; // Zielony, jeśli >= CastingNumber, inaczej czerwony
-        Debug.Log($"{stats.Name} splata zaklęcie. Uzyskane poziomy sukcesu: <color={color}>{successLevels}/{castingNumberRequired}</color>.");
-
-        bool spellFailed = castingNumberRequired - successLevels > 0;
+        bool spellFailed = spell.CastingNumber - rollResult > 0;
         Debug.Log(spellFailed ? $"Rzucanie zaklęcia {spell.Name} nie powiodło się." : $"Zaklęcie {spell.Name} zostało splecione pomyślnie.");
 
-        CheckForChaosManifestation(stats, rollResult, castingTest, spell.Arcane == "Cuda" || spell.Arcane == "Błogosławieństwa" ? "Pray" : "MagicLanguage", castingNumberRequired - successLevels);
+        CheckForChaosManifestation(stats, rollResult, castingTest[3], spell.Arcane == "Cuda" || spell.Arcane == "Błogosławieństwa" ? "Pray" : "MagicLanguage", spell.CastingNumber - rollResult);
 
         // Zresetowanie zaklęcia
         ResetSpellCasting();
-        unit.ChannelingModifier = 0;
 
         // Krytyczne rzucenie zaklęcia
         if (DiceRollManager.Instance.IsDoubleDigit(rollResult, rollResult) && rollResult <= stats.Int + stats.MagicLanguage)
@@ -287,9 +220,9 @@ public class MagicManager : MonoBehaviour
             StartCoroutine(CriticalCastingRoll(spell, spellFailed));
         }
 
-        if(successLevels - castingNumberRequired > 0)
+        if(rollResult - spell.CastingNumber > 0)
         {
-            StartCoroutine(Overcasting(spell, successLevels - castingNumberRequired));
+            StartCoroutine(Overcasting(spell, rollResult - spell.CastingNumber));
         }
 
         while (_criticalCastingPanel.activeSelf || _overcastingPanel.activeSelf)// || _overcastingBlessingPanel.activeSelf)
@@ -366,129 +299,65 @@ public class MagicManager : MonoBehaviour
 
                 int touchRollResult = 0;
 
-                if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+                int[] attackerTest = null;
+                if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
                 {
-                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "dotknięcie przeciwnika", result => touchRollResult = result));
-                    if (touchRollResult == 0) continue;
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "Walkę Wręcz", "Zr", "MeleeCombat", callback: result => attackerTest = result));
+                    if (attackerTest == null) yield break;
                 }
                 else
                 {
-                    touchRollResult = UnityEngine.Random.Range(1, 101);
+                    attackerTest = DiceRollManager.Instance.TestSkill(stats, "Walkę Wręcz", "Zr", "MeleeCombat");
                 }
+                touchRollResult = attackerTest[3];
 
-                int attackerTest = DiceRollManager.Instance.TestSkill("WW", stats, MeleeCategory.Brawling.ToString(), 0, touchRollResult);
 
-                // Talent Ruchliwe Dłonie
-                if (attackerTest >= 0 && stats.FastHands > 0)
-                {
-                    attackerTest += stats.FastHands;
-                    Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{attackerTest}</color> za talent \"Ruchliwe Dłonie.\"");
-                }
+                //Próba obrony przed dotknięciem
 
-                int attackerSuccessLevel = attackerTest;
-
-                CombatManager.Instance.DefenceResults = new int[2];
-                int defenceSuccessValue = 0;
-                int defenceSuccessLevel = 0;
                 int parryValue = 0;
                 int dodgeValue = 0;
-                bool canParry = false;
-                bool canDodge = false;
 
-                // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
-                canParry = target.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && !targetStats.Bestial && (weapon.Type.Contains("melee") || weapon.Id == 0));
-                canDodge = true;
                 Weapon targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target);
+                Weapon weaponUsedForParry = CombatManager.Instance.GetBestParryWeapon(targetStats, targetWeapon);
+                int parryModifier = CombatManager.Instance.CalculateParryModifier(targetUnit, targetStats, stats, weaponUsedForParry);
+                int dodgeModifier = CombatManager.Instance.CalculateDodgeModifier(targetUnit, targetStats);
 
-                if ((canParry || canDodge) && !targetUnit.Surprised)
+                //Modyfikator za strach
+                if (targetUnit.Scared)
                 {
-                    Weapon weaponUsedForParry = CombatManager.Instance.GetBestParryWeapon(targetStats, targetWeapon);
-                    int parryModifier = CombatManager.Instance.CalculateParryModifier(targetUnit, targetStats, stats, weaponUsedForParry, attackerWeapon);
-                    int dodgeModifier = CombatManager.Instance.CalculateDodgeModifier(targetUnit, targetStats, attackerWeapon);
-
-                    //Modyfikator za strach
-                    if (targetUnit.FearedUnits.Contains(unit))
-                    {
-                        parryModifier -= 10;
-                        dodgeModifier -= 10;
-                        Debug.Log($"Uwzględniono modyfikatory za strach przed atakującym.");
-                    }
-
-                    // Ograniczenie modyfikatorów do zakresu od -30 do +60
-                    parryModifier = Mathf.Clamp(parryModifier, -30, 60);
-                    dodgeModifier = Mathf.Clamp(dodgeModifier, -30, 60);
-
-                    string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
-                    string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
-
-                    // Obliczamy sumaryczną wartość parowania i uniku
-                    MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
-                    parryValue = targetStats.Zr + parryModifier;
-                    dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
-
-                    // Funkcja obrony
-                    yield return StartCoroutine(CombatManager.Instance.Defense(targetUnit, targetStats, stats, attackerWeapon, weaponUsedForParry, parryValue, dodgeValue, parryModifier, dodgeModifier, canParry));
-
-                    defenceSuccessValue = CombatManager.Instance.DefenceResults[0];
-                    defenceSuccessLevel = CombatManager.Instance.DefenceResults[1];
+                    parryModifier -= 2;
+                    dodgeModifier -= 2;
+                    Debug.Log($"Uwzględniono modyfikator -2 za strach.");
                 }
 
-                // Następuje finalne rozstrzygnięcie
-                int combinedSuccessLevel = attackerSuccessLevel - defenceSuccessLevel;
+                string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
+                string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
+
+                // Obliczamy sumaryczną wartość parowania i uniku
+                MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
+                parryValue = targetStats.Zr + parryModifier;
+                dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
+
+                // Funkcja obrony
+                yield return StartCoroutine(CombatManager.Instance.Defense(targetUnit, targetStats, weaponUsedForParry, parryValue, dodgeValue, parryModifier, dodgeModifier, true));
+
 
                 // Sprawdzenie warunku trafienia
-                bool attackSucceeded = combinedSuccessLevel > 0 || (combinedSuccessLevel == 0 && stats.Zr > Math.Max(parryValue, dodgeValue));
-
-                if (!attackSucceeded)
+                if (touchRollResult < CombatManager.Instance.DefenceResults[3])
                 {
                     Debug.Log($"Atak skierowany w {targetStats.Name} chybił.");
-                    //ResetSpellCasting();
                     continue;
                 }
             }
 
-            // Sprawdzenie, czy ktoś z przeciwnej drużyny potrafi rozpraszać magię i wybranie najlepszego z nich (w rozpraszaniu)
-            Stats dispeller = null;
-            foreach (Unit u in UnitsManager.Instance.AllUnits)
-            {
-                if (u == null) continue;
-                if (!u.CompareTag(unit.tag) && u.CanDispell && (dispeller == null || dispeller.MagicLanguage + dispeller.Int < u.GetComponent<Stats>().MagicLanguage + u.GetComponent<Stats>().Int))
-                {
-                    dispeller = u.GetComponent<Stats>();
-                }
-            }
 
-            int successLevelAfterDispell = 0;
 
-            // Próba rozproszenia zaklęcia
-            if (dispeller != null && !_dispellDone && _criticalCastingString != "anti_dispell")
-            {
-                StartCoroutine(Dispell(dispeller, spell, castingTest, result =>
-                {
-                    successLevelAfterDispell = result;
-                }));
 
-                _dispellDone = true;
-            }
-            else
-            {
-                successLevelAfterDispell = castingTest;
-            }
 
-            while (_dispellPanel.activeSelf)
-            {
-                yield return null;
-            }
 
-            if (successLevelAfterDispell < 0 || (successLevelAfterDispell == 0 && dispeller.MagicLanguage + dispeller.Int > stats.MagicLanguage + stats.Int))
-            {
-                Debug.Log($"{dispeller.Name} rozproszył zaklęcie rzucane przez {stats.Name}.");
-                ResetSpellCasting();
-                yield break;
-            }
 
-            int finalSuccessLevel = successLevelAfterDispell;
 
+            int finalSuccessLevel = 0;
             // Wywołanie efektu zaklęcia
             foreach (var collider in allTargets)
             {
@@ -507,7 +376,7 @@ public class MagicManager : MonoBehaviour
                 }
                 else
                 {
-                    StartCoroutine(HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell, rollResult, successLevelAfterDispell));
+                    StartCoroutine(HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell, rollResult, 0));
                 }
             }
         }  
@@ -581,15 +450,17 @@ public class MagicManager : MonoBehaviour
 
             // Rzut na test obronny
             int saveRollResult = 0;
+            int[] saveTest = null;
             if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, $"rzut obronny ({attributeName})", result => saveRollResult = result));
-                if (saveRollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, $"rzut obronny na ({attributeName})", attributeName, callback: result => saveTest = result));
+                if (saveTest == null) yield break;
             }
             else
             {
-                saveRollResult = UnityEngine.Random.Range(1, 101);
+                saveTest = DiceRollManager.Instance.TestSkill(targetStats, $"rzut obronny na ({attributeName})", attributeName);
             }
+            saveRollResult = saveTest[3];
 
             string skillName = null;
             if(attributeName == "Dodge")
@@ -598,10 +469,7 @@ public class MagicManager : MonoBehaviour
                 skillName = "Dodge";
             }
 
-            // Test obronny przy użyciu TestSkill
-            int skillTestResults = DiceRollManager.Instance.TestSkill(attributeName, targetStats, skillName, 0, saveRollResult);
-
-            if (skillTestResults < 0)
+            if (saveRollResult < 12)
             {
                 Debug.Log($"{targetStats.Name} nie udało się przeciwstawić zaklęciu.");
             }
@@ -682,36 +550,6 @@ public class MagicManager : MonoBehaviour
             UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
         }
 
-        // Uwzględnienie zasad specjalnych Tradycji Śmierci
-        if (_shyishToggle.isOn && targetStats != spellcasterStats)
-        {
-            targetUnit.Fatiqued++;
-            Debug.Log($"<color=#FF7F50>Poziom wyczerpania {targetStats.Name} wzrasta o 1, gdyż jest celem zaklęcia z Tradycji Śmierci.</color>");
-        }
-
-        // Uwzględnienie zasad specjalnych Tradycji Światła
-        if (_hyshToggle.isOn && targetStats != spellcasterStats)
-        {
-            targetUnit.Blinded++;
-            Debug.Log($"<color=#FF7F50>Poziom oślepienia {targetStats.Name} wzrasta o 1, gdyż jest celem zaklęcia z Tradycji Światła.</color>");
-        }
-
-        // Uwzględnienie zasad specjalnych Tradycji Życia
-        if (_ghyranToggle.isOn && targetStats.Daemonic == 0 && !targetStats.Undead && (targetUnit.Fatiqued != 0 || targetUnit.Bleeding != 0))
-        {
-            targetUnit.Fatiqued = 0;
-            targetUnit.Bleeding = 0;
-            Debug.Log($"<color=#FF7F50>{targetStats.Name} traci wszystkie poziomy wyczerpania i krwawienia, gdyż jest celem zaklęcia z Tradycji Życia.</color>");
-        }
-
-        // Uwzględnienie zasad specjalnych Tradycji Zwierząt ---------------------- DO UZUPEŁNIENIA, ŻEBY TO ZAUTOMATYZOWAĆ
-        if (_ghurToggle.isOn && spellcasterStats.Fear < 1)
-        {
-            //spellcasterStats.Fear++;
-            int duration = UnityEngine.Random.Range(1, 11);
-            Debug.Log($"{spellcasterStats.Name} zyskuje cechę Strach (1) na {duration} rund/y, ponieważ rzucił/a zzaklęcie z Tradycji Zwierząt. <color=red>Uwzględnij to manualnie.</color>");
-        }
-
         //Zaklęcia zadające obrażenia
         if (!spell.Type.Contains("no-damage") && spell.Type.Contains("offensive"))
         {
@@ -732,38 +570,6 @@ public class MagicManager : MonoBehaviour
         {
             damage += spellcasterStats.HolyHatred;
             Debug.Log($"Obrażenia zostają powiększone o {spellcasterStats.HolyHatred} za talent \"Święta Nienawiść\".");
-        }
-
-        // Uwzględnienie zasad specjalnych Tradycji Światła lub Życia
-        if ((_hyshToggle.isOn || _ghyranToggle.isOn) && (targetStats.Daemonic != 0 || targetStats.Undead) && targetStats != spellcasterStats)
-        {
-            bool isGhyran = _ghyranToggle.isOn;
-            int bonusDamage = isGhyran ? spellcasterStats.SW / 10 : spellcasterStats.Int / 10;
-            damage += bonusDamage;
-            spell.WtIgnoring = true;
-            spell.ArmourIgnoring = true;
-
-            string unitType = targetStats.Daemonic != 0 ? "Demoniczny" : "Ożywieniec";
-            string traditionName = isGhyran ? "Tradycji Życia" : "Tradycji Światła";
-
-            Debug.Log($"{targetStats.Name} otrzymuje {bonusDamage} dodatkowe obrażenia za cechę {unitType}, gdyż jest celem zaklęcia z {traditionName}.");
-        }
-
-        // Uwzględnienie zasad specjalnych Tradycji Życia
-        if (_ghyranToggle.isOn && (targetStats.Daemonic != 0 || targetStats.Undead) && targetStats != spellcasterStats)
-        {
-            damage += spellcasterStats.SW / 10;
-            spell.WtIgnoring = true;
-            spell.ArmourIgnoring = true;
-            string unitType = targetStats.Daemonic != 0 ? "Demoniczny" : "Ożywieniec";
-            Debug.Log($"{targetStats.Name} otrzymuje {spellcasterStats.Int / 10} dodatkowe obrażenia za cechę {unitType}, gdyż jest celem zaklęcia z Tradycji Życia.");
-        }
-
-        // Uwzględnienie zasad specjalnych Tradycji Ognia
-        if (_aqshyToggle.isOn)
-        {
-            targetStats.GetComponent<Unit>().Ablaze++;
-            Debug.Log($"<color=#FF7F50>Poziom podpalenia {targetStats.Name} wzrasta o 1, gdyż jest celem zaklęcia z Tradycji Ognia.</color>");
         }
 
         // Sprawdzamy zbroję
@@ -833,58 +639,6 @@ public class MagicManager : MonoBehaviour
             StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation, null, rollResult));
         }
     }
-    #endregion
-
-    #region Dispell
-    private IEnumerator Dispell(Stats targetStats, Spell spell, int casterSuccessLevel, Action<int> onResult)
-    {
-        if(targetStats.MagicLanguage == 0) yield break;
-
-        _dispellPanel.SetActive(true);
-
-        // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
-        yield return new WaitUntil(() => !_dispellPanel.activeSelf);
-
-        if (!_wantsToDispell)
-        {
-            onResult?.Invoke(casterSuccessLevel);
-            yield break;
-        }
-                
-        Unit targetUnit = targetStats.GetComponent<Unit>();
-
-        int rollResult = 0;
-
-        if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
-        {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "język magiczny", result => rollResult = result));
-            if (rollResult == 0) yield break;
-        }
-        else
-        {
-            rollResult = UnityEngine.Random.Range(1, 101);
-        }
-
-        // Modyfikator za zbroję
-        int modifier = CalculateArmorModifier(targetStats);
-
-        int dispellTest = DiceRollManager.Instance.TestSkill("Int", targetStats, "MagicLanguage", modifier, rollResult);
-
-        int combinedSuccessLevel = casterSuccessLevel - dispellTest;
-
-        if (RoundsManager.RoundNumber != 0)
-        {
-            targetUnit.CanDispell = false;
-        }
-
-        onResult?.Invoke(combinedSuccessLevel);
-    }
-
-    public void DispellDecision(bool value)
-    {
-        _wantsToDispell = value;
-    }
-
     #endregion
 
     #region Critical casting
@@ -1177,17 +931,6 @@ public class MagicManager : MonoBehaviour
             else
             {
                 Debug.Log($"<color=red>Występuje manifestacja Chaosu!</color> Wynik rzutu na manifestację: <color=red>{finalRoll}</color>.");
-            }
-
-            if (skillName == "Channeling" && isSuccessful && value == false)
-            {
-                unit.ChannelingModifier += stats.SW / 10;
-                Debug.Log($"Poziomy sukcesu zebrane w wyniku splatania magii zostają powiększone o bonus z Siły Woli i wynoszą: <color=#4dd2ff>{unit.ChannelingModifier}</color>");
-            }
-            else if (skillName == "Channeling" && (!isSuccessful || value == true) && unit.ChannelingModifier != 0)
-            {
-                unit.ChannelingModifier = 0;
-                Debug.Log($"Wszystkie poziomy sukcesu zebrane w wyniku splatania magii przepadają.");
             }
         }
     }

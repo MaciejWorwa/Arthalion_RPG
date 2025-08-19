@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEngine.GraphicsBuffer;
 
 public class MovementManager : MonoBehaviour
 {
@@ -86,7 +87,7 @@ public class MovementManager : MonoBehaviour
             Weapon attackerWeapon = InventoryManager.Instance.ChooseWeaponToAttack(unit.gameObject);
             foreach (var u in UnitsManager.Instance.AllUnits)
             {
-                if (u.UnitId == unit.EntangledUnitId && u.Entangled > 0)
+                if (u.UnitId == unit.EntangledUnitId && u.Entangled)
                 { 
                     if (attackerWeapon != null && attackerWeapon.Category == "entangling")
                     {
@@ -157,12 +158,6 @@ public class MovementManager : MonoBehaviour
                 {
                     StartCoroutine(UpdateMovementRange(1));
                 }
-            }
-
-            //Resetuje pozycję obronną, jeśli była aktywna
-            if (unit.DefensiveBonus != 0 && unit.CanDoAction)
-            {
-                CombatManager.Instance.DefensiveStance();
             }
 
             // Oznacza wybrane pole jako zajęte (gdyż trochę potrwa, zanim postać tam dojdzie i gdyby nie zaznaczyć, to można na nie ruszyć inną postacią)
@@ -458,18 +453,22 @@ public class MovementManager : MonoBehaviour
         if (unit.IsRunning)
         {
             int rollResult = 0;
+            int[] runTest = null;
             if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
             {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "atletykę", result => rollResult = result));
-                if (rollResult == 0) yield break;
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "Atletykę", "Zw", "Athletics", callback: result => runTest = result));
+                if (runTest == null) yield break;
             }
+            else
+            {
+                runTest = DiceRollManager.Instance.TestSkill(stats, "Zw", "Athletics");
+            }
+            rollResult = runTest[3];
+
 
             //Oblicza obecną szybkość
             stats.TempSz *= modifier;
-            stats.TempSz += DiceRollManager.Instance.TestSkill("Zw", stats, "Athletics", 20, rollResult) / 2;
-
-            //Uwzględnia talent Szybkobiegacz
-            stats.TempSz += stats.Sprinter;
+            stats.TempSz += rollResult - 12;
         }
         else if(unit.IsFlying)
         {
@@ -496,8 +495,8 @@ public class MovementManager : MonoBehaviour
             stats.TempSz *= 2;
         }
 
-        // Uwzględnia ogłuszenie i powalenie
-        if (unit.Stunned > 0 || unit.Prone) stats.TempSz /= 2;
+        // Uwzględnia powalenie
+        if (unit.Prone) stats.TempSz /= 2;
 
         ChangeButtonColor(modifier, unit.IsRunning, unit.IsFlying);
 
@@ -562,21 +561,19 @@ public class MovementManager : MonoBehaviour
                 // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
                 yield return new WaitUntil(() => !_retreatPanel.activeSelf);
 
-                // Jeżeli wybraliśmy unik to czekamy na wynik rzutu
-                int rollResult = 0;
-                if (_retreatWay == "dodge" && !GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
+                // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi i wybrana jednostka to sojusznik to czekamy na wynik rzutu
+                int[] defenceTest = null;
+                if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
                 {
-                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(unit.GetComponent<Stats>(), "unik", result => rollResult = result));
-                    if (rollResult == 0) yield break;
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "unik", "ZW", "Dodge", callback: result => defenceTest = result));
+                    if (defenceTest == null) yield break;
                 }
-                else if (_retreatWay == "dodge")
+                else
                 {
-                    rollResult = UnityEngine.Random.Range(1, 101);
+                    defenceTest = DiceRollManager.Instance.TestSkill(stats, "unik", "ZW", "Dodge");
                 }
-                else if (_retreatWay != "advantage") // Zamknięcie okna. Odwrót nie jest wykonywany
-                {
-                    value = false;
-                }
+
+                CombatManager.Instance.DefenceResults = defenceTest;
             }
             else
             {
@@ -637,18 +634,23 @@ public class MovementManager : MonoBehaviour
                     MeleeCategory meleeSkill = EnumConverter.ParseEnum<MeleeCategory>(attackerWeapon.Category) ?? MeleeCategory.Basic;
 
                     int rollOnAttack = 0;
+                    int[] attackTest = null;
                     if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
                     {
-                        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie", result => rollOnAttack = result));
-                        if (rollOnAttack == 0) yield break;
+                        // Ręczne wpisanie 2–3 kości i natychmiastowy TestSkill po submit
+                        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie", "Zr", "MeleeCombat", callback: res => attackTest = res));
+                        if (attackTest == null) yield break;
                     }
                     else
                     {
-                        rollOnAttack = UnityEngine.Random.Range(1, 101);
+                        // Auto – TestSkill sam wylosuje kości
+                        attackTest = DiceRollManager.Instance.TestSkill(attackerStats, "trafienie", "Zr", "MeleeCombat");
                     }
+                    rollOnAttack = attackTest[3];
+
                     Debug.Log("attacker " + attacker);
                     int skillValue = attackerStats.Zr;
-                    int attackModifier = CombatManager.Instance.CalculateAttackModifier(attacker, attackerWeapon, unit, 0, false);
+                    int attackModifier = CombatManager.Instance.CalculateAttackModifier(attacker, attackerWeapon, unit);
 
                     int[] results = CombatManager.Instance.CalculateSuccessLevel(attackerWeapon, rollOnAttack, skillValue, true, attackModifier);
                     int attackerSuccessValue = results[0];
@@ -666,10 +668,10 @@ public class MovementManager : MonoBehaviour
                     Debug.Log($"{attackerStats.Name} atakuje przy użyciu {attackerWeapon.Name}. Wynik rzutu: {rollOnAttack}, Wartość umiejętności: {skillValue},{modifierString} PS: <color={successLevelColor}>{attackerSuccessLevel}</color>");
                 }
 
-                Debug.Log("CombatManager.Instance.DefenceResults[0]  " + CombatManager.Instance.DefenceResults[0]);
+                Debug.Log("CombatManager.Instance.DefenceResults[0]  " + CombatManager.Instance.DefenceResults[3]);
                 Debug.Log("highestOpponentSuccessValue  " + highestOpponentSuccessValue);
 
-                if (highestOpponentSuccessValue > CombatManager.Instance.DefenceResults[0])
+                if (highestOpponentSuccessValue > CombatManager.Instance.DefenceResults[3])
                 {
                     value = false;
                     Debug.Log($"{stats.Name} nie udaje się wykonać bezpiecznego odwrotu.");

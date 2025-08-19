@@ -162,7 +162,6 @@ public class SaveAndLoadManager : MonoBehaviour
             }
 
             UnitData unitData = new UnitData(unit);
-            unitData.FearedUnitIds = unit.FearedUnits?.Select(fu => fu.UnitId).ToList() ?? new List<int>();
 
             StatsData statsData = new StatsData(unit.GetComponent<Stats>());
             WeaponData weaponData = new WeaponData(unit.GetComponent<Weapon>());
@@ -559,8 +558,6 @@ public class SaveAndLoadManager : MonoBehaviour
             LoadComponentDataWithReflection<UnitData, Unit>(unitGameObject, unitFilePath);
             LoadComponentDataWithReflection<WeaponData, Weapon>(unitGameObject, weaponFilePath);
 
-            unitGameObject.GetComponent<Unit>().FearedUnits = new HashSet<Unit>(unitData.FearedUnitIds.Select(id => UnitsManager.Instance.AllUnits.FirstOrDefault(u => u.UnitId == id)).Where(u => u != null));
-
             //Dodaje jednostkę do kolejki inicjatywy
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unitGameObject.GetComponent<Unit>());
 
@@ -671,12 +668,6 @@ public class SaveAndLoadManager : MonoBehaviour
                 if (unit == null) continue;
                 UnitData unitData = JsonUtility.FromJson<UnitData>(
                     File.ReadAllText(Path.Combine(saveFolderPath, unit.GetComponent<Stats>().Name + "_unit.json"))
-                );
-
-                unit.FearedUnits = new HashSet<Unit>(
-                    unitData.FearedUnitIds
-                        .Select(id => UnitsManager.Instance.AllUnits.FirstOrDefault(u => u.UnitId == id))
-                        .Where(u => u != null)
                 );
 
                 MountsManager.Instance.GetOnMount(unit, true);
