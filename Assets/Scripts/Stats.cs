@@ -49,7 +49,8 @@ public class Stats : MonoBehaviour
     public int TempHealth;
     public int CriticalWounds; // Ilość Ran Krytycznych
     public int SinPoints; // Punkty Grzechu (istotne dla kapłanów)
-    public int PL; // Punkty Losu
+    public int TempPL; // Punkty losu aktualne
+    public int MaxPL; // Punkty Losu Maksymalne
     public int PB; // Punkty Bohatera
     public int ExtraPoints; // Dodatkowe punkty do rozdania między PL a PB
     public int Initiative; // Inicjatywa
@@ -83,14 +84,17 @@ public class Stats : MonoBehaviour
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Talenty")]
+    public bool CombatMaster; // Wojownik
     public int Pitiless; // Bezlitosny
+    public bool Sharpshooter; // Strzelec wyborowy
+    public bool SpecialistMeleeCombat; // Specjalista (Walka Wręcz)
+    public bool SpecialistRangedCombat; // Specjalista (Walka Dystansowa)
     public int SurvivalInstinct; // Instynkt Przetrwania
 
 
     public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
-    public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
@@ -115,7 +119,7 @@ public class Stats : MonoBehaviour
     public int Riposte; // Riposta
     public int RiposteAttacksLeft; // Pozostałe riposty w obecnej rundzie
     public int Robust; // Krzepki
-    public bool Sharpshooter; // Strzał w dziesiątkę
+
     public int Shieldsman; // Tarczownik
     public int Sniper; // Snajper
     public int Sprinter; // Szybkobiegacz
@@ -131,6 +135,9 @@ public class Stats : MonoBehaviour
     public bool WarWizard; // Mag bitewny
 
     [Header("Cechy stworzeń")]
+    public int Scary; // Straszny
+
+
     public bool Belligerent; // Wojowniczy
     public bool Bestial; // Zwierzęcy
     public bool Bounce; // Skoczny
@@ -193,11 +200,13 @@ public class Stats : MonoBehaviour
         for (int i = 0; i < ExtraPoints; i++)
         {
             if (UnityEngine.Random.value < 0.5f)
-                PL++;
+                MaxPL++;
             else
                 PB++;
         }
         ExtraPoints = 0;
+
+        TempPL = MaxPL;
 
         // Aktualizuje udźwig
         MaxEncumbrance = Math.Max(1, 6 + S);

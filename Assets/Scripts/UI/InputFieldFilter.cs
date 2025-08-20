@@ -5,7 +5,7 @@ using TMPro;
 public class InputFieldFilter : MonoBehaviour
 {
     [SerializeField] private TMP_InputField _inputField;
-    [SerializeField] private bool _isAttributeInput;
+    [SerializeField] private bool _isSkillOrTalentInput;
     [SerializeField] private bool _isTwoDigitNumber;
     [SerializeField] private bool _isMoneyInput;
     [SerializeField] private bool _isDiceRoll;
@@ -19,74 +19,60 @@ public class InputFieldFilter : MonoBehaviour
             _inputField.onValidateInput += ValidateInput;
 
             if (_isDiceRoll)
-            {
                 _inputField.onEndEdit.AddListener(ValidateDiceRollValue);
-            }
+
+            if (_isSkillOrTalentInput)
+                _inputField.onEndEdit.AddListener(ValidateSkillOrTalentValue);
         }
     }
 
     private char ValidateInput(string text, int charIndex, char addedChar)
     {
-        if (_isAttributeInput)
+        // *** SKILL / TALENT: 1 cyfra, tylko 0–3 ***
+        if (_isSkillOrTalentInput)
         {
             if (char.IsDigit(addedChar))
             {
                 string newText = text.Insert(charIndex, addedChar.ToString());
-
-                if (int.TryParse(newText, out int result) && result <= 199)
-                {
+                if (newText.Length <= 1 && addedChar >= '0' && addedChar <= '3')
                     return addedChar;
-                }
             }
             return '\0';
         }
         else if (_isTwoDigitNumber)
         {
-            // Pozwól na minus tylko jako pierwszy znak
-            if (addedChar == '-' && text.Length == 0)
-            {
-                return addedChar;
-            }
+            if (addedChar == '-' && text.Length == 0) return addedChar;
 
-            // Pozwól na cyfry
             if (char.IsDigit(addedChar))
             {
-                // Długość bez minusa
                 int digitCount = text.StartsWith("-") ? text.Length - 1 : text.Length;
-
-                if (digitCount < 2)
-                {
-                    return addedChar;
-                }
+                if (digitCount < 2) return addedChar;
             }
-
-            return '\0'; // Inne znaki są niedozwolone
+            return '\0';
         }
         else if (_isMoneyInput)
         {
-            // Dozwolone cyfry oraz + i -
-            if (char.IsDigit(addedChar) || addedChar == '+' || addedChar == '-')
-            {
-                return addedChar;
-            }
+            if (char.IsDigit(addedChar) || addedChar == '+' || addedChar == '-') return addedChar;
             return '\0';
         }
         else if (_isDiceRoll)
         {
-            // Dozwolone tylko cyfry
-            if (char.IsDigit(addedChar))
-            {
-                return addedChar;
-            }
-            return '\0';
+            // Pozwól tylko na 1–10 na etapie wpisywania
+            if (!char.IsDigit(addedChar)) return '\0';
+
+            string newText = text.Insert(charIndex, addedChar.ToString());
+
+            if (newText.Length == 1)
+                return addedChar; // pojedyncza cyfra (0–9; 0 skoryguje onEndEdit do 1..10)
+
+            if (newText.Length == 2 && newText == "10")
+                return addedChar; // jedyna dozwolona dwucyfrowa wartość
+
+            return '\0'; // blokuj 11–99 i >2 znaki
         }
         else
         {
-            // Domyślnie: cyfry, litery i spacje
-            if (char.IsLetterOrDigit(addedChar) || char.IsWhiteSpace(addedChar))
-            {
-                return addedChar;
-            }
+            if (char.IsLetterOrDigit(addedChar) || char.IsWhiteSpace(addedChar)) return addedChar;
             return '\0';
         }
     }
@@ -95,8 +81,16 @@ public class InputFieldFilter : MonoBehaviour
     {
         if (int.TryParse(input, out int value))
         {
-            value = Mathf.Clamp(value, 1, 20);
+            value = Mathf.Clamp(value, 1, 10);
             _inputField.text = value.ToString();
         }
+    }
+
+    // Dodatkowe zabezpieczenie: clamp 0–3 po zakończeniu edycji
+    private void ValidateSkillOrTalentValue(string input)
+    {
+        if (!int.TryParse(input, out int v)) v = 0;
+        v = Mathf.Clamp(v, 0, 3);
+        _inputField.text = v.ToString();
     }
 }

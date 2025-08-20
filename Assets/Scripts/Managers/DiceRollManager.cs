@@ -3,6 +3,7 @@ using System.Collections;
 using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 public class DiceRollManager : MonoBehaviour
 {
@@ -98,12 +99,19 @@ public class DiceRollManager : MonoBehaviour
             _applyRollResultPanel.SetActive(true);
             var label = _applyRollResultPanel.GetComponentInChildren<TMP_Text>();
             if (label != null)
-                label.text = $"Wpisz wyniki rzutów {stats.Name} na {rollContext}.";
+                label.text = $"Wpisz wynik rzutu {stats.Name} na {rollContext}.";
         }
 
         if (_roll1InputField != null) _roll1InputField.text = "";
         if (_roll2InputField != null) _roll2InputField.text = "";
         if (_skillRollInputField != null) _skillRollInputField.text = "";
+
+        // zablokuj imput na Kość Umiejętności, jeśli jednostka nie posiada rozwiniętej umiejętności
+        if (_skillRollInputField != null)
+        {
+            HasSkillDie(_pendingStats, _pendingSkillName, out var skillVal);
+            _skillRollInputField.interactable = skillVal > 0;
+        }
 
         // Czekaj aż OnSubmitRoll policzy TestSkill i zapisze _pendingResult
         while (_pendingResult == null)
@@ -208,16 +216,109 @@ public class DiceRollManager : MonoBehaviour
     }
 
     #region Attributes and skills tests
+    //public int[] TestSkill(
+    // Stats stats,
+    // string rollContext,              // kontekst do logów
+    // string attributeName,            // może być null
+    // string skillName = null,
+    // int modifier = 0,
+    // int difficultyLevel = 0,
+    // int roll1 = 0,
+    // int roll2 = 0,
+    // int skillRoll = 0,
+    // bool skillReroll = false)
+    //{
+    //    // Pobieranie wartości umiejętności
+    //    int skillValue = 0;
+    //    if (!string.IsNullOrEmpty(skillName))
+    //    {
+    //        var field = typeof(Stats).GetField(skillName);
+    //        if (field != null)
+    //            skillValue = (int)field.GetValue(stats);
+    //    }
+
+    //    // Losowanie kości tylko jeśli nie podano gotowych wyników
+    //    if (roll1 == 0)
+    //    {
+    //        roll1 = UnityEngine.Random.Range(1, 11);
+    //        roll2 = UnityEngine.Random.Range(1, 11);
+
+    //        switch (skillValue)
+    //        {
+    //            case 1: skillRoll = UnityEngine.Random.Range(1, 5); break;  // k4
+    //            case 2: skillRoll = UnityEngine.Random.Range(1, 7); break;  // k6
+    //            case 3: skillRoll = UnityEngine.Random.Range(1, 9); break;  // k8
+    //            default:
+    //                // brak kostki umiejętności
+    //                break;
+    //        }
+    //    }
+
+    //    // Modyfikator z panelu jednostki
+    //    if (RollModifier != 0)
+    //        modifier += RollModifier;
+
+    //    // Modyfikator za Strach
+    //    if (stats.GetComponent<Unit>().Scared && !stats.GetComponent<Unit>().Blinded) modifier -= 2;
+
+    //    // Pobieranie wartości CECHY — bezpiecznie, gdy attributeName == null
+    //    int attributeValue = 0;
+    //    if (!string.IsNullOrEmpty(attributeName))
+    //    {
+    //        var attributeField = typeof(Stats).GetField(attributeName);
+    //        if (attributeField != null)
+    //            attributeValue = (int)attributeField.GetValue(stats);
+    //    }
+
+    //    int finalScore = roll1 + roll2 + skillRoll + attributeValue + modifier;
+
+    //    if(string.IsNullOrEmpty(rollContext))
+    //    {
+    //        rollContext = !string.IsNullOrEmpty(skillName) ? skillName :
+    //                      !string.IsNullOrEmpty(attributeName) ? attributeName : "";
+    //    }
+
+    //    string modifierString = modifier != 0 ? $" Inne modyfikatory: {modifier}." : "";
+    //    string attrString = attributeValue != 0 ? $" Modyfikator z cechy: {attributeValue}." : "";
+    //    string difficultyLevelString = difficultyLevel != 0 ? $"/{difficultyLevel}" : "";
+
+    //    string color = (difficultyLevel == 0 || finalScore >= difficultyLevel) ? "green" : "red";
+
+    //    string roll1Str = $"<color=#4dd2ff>{roll1}</color>";
+    //    string roll2Str = $"<color=#4dd2ff>{roll2}</color>";
+    //    string skillRollStr = skillRoll != 0 ? $" + <color=#FF7F50>{skillRoll}</color>" : "";
+
+    //    Debug.Log($"{stats.Name} rzuca na {rollContext}: {roll1Str} + {roll2Str}{skillRollStr} = <color=#4dd2ff>{roll1 + roll2 + skillRoll}</color>." + $"{attrString}{modifierString} Łączny wynik: <color={color}>{finalScore}{difficultyLevelString}</color>.");
+
+    //    if (difficultyLevel != 0 && IsDoubleDigit(roll1, roll2))
+    //    {
+    //        if (finalScore >= difficultyLevel)
+    //        {
+    //            Debug.Log($"{stats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
+    //            stats.FortunateEvents++;
+    //        }
+    //        else
+    //        {
+    //            Debug.Log($"{stats.Name} wyrzucił <color=red>PECHA</color>!");
+    //            stats.UnfortunateEvents++;
+    //        }
+    //    }
+
+    //    ResetRollModifier();
+    //    return new int[] { roll1, roll2, skillRoll, finalScore };
+    //}
+
     public int[] TestSkill(
-     Stats stats,
-     string rollContext,              // kontekst do logów
-     string attributeName,            // może być null
-     string skillName = null,
-     int modifier = 0,
-     int difficultyLevel = 0,
-     int roll1 = 0,
-     int roll2 = 0,
-     int skillRoll = 0)
+    Stats stats,
+    string rollContext,              // kontekst do logów
+    string attributeName,            // może być null
+    string skillName = null,
+    int modifier = 0,
+    int difficultyLevel = 0,
+    int roll1 = 0,
+    int roll2 = 0,
+    int skillRoll = 0,
+    bool skillReroll = false)
     {
         // Pobieranie wartości umiejętności
         int skillValue = 0;
@@ -226,6 +327,35 @@ public class DiceRollManager : MonoBehaviour
             var field = typeof(Stats).GetField(skillName);
             if (field != null)
                 skillValue = (int)field.GetValue(stats);
+        }
+
+        // ===== Użycie talentu SPECJALISTA: przerzut tylko Kości Umiejętności =====
+        if (skillReroll)
+        {
+            int oldSkillRoll = skillRoll;
+
+            // Reroll wyłącznie kości umiejętności zależnie od poziomu (1=k4, 2=k6, 3=k8)
+            switch (skillValue)
+            {
+                case 1: skillRoll = UnityEngine.Random.Range(1, 5); break;  // k4
+                case 2: skillRoll = UnityEngine.Random.Range(1, 7); break;  // k6
+                case 3: skillRoll = UnityEngine.Random.Range(1, 9); break;  // k8
+            }
+
+            // Ustalenie kontekstu do logów (fallback)
+            if (string.IsNullOrEmpty(rollContext))
+            {
+                rollContext = !string.IsNullOrEmpty(skillName) ? skillName :
+                              !string.IsNullOrEmpty(attributeName) ? attributeName : "";
+            }
+
+            string difficultyString = difficultyLevel != 0 ? $"/{difficultyLevel}" : "";
+            string colorString = (difficultyLevel == 0 || modifier >= difficultyLevel) ? "green" : "red";
+            string oldStr = oldSkillRoll > 0 ? $" z <color=#FF7F50>{oldSkillRoll}</color>" : "";
+
+            Debug.Log($"{stats.Name} korzysta z talentu Specjalista i przerzuca Kość Umiejętności{oldStr} na <color=#FF7F50>{skillRoll}</color>. Nowy łączny wynik: <color={colorString}>{modifier}{difficultyString}</color>.");
+
+            return new int[] { 0, 0, skillRoll, 0 };
         }
 
         // Losowanie kości tylko jeśli nie podano gotowych wyników
@@ -249,25 +379,32 @@ public class DiceRollManager : MonoBehaviour
         if (RollModifier != 0)
             modifier += RollModifier;
 
+        // Modyfikator za Strach
+        if (stats.GetComponent<Unit>().Scared && !stats.GetComponent<Unit>().Blinded) modifier -= 2;
+
         // Pobieranie wartości CECHY — bezpiecznie, gdy attributeName == null
-        int attributeValue = 0;
+        int attributeValue2 = 0;
         if (!string.IsNullOrEmpty(attributeName))
         {
             var attributeField = typeof(Stats).GetField(attributeName);
             if (attributeField != null)
-                attributeValue = (int)attributeField.GetValue(stats);
+                attributeValue2 = (int)attributeField.GetValue(stats);
         }
 
-        int finalScore = roll1 + roll2 + skillRoll + attributeValue + modifier;
+        int finalScore = roll1 + roll2 + skillRoll + attributeValue2 + modifier;
 
-        if(string.IsNullOrEmpty(rollContext))
+        if (string.IsNullOrEmpty(rollContext))
         {
             rollContext = !string.IsNullOrEmpty(skillName) ? skillName :
                           !string.IsNullOrEmpty(attributeName) ? attributeName : "";
         }
 
-        string modifierString = modifier != 0 ? $" Inne modyfikatory: {modifier}." : "";
-        string attrString = attributeValue != 0 ? $" Modyfikator z cechy: {attributeValue}." : "";
+        string attrString = attributeValue2 != 0 ? $" Modyfikator z cechy: {attributeValue2}." : "";
+
+        // Jeśli nie ma modyfikatora z cechy, użyj etykiety "Modyfikatory", inaczej "Inne modyfikatory"
+        string modifierLabel = string.IsNullOrEmpty(attrString) ? " Modyfikatory" : " Inne modyfikatory";
+        string modifierString = modifier != 0 ? $"{modifierLabel}: {modifier}." : "";
+
         string difficultyLevelString = difficultyLevel != 0 ? $"/{difficultyLevel}" : "";
 
         string color = (difficultyLevel == 0 || finalScore >= difficultyLevel) ? "green" : "red";
@@ -295,6 +432,17 @@ public class DiceRollManager : MonoBehaviour
         ResetRollModifier();
         return new int[] { roll1, roll2, skillRoll, finalScore };
     }
-
     #endregion
+
+    private bool HasSkillDie(Stats stats, string skillName, out int skillValue)
+    {
+        skillValue = 0;
+        if (stats == null || string.IsNullOrEmpty(skillName)) return false;
+
+        var field = typeof(Stats).GetField(skillName);
+        if (field == null) return false;
+
+        skillValue = (int)field.GetValue(stats); // 0..3
+        return skillValue > 0;
+    }
 }

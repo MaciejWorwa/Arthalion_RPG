@@ -320,7 +320,7 @@ public class MagicManager : MonoBehaviour
                 Weapon targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target);
                 Weapon weaponUsedForParry = CombatManager.Instance.GetBestParryWeapon(targetStats, targetWeapon);
                 int parryModifier = CombatManager.Instance.CalculateParryModifier(targetUnit, targetStats, stats, weaponUsedForParry);
-                int dodgeModifier = CombatManager.Instance.CalculateDodgeModifier(targetUnit, targetStats);
+                int dodgeModifier = CombatManager.Instance.CalculateDodgeModifier(targetUnit, unit);
 
                 //Modyfikator za strach
                 if (targetUnit.Scared)

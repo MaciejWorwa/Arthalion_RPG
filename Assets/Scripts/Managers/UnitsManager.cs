@@ -508,7 +508,10 @@ public class UnitsManager : MonoBehaviour
             }
         }
 
-        if(unit.IsMounted && unit.Mount != null && !SaveAndLoadManager.Instance.IsLoading && (AreaSelector.Instance.SelectedUnits == null || !AreaSelector.Instance.SelectedUnits.Contains(unit)))
+        // Jeśli umiera jednostka Straszna to należy zaktualizować stan Strachu u przeciwników
+        if (stats.Scary > 0) StartCoroutine(ScaryUnitDeath(unit));
+
+        if (unit.IsMounted && unit.Mount != null && !SaveAndLoadManager.Instance.IsLoading && (AreaSelector.Instance.SelectedUnits == null || !AreaSelector.Instance.SelectedUnits.Contains(unit)))
         {
             unit.Mount.transform.SetParent(GameObject.Find("----------Units-------------------").transform);
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit.Mount);
@@ -534,18 +537,68 @@ public class UnitsManager : MonoBehaviour
                 unit.LastAttackerStats.StrongestDefeatedOpponentOverall = stats.Overall;
                 unit.LastAttackerStats.StrongestDefeatedOpponent = stats.Name;
             }
-
-            // Uwzględnia cechę Żarłoczny
-            if (unit.LastAttackerStats.Hungry)
-            {
-                //StartCoroutine(HungryTrait(unit.LastAttackerStats, stats));
-            }
         }
 
         Destroy(unitObject);
 
         //Resetuje kolor przycisku usuwania jednostek
         _removeUnitButton.GetComponent<UnityEngine.UI.Image>().color = Color.white;
+    }
+
+    private IEnumerator ScaryUnitDeath(Unit deadUnit)
+    {
+        if (deadUnit == null) yield break;
+
+        Stats stats = deadUnit.GetComponent<Stats>();
+
+        string scaryTag = deadUnit.tag;                                           // strona zmarłego źródła strachu
+        string otherTag = scaryTag == "PlayerUnit" ? "EnemyUnit" : "PlayerUnit";  // przeciwnicy
+
+        // 1) Ustal, czy po stronie zmarłego zostały inne źródła strachu i ich maksymalną siłę
+        int maxRemainingScary = 0;
+        foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
+        {
+            Unit u = pair.Key;
+            if (u == null || u == deadUnit) continue;
+            if (!u.CompareTag(scaryTag)) continue;
+
+            Stats s = u.GetComponent<Stats>();
+            if (s.Scary > maxRemainingScary) maxRemainingScary = s.Scary;
+        }
+
+        // 2) Jeśli NIE ma już żadnych strasznych po tej stronie → zdejmij Scared z przeciwników
+        if (maxRemainingScary == 0)
+        {
+            foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
+            {
+                Unit u = pair.Key;
+                if (!u.CompareTag(otherTag)) continue;
+
+                if (u.Scared)
+                {
+                    u.Scared = false;
+                    String n = u.GetComponent<Stats>()?.Name ?? u.name;
+                    Debug.Log($"<color=#FF7F50>{n} przestaje się bać (źródło strachu pokonane).</color>");
+                }
+            }
+            yield break;
+        }
+
+        // 3) Jeśli pozostało równie silne lub silniejsze źródło strachu → nic nie zmieniaj
+        if (maxRemainingScary >= stats.Scary)
+            yield break;
+
+        // 4) Pozostały TYLKO słabsze źródła → ponowny test strachu DLA WSZYSTKICH, którzy mają stan Strachu
+        foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
+        {
+            Unit u = pair.Key;
+            if (u == null) continue;
+            if (!u.CompareTag(otherTag)) continue;
+            if (!u.Scared) continue;
+
+            // test odniesie się do NAJSTRASZNIEJSZEGO istniejącego przeciwnika wewnątrz FearTest
+            yield return StartCoroutine(StatesManager.Instance.FearTest(u));
+        }
     }
 
     //private IEnumerator HungryTrait(Stats stats, Stats deadBodyStats)
@@ -1131,167 +1184,6 @@ public class UnitsManager : MonoBehaviour
             }
         }
     }
-    #endregion
-
-    #region Fear and terror mechanics
-    public void LookForScaryUnits()
-    {
-        List<Unit> allEnemies = new List<Unit>();
-        List<Unit> allPlayers = new List<Unit>();
-
-        foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
-        {
-            if (pair.Key.CompareTag("EnemyUnit"))
-            {
-                allEnemies.Add(pair.Key);
-            }
-            else if (pair.Key.CompareTag("PlayerUnit"))
-            {
-                allPlayers.Add(pair.Key);
-            }
-        }
-
-        // Sprawdzamy strach graczy od wrogów i wrogów od graczy
-        ProcessFearAndTerror(allPlayers, allEnemies); // Gracze boją się wrogów
-        ProcessFearAndTerror(allEnemies, allPlayers); // Wrogowie boją się graczy
-    }
-
-    private void ProcessFearAndTerror(List<Unit> checkingUnits, List<Unit> opposingUnits)
-    {
-        foreach (Unit unit in checkingUnits)
-        {
-            if (unit.Scared) continue;
-
-            int highestTerrorValue = 0;
-            Unit highestTerrorUnit = null;
-
-            int highestFearValue = 0;
-            Unit highestFearUnit = null;
-
-            foreach (Unit opponent in opposingUnits)
-            {
-                int sizeDifference = opponent.GetComponent<Stats>().Size - unit.GetComponent<Stats>().Size;
-
-                if ((sizeDifference > 1 || opponent.GetComponent<Stats>().Terror > 0))
-                {
-                    int value = sizeDifference > opponent.GetComponent<Stats>().Terror ? sizeDifference : opponent.GetComponent<Stats>().Terror;
-
-                    if (value > highestTerrorValue)
-                    {
-                        highestTerrorValue = value;
-                        highestTerrorUnit = opponent;
-                    }
-                }
-                else if (sizeDifference == 1 || opponent.GetComponent<Stats>().Fear > 0)
-                {
-
-                    int value = sizeDifference > opponent.GetComponent<Stats>().Fear ? sizeDifference : opponent.GetComponent<Stats>().Fear;
-
-                    if (value > highestTerrorValue)
-                    {
-                        highestFearValue = value;
-                        highestFearUnit = opponent;
-                    }
-                }
-            }
-        }
-    }
-
-    //public IEnumerator FearRoll(Unit unit, string opponentName, int value = 0)
-    //{
-    //    if (unit.IsFearTestPassed || unit.GetComponent<Stats>().ImmunityToPsychology) yield break;
-    //    if (unit.GetComponent<Stats>().Belligerent && (unit.CompareTag("PlayerUnit") && InitiativeQueueManager.Instance.PlayersAdvantage > InitiativeQueueManager.Instance.EnemiesAdvantage) || (unit.CompareTag("EnemyUnit") && InitiativeQueueManager.Instance.PlayersAdvantage < InitiativeQueueManager.Instance.EnemiesAdvantage)) yield break;
-
-    //    int rollResult = 0;
-    //    Stats stats = unit.GetComponent<Stats>();
-
-    //    if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
-    //    {
-    //        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie (strach)", result => rollResult = result));
-    //        if (rollResult == 0) yield break;
-    //    }
-    //    else
-    //    {
-    //        rollResult = UnityEngine.Random.Range(1, 101);
-    //    }
-
-    //    int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult)[2];
-    //    int successLevel = test;
-
-    //    // Zaktualizowanie listy wszystkich jednostek, których się boi
-    //    foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
-    //    {
-    //        if(pair.Key == null) continue;
-
-    //        if (!pair.Key.CompareTag(unit.tag))
-    //        {
-    //            if ((pair.Key.GetComponent<Stats>().Fear != 0 && pair.Key.GetComponent<Stats>().Fear > successLevel) || (pair.Key.GetComponent<Stats>().Size > stats.Size && pair.Key.GetComponent<Stats>().Size - stats.Size > successLevel))
-    //            {
-    //                unit.FearedUnits.Add(pair.Key);
-    //            }
-    //            else if (unit.FearedUnits.Contains(pair.Key))
-    //            {
-    //                unit.FearedUnits.Remove(pair.Key);
-    //            }
-    //        }
-    //    }
-
-    //    if (value != 0) unit.FearLevel = value;
-
-    //    unit.FearLevel = Math.Max(0, unit.FearLevel - successLevel);
-
-    //    // Upewnia się, że FearLevel nie przekroczy wartości value
-    //    unit.FearLevel = Math.Min(unit.FearLevel, value);
-
-    //    // Tworzenie stringa z nazwami przeciwników, których jednostka się boi
-    //    string opponentsNames = unit.FearedUnits.Count > 0 ? string.Join(", ", unit.FearedUnits.Where(u => u != null).Select(u => u.GetComponent<Stats>().Name)) : "";
-
-    //    if (unit.FearLevel == 0)
-    //    {
-    //        Debug.Log($"<color=#FF7F50>{stats.Name} zdał/a test strachu przed: {opponentName}.</color>");
-    //        unit.IsFearTestPassed = true;
-    //    }
-    //    else
-    //    {
-    //        Debug.Log($"<color=#FF7F50>{stats.Name} nie zdał/a testu strachu przed: {opponentsNames}. Pozostałe poziomy strachu: {unit.FearLevel}</color>");
-    //        Debug.Log($"<color=#FF7F50>Zbliżenie się źródła strachu lub próba zbliżenia się do niego wymaga wykonania Testu Opanowania +0. Wykonaj go samodzielnie. Niezdany test zwiększa poziom paniki o 1.</color>");
-    //    }
-    //}
-
-    //public IEnumerator TerrorRoll(Unit unit, string opponentName, int value)
-    //{
-    //    if (unit.IsTerrorTestPassed || unit.GetComponent<Stats>().ImmunityToPsychology) yield break;
-    //    if(unit.GetComponent<Stats>().Belligerent && (unit.CompareTag("PlayerUnit") && InitiativeQueueManager.Instance.PlayersAdvantage > InitiativeQueueManager.Instance.EnemiesAdvantage) || (unit.CompareTag("EnemyUnit") && InitiativeQueueManager.Instance.PlayersAdvantage < InitiativeQueueManager.Instance.EnemiesAdvantage)) yield break;
-        
-    //    int rollResult = 0;
-    //    Stats stats = unit.GetComponent<Stats>();
-
-    //    if (!GameManager.IsAutoDiceRollingMode && unit.CompareTag("PlayerUnit"))
-    //    {
-    //        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie (groza)", result => rollResult = result));
-    //        if (rollResult == 0) yield break;
-    //    }
-    //    else
-    //    {
-    //        rollResult = UnityEngine.Random.Range(1, 101);
-    //    }
-
-    //    int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult)[2];
-    //    int successValue = test;
-    //    int successLevel = test;
-
-    //    if(successValue > 0)
-    //    {
-    //        unit.IsTerrorTestPassed = true;
-    //        Debug.Log($"<color=#FF7F50>{stats.Name} zdał/a test grozy przed {opponentName}. Następuje test strachu.</color>");
-    //        StartCoroutine(FearRoll(unit, opponentName, value));
-    //    }
-    //    else
-    //    {
-    //        unit.Broken += value - successLevel;
-    //        Debug.Log($"<color=#FF7F50>{stats.Name} nie zdał/a test grozy przed {opponentName}. Poziom paniki wzrasta o {value - successLevel}</color>");
-    //    }
-    //}
     #endregion
 
     public bool BothTeamsExist()

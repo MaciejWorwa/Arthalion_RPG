@@ -578,7 +578,7 @@ public class UnitData
     public bool IsCharging; // Szarżuje
     public bool IsFlying; // Leci
     public bool IsRetreating; // Wycofuje się
-    public bool IsFrenzy; // Jest w trakcie szału bojowego
+
 
     public bool Ablaze; // Podpalenie
     public int Bleeding; // Krwawienie
@@ -590,6 +590,8 @@ public class UnitData
     public bool Unconscious; // Utrata Przytomności
 
     public int EntangledUnitId; // Cel unieruchomienia
+
+    public int FearTestedLevel; // max poziom strachu, przeciw któremu ta jednostka już testowała Opanowanie (0 = brak)
 
     //public bool IsFearTestPassed; // Zdał test strachu
     //public bool IsTerrorTestPassed; // Zdał test grozy
@@ -665,7 +667,8 @@ public class StatsData
     public int TempHealth;
     public int CriticalWounds; // Ilość Ran Krytycznych
     public int SinPoints; // Punkty Grzechu (istotne dla kapłanów)
-    public int PL; // Punkty Losu
+    public int TempPL; // Punkty losu aktualne
+    public int MaxPL; // Punkty Losu Maksymalne
     public int PB; // Punkty Bohatera
     public int ExtraPoints; // Dodatkowe punkty do rozdania między PL a PB
     public int Initiative; // Inicjatywa
@@ -694,13 +697,16 @@ public class StatsData
     public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Talenty")]
+    public bool CombatMaster; // Mistrz walki
     public int Pitiless; // Bezlitosny
+    public bool Sharpshooter; // Strzelec wyborowy
+    public bool SpecialistMeleeCombat; // Specjalista (Walka Wręcz)
+    public bool SpecialistRangedCombat; // Specjalista (Walka Dystansowa)
     public int SurvivalInstinct; // Instynkt Przetrwania
 
     public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
     public int Ambidextrous; // Oburęczność
-    public int CombatMaster; // Mistrz walki
     public int CombatReflexes; // Bitewny refleks
     public int DirtyFighting; // Cios poniżej pasa
     public int Disarm; // Rozbrojenie
@@ -725,7 +731,6 @@ public class StatsData
     public int Riposte; // Riposta
     public int RiposteAttacksLeft; // Pozostałe riposty w obecnej rundzie
     public int Robust; // Krzepki
-    public bool Sharpshooter; // Strzał w dziesiątkę
     public int Shieldsman; // Tarczownik
     public int Sniper; // Snajper
     public int Sprinter; // Szybkobiegacz
@@ -741,6 +746,9 @@ public class StatsData
     public bool WarWizard; // Mag bitewny
 
     [Header("Cechy stworzeń")]
+    public int Scary; // Straszny
+
+
     public bool Belligerent; // Wojowniczy
     public bool Bestial; // Zwierzęcy
     public bool Bounce; // Skoczny

@@ -180,10 +180,37 @@ public class RoundsManager : MonoBehaviour
             }
         }
 
-        // Wykonuje testy grozy i strachu, jeśli na polu bitwy są jednostki straszne lub przerażające
-        if (GameManager.IsFearIncluded == true)
+        // Wykonuje testy grozy i strachu, jeśli na polu bitwy są jednostki straszne
+        if (GameManager.IsFearIncluded)
         {
-            UnitsManager.Instance.LookForScaryUnits();
+            var queue = InitiativeQueueManager.Instance.InitiativeQueue;
+
+            // Oblicza maxima dla obu stron
+            int maxScaryEnemies = queue
+                .Where(p => p.Key != null && p.Key.CompareTag("EnemyUnit"))
+                .Select(p => p.Key.GetComponent<Stats>()?.Scary ?? 0)
+                .DefaultIfEmpty(0).Max();
+
+            int maxScaryPlayers = queue
+                .Where(p => p.Key != null && p.Key.CompareTag("PlayerUnit"))
+                .Select(p => p.Key.GetComponent<Stats>()?.Scary ?? 0)
+                .DefaultIfEmpty(0).Max();
+
+            // jeśli nikt nie jest straszny – pomija dalszy kod
+            if (maxScaryEnemies == 0 && maxScaryPlayers == 0) return;
+
+            foreach (var pair in queue)
+            {
+                var unit = pair.Key;
+                if (unit == null) continue;
+
+                // wybierz odpowiedni max poziom Strachu przeciwnika
+                int requiredLevel = unit.CompareTag("PlayerUnit") ? maxScaryEnemies : maxScaryPlayers;
+                if (requiredLevel <= unit.FearTestedLevel) continue;           // test już się odbył na tym lub wyższym poziomie Starchu
+
+                unit.FearTestedLevel = requiredLevel;                          
+                StartCoroutine(StatesManager.Instance.FearTest(unit));         // korutyna sama zrobi test na aktualne warunki
+            }
         }
 
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
@@ -381,11 +408,11 @@ public class RoundsManager : MonoBehaviour
         }
 
         Debug.Log($"{stats.Name} zużywa Punkt Losu. Wykonaj akcję ponownie.");
-        stats.PL--;
+        stats.TempPL--;
 
         _isFortunePointSpent = true;
 
-        SaveAndLoadManager.Instance.SaveFortunePoints("autosave", stats, stats.PL);
+        SaveAndLoadManager.Instance.SaveFortunePoints("autosave", stats, stats.TempPL);
         SaveAndLoadManager.Instance.LoadGame("autosave");
 
         _useFortunePointsButton.SetActive(false);

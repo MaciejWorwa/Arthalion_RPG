@@ -231,14 +231,14 @@ public class SaveAndLoadManager : MonoBehaviour
         File.WriteAllText(gridManagerPath, gridManagerJsonData);
     }
 
-    public void SaveFortunePoints(string savesFolderName, Stats stats, int PL)
+    public void SaveFortunePoints(string savesFolderName, Stats stats, int TempPL)
     {
         string unitName = stats.Name;
 
         string statsPath = Path.Combine(Application.persistentDataPath, savesFolderName, unitName + "_stats.json");
 
         StatsData statsData = new StatsData(stats);
-        statsData.PL = PL;
+        statsData.TempPL = TempPL;
 
         string statsJsonData = JsonUtility.ToJson(statsData, true);
         File.WriteAllText(statsPath, statsJsonData);

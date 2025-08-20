@@ -53,12 +53,6 @@ public class AutoCombatManager : MonoBehaviour
             effectiveAttackRange *= unit.GetComponent<Stats>().S / 10;
         }
 
-        if (unit.Broken > 0)
-        {
-            MoveAwayFromOpponent(unit, closestOpponent);
-            return;
-        }
-
         // Jeśli rywal jest w zasięgu ataku to wykonuje atak
         if (distance <= effectiveAttackRange)
         {
@@ -264,15 +258,8 @@ public class AutoCombatManager : MonoBehaviour
         GameObject tile = GetTileAwayFromTarget(unit.gameObject, closestOpponent);
 
         if(tile != null)
-        {
-            if (unit.Broken > 0)
-            {
-                Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} ucieka od {closestOpponent.GetComponent<Stats>().Name} z powodu paniki.</color>");
-            }
-            else
-            {
-                Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} wycofuje się od {closestOpponent.GetComponent<Stats>().Name}.</color>");
-            }
+        {      
+            Debug.Log($"<color=#4dd2ff>{unit.Stats.Name} wycofuje się od {closestOpponent.GetComponent<Stats>().Name}.</color>");
 
             MovementManager.Instance.MoveSelectedUnit(tile, unit.gameObject);
         }

@@ -342,10 +342,9 @@
       "Type": [ "melee" ],
       "TwoHanded": true,
       "AttackRange": 1.5,
-      "S": 5,
-      "Encumbrance": 3,
-      "Hack": true,
-      "Damaging": true
+      "Damage": 3,
+      "Encumbrance": 1,
+      "Slow": true
     },
     {
       "Name": "Miecz Dzikiej Kniei",

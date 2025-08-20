@@ -39,16 +39,12 @@ public class CombatManager : MonoBehaviour
     [Header("Przyciski wszystkich typów ataku")]
     [SerializeField] private UnityEngine.UI.Button _standardAttackButton;
     [SerializeField] private UnityEngine.UI.Button _chargeButton;
-    [SerializeField] private UnityEngine.UI.Button _frenzyButton;
     [SerializeField] private UnityEngine.UI.Button _mountAttackButton;
     [SerializeField] private UnityEngine.UI.Button _grapplingButton;
-    [SerializeField] private UnityEngine.UI.Button _feintButton;
-    [SerializeField] private UnityEngine.UI.Button _stompButton;
     [SerializeField] private UnityEngine.UI.Button _disarmButton;
     public Dictionary<string, bool> AttackTypes = new Dictionary<string, bool>();
 
     [SerializeField] private UnityEngine.UI.Button _aimButton;
-    [SerializeField] private UnityEngine.UI.Button _defensiveStanceButton;
     [SerializeField] private UnityEngine.UI.Button _reloadButton;
 
     [Header("Panel do manualnego zarządzania sposobem obrony")]
@@ -75,10 +71,6 @@ public class CombatManager : MonoBehaviour
     private string _criticalDeflection;
     [SerializeField] private UnityEngine.UI.Button _armorDamageButton;
 
-    [SerializeField] private GameObject _distractingWeaponPanel;
-    private string _distractChoice;
-    [SerializeField] private UnityEngine.UI.Button _distractButton;
-
     private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
 
     public bool IsManualPlayerAttack;
@@ -99,8 +91,6 @@ public class CombatManager : MonoBehaviour
         _parryButton.onClick.AddListener(() => ParryOrDodgeButtonClick("parry"));
 
         _armorDamageButton.onClick.AddListener(() => CriticalDeflectionButtonClick("damage_armor"));
-
-        _distractButton.onClick.AddListener(() => DistractButtonClick("distract"));
 
         _riderButton.onClick.AddListener(() => RiderOrMountButtonClick("rider"));
         _mountButton.onClick.AddListener(() => RiderOrMountButtonClick("mount"));
@@ -139,11 +129,8 @@ public class CombatManager : MonoBehaviour
         // Dodajemy typy ataków do słownika
         AttackTypes.Add("StandardAttack", true);
         AttackTypes.Add("Charge", false);
-        //AttackTypes.Add("Frenzy", false);  // Szał bojowy
         AttackTypes.Add("MountAttack", false);  // Atak wierzchowca
         AttackTypes.Add("Grappling", false);  // Zapasy
-        AttackTypes.Add("Feint", false);  // Finta
-        AttackTypes.Add("Stomp", false);  // Tupnięcie
         AttackTypes.Add("Disarm", false);  // Rozbrajanie
     }
 
@@ -197,14 +184,6 @@ public class CombatManager : MonoBehaviour
 
             AttackTypes[attackTypeName] = true;
 
-            //Tupnięcie jest dostępne tylko dla dużych jednostek
-            if (AttackTypes["Stomp"] == true && stats.Size < SizeCategory.Large)
-            {
-                AttackTypes[attackTypeName] = false;
-                AttackTypes["StandardAttack"] = true;
-                Debug.Log("Tupnięcie mogą wykonywać tylko odpowiednio duże jednostki.");
-            }
-
             //Rozbrajanie jest dostępne tylko dla jednostek ze zdolnością rozbrajania
             if (AttackTypes["Disarm"] == true && stats.Disarm == 0)
             {
@@ -213,16 +192,8 @@ public class CombatManager : MonoBehaviour
                 Debug.Log("Rozbrajanie mogą wykonywać tylko jednostki posiadające ten talent.");
             }
 
-            //Finta jest dostępna tylko dla jednostek ze zdolnością finty
-            if (AttackTypes["Feint"] == true && stats.Feint == 0)
-            {
-                AttackTypes[attackTypeName] = false;
-                AttackTypes["StandardAttack"] = true;
-                Debug.Log("Fintę mogą wykonywać tylko jednostki posiadające ten talent.");
-            }
-
             //Ograniczenie finty, ogłuszania i rozbrajania do ataków w zwarciu
-            if ((AttackTypes["Feint"] || AttackTypes["Disarm"] || AttackTypes["Charge"]) == true && unit.GetComponent<Inventory>().EquippedWeapons[0] != null && unit.GetComponent<Inventory>().EquippedWeapons[0].Type.Contains("ranged"))
+            if ((AttackTypes["Disarm"] || AttackTypes["Charge"]) == true && unit.GetComponent<Inventory>().EquippedWeapons[0] != null && unit.GetComponent<Inventory>().EquippedWeapons[0].Type.Contains("ranged"))
             {
                 AttackTypes[attackTypeName] = false;
                 AttackTypes["StandardAttack"] = true;
@@ -266,11 +237,8 @@ public class CombatManager : MonoBehaviour
     {
         _standardAttackButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["StandardAttack"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _chargeButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Charge"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
-        //_frenzyButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Frenzy"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _mountAttackButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["MountAttack"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _grapplingButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Grappling"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
-        _feintButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Feint"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
-        _stompButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Stomp"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         _disarmButton.GetComponent<UnityEngine.UI.Image>().color = AttackTypes["Disarm"] ? new UnityEngine.Color(0.15f, 1f, 0.45f) : UnityEngine.Color.white;
         
         SetActionsButtonsInteractable();
@@ -280,12 +248,9 @@ public class CombatManager : MonoBehaviour
     {
         if (Unit.SelectedUnit == null) return;
         _disarmButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Disarm > 0;
-        _feintButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Feint > 0;
-        _frenzyButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Frenzy;
         _reloadButton.interactable = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.ReloadLeft > 0);
         _grapplingButton.gameObject.SetActive(!Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
         _mountAttackButton.gameObject.SetActive(Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
-        _stompButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Size > SizeCategory.Average;
     }
     #endregion
 
@@ -502,6 +467,36 @@ public class CombatManager : MonoBehaviour
         }
         attackRollResult = attackTest[3];
 
+        // Uwzględnienie talentu WOJOWNIK lub STRZELEC WYBOROWY – podwaja niższą k10
+        bool doubleLowerDice = (!isRangedAttack && attackerStats.CombatMaster) || (isRangedAttack && attackerStats.Sharpshooter);
+        if (doubleLowerDice)
+        {
+            int lowerDice = attackTest[0] <= attackTest[1] ? 0 : 1;
+            attackRollResult += attackTest[lowerDice];
+
+            string talentName = isRangedAttack ? "Strzelec Wyborowy" : "Wojownik";
+            Debug.Log($"{attackerStats.Name} korzysta z talentu {talentName}. Wartość niższej kości k10 zostaje podwojona z <color=#4dd2ff>{attackTest[lowerDice]}</color> na <color=#4dd2ff>{attackTest[lowerDice]*2}</color>. Nowy łączny wynik: <color=green>{attackRollResult}</color>.");
+        }
+
+        // Uwzględniamy talent SPECJALISTA (Walka Wręcz lub Dystansowa)
+        if (!IsManualPlayerAttack)
+        {
+            bool hasSpecialist = (!isRangedAttack && attackerStats.SpecialistMeleeCombat) || (isRangedAttack && attackerStats.SpecialistRangedCombat);
+
+            int skillLevel = isRangedAttack ? attackerStats.RangedCombat : attackerStats.MeleeCombat;
+
+            if (hasSpecialist && skillLevel > 0 && attackTest[2] < skillLevel + 2) // Tylko jeśli poprzedni rzut był poniżej średniego wyniku
+            {
+                int newSkillRoll = DiceRollManager.Instance.TestSkill(attackerStats, "", "Zr", skillName, attackRollResult, skillReroll: true)[2];
+
+                if (newSkillRoll > attackTest[2])
+                {
+                    attackRollResult += newSkillRoll - attackTest[2];
+                    attackTest[2] = newSkillRoll;
+                }
+            }
+        }
+
         //Ustalamy miejsce trafienia
         int lowerValue = attackTest[0] > attackTest[1] ? attackTest[1] : attackTest[0];
         string hitLocation = !String.IsNullOrEmpty(HitLocation) ? HitLocation : (DiceRollManager.Instance.IsDoubleDigit(attackTest[0], attackTest[1]) ? DetermineHitLocation(lowerValue) : DetermineHitLocation(lowerValue));
@@ -557,15 +552,7 @@ public class CombatManager : MonoBehaviour
         {
             Weapon weaponUsedForParry = GetBestParryWeapon(targetStats, targetWeapon);
             int parryModifier = CalculateParryModifier(target, targetStats, attackerStats, weaponUsedForParry);
-            int dodgeModifier = CalculateDodgeModifier(target, targetStats);
-
-            //Modyfikator za strach
-            if (target.Scared)
-            {
-                parryModifier -= 2;
-                dodgeModifier -= 2;
-                Debug.Log($"Uwzględniono modyfikatory za strach przed atakującym.");
-            }
+            int dodgeModifier = CalculateDodgeModifier(target, attacker);
 
             string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
             string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
@@ -810,11 +797,6 @@ public class CombatManager : MonoBehaviour
         // Aktualizacja podświetlenia pól w zasięgu ruchu atakującego
         GridManager.Instance.HighlightTilesInMovementRange(attackerStats);
     }
-
-    public void DistractButtonClick(string value)
-    {
-        _distractChoice = value;
-    }
     #endregion
 
     #region Defense functions
@@ -844,20 +826,21 @@ public class CombatManager : MonoBehaviour
         int modifier = 0;
         if (weaponUsedForParry.Defensive > 0) modifier += weaponUsedForParry.Defensive;
 
-        //OGARNĄĆ CZY CHCE TO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        //if (attackerStats.Size > targetStats.Size) modifier -= (attackerStats.Size - targetStats.Size) * 20; // Kara do parowania za rozmiar
-        //if (attackerStats.Size > targetStats.Size) Debug.Log($"Modyfikator do parowania za rozmiar atakującego: -{(attackerStats.Size - targetStats.Size) * 20}");
-
-        //DODAĆ KARY ZA OŚLEPIENIE I INNE STANY
+        if (attackerStats.Size > targetStats.Size) modifier -= (attackerStats.Size - targetStats.Size) * 2; // Kara do parowania za rozmiar
+        if (target.Blinded) modifier -= 5;
+        if (target.Prone) modifier -= 5;
+        if (target.Entangled && attackerStats.GetComponent<Unit>().EntangledUnitId != target.UnitId) modifier -= 5;
 
         return modifier;
     }
 
-    public int CalculateDodgeModifier(Unit target, Stats targetStats)
+    public int CalculateDodgeModifier(Unit target, Unit attacker)
     {
         int modifier = 0;
 
-        //DODAĆ KARY ZA OŚLEPIENIE I INNE STANY
+        if(target.Blinded) modifier -= 5;
+        if(target.Prone) modifier -= 5;
+        if(target.Entangled && attacker.EntangledUnitId != target.UnitId) modifier -= 5;
 
         return modifier;
     }
@@ -1319,7 +1302,7 @@ public class CombatManager : MonoBehaviour
         rollResult = criticalWoundTest[3];
 
 
-        int modifier = targetStats.TempHealth < 0 ? targetStats.TempHealth : 0;
+        int modifier = targetStats.TempHealth < 0 ? Math.Abs(targetStats.TempHealth) : 0;
         string modifierString = modifier != 0 ? $" Modyfikator: {modifier}." : "";
         Debug.Log($"Wynik rzutu na trafienie krytyczne: {rollResult}.{modifierString} {targetStats.Name} otrzymuje trafienie krytyczne w {TranslateHitLocation(hitLocation)} o wartości <color=red>{rollResult + modifier}</color>");
 

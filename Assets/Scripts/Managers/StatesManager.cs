@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
@@ -30,173 +32,229 @@ public class StatesManager : MonoBehaviour
 
     public void UpdateUnitStates(Unit unit)
     {
-        Ablaze(unit); // Podpalenie
-        //StartCoroutine(Bleeding(unit)); // Krwawienie
+        StartCoroutine(Ablaze(unit)); // Podpalenie
+        StartCoroutine(Bleeding(unit)); // Krwawienie
         Blinded(unit); // Oślepienie
-        //StartCoroutine(Broken(unit)); // Panika
-        //StartCoroutine(Poison(unit)); // Zatrucie
-        //StartCoroutine(Stunned(unit)); // Oszołomienie
+        Scared(unit); // Strach
+        StartCoroutine(Poison(unit)); // Zatrucie
     }
 
-    private void Ablaze(Unit unit)
+    private IEnumerator Ablaze(Unit unit)
     {
-        if (unit.Ablaze) return;
+        if (!unit.Ablaze) yield break; // jeśli nie płonie, nic nie robimy
         Stats stats = unit.GetComponent<Stats>();
 
-        // Obrażenia od ognia
-        int damage = UnityEngine.Random.Range(1, 7);
+        // 1) Próba ugaszenia: wymagający (14+) test Atletyki (*Zwinność*)
+        int difficulty = 14;
+        int[] test = null;
 
+        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(
+                stats: stats,
+                rollContext: "Atletyki na ugaszenie płomieni",
+                attributeName: "Zw", 
+                skillName: "Athletics",
+                modifier: 0,
+                difficultyLevel: difficulty,
+                callback: res => test = res
+            ));
+            if (test == null) yield break; // anulowano panel
+        }
+        else
+        {
+            test = DiceRollManager.Instance.TestSkill(
+                stats: stats,
+                rollContext: "ugaszenie płomieni",
+                attributeName: "Zw",
+                skillName: "Athletics",
+                modifier: 0,
+                roll1: 0, roll2: 0, skillRoll: 0,
+                difficultyLevel: difficulty
+            );
+        }
+
+        int finalScore = test[3];
+        if (finalScore >= difficulty)
+        {
+            unit.Ablaze = false;
+            Debug.Log($"<color=#FF7F50>{stats.Name} zdaje test Atletyki i gasi płomienie.</color>");
+            yield break;
+        }
+
+        // 2) Porażka testu → obrażenia k6 ignorujące pancerz (efekt Podpalenia)
+        int damage = UnityEngine.Random.Range(1, 7);
         stats.TempHealth -= damage;
-        Debug.Log($"<color=#FF7F50>{stats.Name} traci {damage} punktów żywotności w wyniku podpalenia.</color>");
+        Debug.Log($"<color=#FF7F50>{stats.Name} nie udaje się ugasić ognia i traci {damage} Punkty/ów Zdrowia w wyniku podpalenia.</color>");
         unit.DisplayUnitHealthPoints();
     }
 
-    //private IEnumerator Bleeding(Unit unit)
-    //{
-    //    Stats stats = unit.GetComponent<Stats>();
+    private IEnumerator Bleeding(Unit unit)
+    {
+        if (unit.Bleeding <= 0) yield break;
+        Stats stats = unit.GetComponent<Stats>();
 
-    //    if (unit.Bleeding - stats.Implacable <= 0) yield break;
+        if (stats.TempHealth > 0)
+        {
+            stats.TempHealth -= unit.Bleeding;
+            Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Bleeding} Punkty/ów Zdrowia w wyniku krwawienia.</color>");
+            unit.DisplayUnitHealthPoints();
+        }
+        else if (!unit.Unconscious)
+        {
+            unit.Unconscious = true; // Utrata Przytomności
+            Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność w wyniku krwawienia.</color>");
+        }
+        else
+        {
+            int difficulty = GetDifficulty(unit.Bleeding);
+            int[] testResult = null;
+            if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+            {
+                // Rzut manualny
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(
+                    stats,
+                    "śmierć w wyniku krwawienia",
+                    "K",
+                    "Endurance",
+                    difficultyLevel: difficulty,
+                    callback: result => testResult = result
+                ));
+                if (testResult == null) yield break;
+            }
+            else
+            {
+                // Rzut automatyczny
+                testResult = DiceRollManager.Instance.TestSkill(
+                    stats,
+                    "śmierć w wyniku krwawienia",
+                    "K",
+                    "Endurance",
+                    difficultyLevel: difficulty
+                );
+            }
 
-    //    if (stats.TempHealth > 0)
-    //    {
-    //        stats.TempHealth -= unit.Bleeding - stats.Implacable;
-    //        Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Bleeding - stats.Implacable} punktów żywotności w wyniku krwawienia.</color>");
-    //        unit.DisplayUnitHealthPoints();
-    //    }
-    //    else if (!unit.Unconscious)
-    //    {
-    //        unit.Unconscious = true; // Utrata Przytomności
-    //        Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność w wyniku krwawienia.</color>");
-    //    }
-    //    else
-    //    {
-    //        int rollResult = 0;
-    //        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
-    //        {
-    //            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "śmierć w wyniku krwawienia", result => rollResult = result));
-    //            if (rollResult == 0) yield break;
-    //        }
+            int finalScore = testResult[3];
 
-    //        int rollDifficulty = unit.Bleeding * 10;
-    //        if (rollResult < rollDifficulty)
-    //        {
-    //            Debug.Log($"<color=#FF7F50>{stats.Name} wykonuje rzut obronny przed śmiercią w wyniku krwawienia. Wynik rzutu: {rollResult} Modyfikator: {-rollDifficulty}. {stats.Name} umiera.</color>");
+            if (finalScore < difficulty)
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} nie zdał/a testu Odporności i umiera w wyniku krwawienia.</color>");
+                if (GameManager.IsAutoKillMode)
+                    UnitsManager.Instance.DestroyUnit(unit.gameObject);
+            }
+            else
+            {
+                if (DiceRollManager.Instance.IsDoubleDigit(testResult[0], testResult[1]))
+                {
+                    Debug.Log($"<color=#FF7F50>{stats.Name} wyrzucił/a <color=green>SZCZĘŚCIE</color>! Krwawienie zostaje całkowicie usunięte.</color>");
+                    unit.Bleeding = 0;
+                }
+                else
+                {
+                    Debug.Log($"<color=#FF7F50>{stats.Name} zdał/a test Odporności. Wciąż żyje, ale pozostaje nieprzytomny/a.</color>");
+                }
+            }
+        }
+    }
 
-    //            if (GameManager.IsAutoKillMode)
-    //            {
-    //                // Usuwanie jednostki
-    //                UnitsManager.Instance.DestroyUnit(unit.gameObject);
-    //            }
-    //        }
-    //        else
-    //        {
-    //            Debug.Log($"<color=#FF7F50>{stats.Name} wykonuje rzut obronny przed śmiercią w wyniku krwawienia. Wynik rzutu: {rollResult} Modyfikator: {-rollDifficulty}. {stats.Name} nadal żyje.</color>");
-    //        }
-
-    //        if (DiceRollManager.Instance.IsDoubleDigit(rollResult, rollResult))
-    //        {
-    //            Debug.Log($"<color=#FF7F50>{stats.Name} wyrzucił/a dublet. Krwawienie zmniejsza się o 1 poziom.</color>");
-    //            unit.Bleeding--;
-
-    //            if (unit.Bleeding == 0) unit.Fatiqued++; // Zwiększenie Wyczerpania
-    //        }
-    //    }
-    //}
     private void Blinded(Unit unit)
     {
         if (!unit.Blinded) unit.Blinded = true;
     }
 
-    //public IEnumerator Broken(Unit unit)
-    //{
-    //    Stats stats = unit.GetComponent<Stats>();
-    //    bool isEngagedInCombat = CombatManager.Instance.AdjacentOpponents(unit.transform.position, unit.tag).Count > 0 ? true : false;
+    private IEnumerator Poison(Unit unit)
+    {
+        if (unit.Poison <= 0) yield break;
 
-    //    if (unit.Broken > 0 && !isEngagedInCombat)
-    //    {
-    //        int rollResult = 0;
-    //        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
-    //        {
-    //            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "opanowanie", result => rollResult = result));
-    //            if (rollResult == 0) yield break;
-    //        }
+        Stats stats = unit.GetComponent<Stats>();
 
-    //        int test = DiceRollManager.Instance.TestSkill("SW", stats, "Cool", 0, rollResult)[2];
+        // Rzut na Odporność zależny od poziomu zatrucia
+        int[] test = null;
+        int difficulty = GetDifficulty(unit.Poison);
 
-    //        if (test > 0 && stats.StoutHearted > 0)
-    //        {
-    //            test += stats.StoutHearted;
-    //            Debug.Log($"Poziom sukcesu {stats.Name} wzrasta do <color=green>{test}</color> za talent \"Waleczne Serce.\"");
-    //        }
+        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(
+                stats,
+                "Odporność na zatrucie",
+                attributeName: "K",
+                skillName: "Endurance",
+                difficultyLevel: difficulty,
+                callback: res => test = res
+            ));
+            if (test == null) yield break;
+        }
+        else
+        {
+            // Auto – TestSkill sam wylosuje kości
+            test = DiceRollManager.Instance.TestSkill(
+                stats: stats,
+                rollContext: "Odporność na zatrucie",
+                attributeName: "Wt",
+                skillName: "Endurance",
+                difficultyLevel: difficulty
+            );
+        }
 
-    //        int successLevel = test;
+        int roll1 = test[0];
+        int roll2 = test[1];
+        int finalScore = test[3];
 
-    //        if (successLevel > 0)
-    //        {
-    //            unit.Broken = Mathf.Max(0, unit.Broken - successLevel);
-    //        }
+        // SZCZĘŚCIE i PECH
+        if (DiceRollManager.Instance.IsDoubleDigit(roll1, roll2))
+        {
+            if (finalScore >= difficulty)
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} wyrzucił/a <color=green>SZCZĘŚCIE</color>! Zatrucie zostaje całkowicie usunięte.</color>");
+                unit.Poison = 0;
+            }
+            else
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} wyrzucił/a <color=red>PECHA</color>! Poziom zatrucia wzrasta o 1.</color>");
+                unit.Poison++;
+            }
 
-    //        if (unit.Broken == 0)
-    //        {
-    //            unit.Fatiqued++; // Zwiększenie Wyczerpania
-    //            unit.IsFearTestPassed = true;
-    //            unit.IsTerrorTestPassed = true;
-    //            Debug.Log($"<color=#FF7F50>{stats.Name} udało się opanować panikę. Poziom wyczerpania wzrasta o 1.</color>");
-    //        }
-    //        else
-    //        {
-    //            Debug.Log($"<color=#FF7F50>{stats.Name} próbuje opanować panikę. Pozostałe poziomy paniki: {unit.Broken}.</color>");
-    //        }
-    //    }
-    //}
+            yield break;
+        }
 
+        // Jeśli postać jest NIEPRZYTOMNA – nieudany test = śmierć
+        if (unit.Unconscious)
+        {
+            if (finalScore < difficulty)
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} nie zdaje testu Odporności i umiera z powodu zatrucia.</color>");
+                if (GameManager.IsAutoKillMode)
+                    UnitsManager.Instance.DestroyUnit(unit.gameObject);
+            }
+            else
+            {
+                Debug.Log($"<color=#FF7F50>{stats.Name} zdaje test Odporności. Wciąż żyje, ale pozostaje nieprzytomny/a.</color>");
+            }
+            yield break;
+        }
 
-    //private IEnumerator Poison(Unit unit)
-    //{
-    //    if (unit.Poison == 0) yield break;
-    //    Stats stats = unit.GetComponent<Stats>();
-
-    //    if (unit.Poison > 0)
-    //    {
-    //        int rollResult = 0;
-    //        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
-    //        {
-    //            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność", result => rollResult = result));
-    //            if (rollResult == 0) yield break;
-    //        }
-
-    //        int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", unit.PoisonTestModifier + 10, rollResult)[2];
-    //        if (successLevel > 0)
-    //        {
-    //            unit.Poison = Mathf.Max(0, unit.Poison - successLevel);
-    //        }
-
-    //        if (unit.Poison == 0)
-    //        {
-    //            unit.PoisonTestModifier = 0;
-    //            unit.Fatiqued++; // Zwiększenie Wyczerpania
-    //            Debug.Log($"<color=#FF7F50>{stats.Name} udało się wygrać z zatruciem. Poziom wyczerpania wzrasta o 1.</color>");
-    //            yield break;
-    //        }
-    //        else
-    //        {
-    //            Debug.Log($"<color=#FF7F50>{stats.Name} walczy z zatruciem. Pozostałe poziomy zatrucia: {unit.Poison}.</color>");
-    //        }
-    //    }
-
-    //    if (stats.TempHealth > 0)
-    //    {
-    //        stats.TempHealth -= unit.Poison;
-    //        Debug.Log($"<color=#FF7F50>{stats.Name} traci {unit.Poison} punktów żywotności w wyniku zatrucia.</color>");
-    //        unit.DisplayUnitHealthPoints();
-    //    }
-    //    else
-    //    {
-    //        unit.Unconscious = true; // Utrata Przytomności
-    //        StartCoroutine(CombatManager.Instance.FrenzyCoroutine(false, unit)); //Zresetowanie szału bojowego
-    //        Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność w wyniku zatrucia.</color>");
-    //    }
-    //}
+        // Postać PRZYTOMNA – porażka = -1 HP
+        if (finalScore < difficulty)
+        {
+            // Jeśli spadło do 0 lub poniżej → Utrata przytomności
+            if (stats.TempHealth <= 0 && !unit.Unconscious)
+            {
+                unit.Unconscious = true;
+                Debug.Log($"<color=#FF7F50>{stats.Name} traci przytomność w wyniku zatrucia.</color>");
+            }
+            else
+            {
+                // Utrata 1 HP (nie cała wartość Poison!)
+                stats.TempHealth -= 1;
+                Debug.Log($"<color=#FF7F50>{stats.Name} nie zdaje testu Odporności i traci 1 Punkt Zdrowia z powodu zatrucia.</color>");
+                unit.DisplayUnitHealthPoints();
+            }
+        }
+        else
+        {
+            Debug.Log($"<color=#FF7F50>{stats.Name} zdaje test Odporności i nie traci Punktu Zdrowia w tej turze.</color>");
+        }
+    }
 
     public void Entangled(Unit unit, int value = 0)
     {
@@ -227,36 +285,10 @@ public class StatesManager : MonoBehaviour
         }
     }
 
-    //private IEnumerator Stunned(Unit unit)
-    //{
-    //    Stats stats = unit.GetComponent<Stats>();
-
-    //    if (unit.Stunned > 0)
-    //    {
-    //        int rollResult = 0;
-    //        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
-    //        {
-    //            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "odporność", result => rollResult = result));
-    //            if (rollResult == 0) yield break;
-    //        }
-
-    //        int successLevel = DiceRollManager.Instance.TestSkill("Wt", stats, "Endurance", 0, rollResult)[2];
-    //        if (successLevel > 0)
-    //        {
-    //            unit.Stunned = Mathf.Max(0, unit.Stunned - successLevel);
-    //        }
-
-    //        if (unit.Stunned == 0)
-    //        {
-    //            unit.Fatiqued++; // Zwiększenie Wyczerpania
-    //            Debug.Log($"<color=#FF7F50>{stats.Name} udało się wyjść ze stanu oszołomienia. Poziom wyczerpania wzrasta o 1.</color>");
-    //        }
-    //        else
-    //        {
-    //            Debug.Log($"<color=#FF7F50>{stats.Name} walczy z oszołomieniem. Pozostałe poziomy oszołomienia: {unit.Stunned}.</color>");
-    //        }
-    //    }
-    //}
+    private void Scared(Unit unit)
+    {
+        if (!unit.Scared) unit.Scared = true;
+    }
 
     public void Unconscious(Unit unit, bool value = true)
     {
@@ -271,6 +303,19 @@ public class StatesManager : MonoBehaviour
         {
             Debug.Log($"<color=#FF7F50>{stats.Name} odzyskuje przytomność.</color>");
         }
+    }
+
+    private int GetDifficulty(int stateLevel)
+    {
+        return stateLevel switch
+        {
+            1 => 12, // Przeciętny
+            2 => 14, // Wymagający
+            3 => 16, // Trudny
+            4 => 18, // Bardzo trudny
+            5 => 20, // Ekstremalny
+            _ => 20
+        };
     }
 
     public void SetUnitState(GameObject textInput)
@@ -309,8 +354,6 @@ public class StatesManager : MonoBehaviour
         {
             Debug.Log($"Nie udało się zmienić wartości stanu '{stateName}'.");
         }
-
-        //UnitsManager.Instance.UpdateUnitPanel(unit);
     }
 
     public void LoadUnitStates()
@@ -345,4 +388,85 @@ public class StatesManager : MonoBehaviour
             }
         }
     }
+
+    #region Fear
+    public IEnumerator FearTest(Unit target)
+    {
+        if (target == null) yield break;
+
+        // znajdź najstraszniejszego przeciwnika (inny tag, aktywny, Scary > 0)
+        string otherTag = target.CompareTag("PlayerUnit") ? "EnemyUnit" : "PlayerUnit";
+
+        int difficulty = 0;
+        Stats targetStats = target.GetComponent<Stats>();
+        Stats mostScaryEnemy = null;
+
+        // Szukamy najstraszniejszego przeciwnika w kolejce inicjatywy
+        foreach (var pair in InitiativeQueueManager.Instance.InitiativeQueue)
+        {
+            Unit unit = pair.Key;
+            if (unit == null) continue;
+
+            if (unit.CompareTag(otherTag))
+            {
+                Stats enemyStats = unit.GetComponent<Stats>();
+                if (enemyStats != null && enemyStats.Scary > difficulty)
+                {
+                    difficulty = enemyStats.Scary;
+                    mostScaryEnemy = enemyStats;
+                }
+            }
+        }
+
+        if (mostScaryEnemy == null)
+        {
+            // Brak źródeł strachu → zdejmij Scared jeśli był
+            if (target.Scared)
+            {
+                target.Scared = false;
+                Debug.Log($"<color=#FF7F50>{targetStats.Name} przestaje się bać (brak źródeł strachu).</color>");
+            }
+            yield break;
+        }
+
+        int[] test = null;
+
+        if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(
+                stats: targetStats,
+                rollContext: $"Opanowanie strachu przed {mostScaryEnemy.Name}",
+                attributeName: "SW",
+                skillName: "Cool",
+                difficultyLevel: difficulty,
+                callback: res => test = res
+            ));
+            if (test == null) yield break; // anulowano panel
+        }
+        else
+        {
+            test = DiceRollManager.Instance.TestSkill(
+                stats: targetStats,
+                rollContext: $"Opanowanie strachu przed {mostScaryEnemy.Name}",
+                attributeName: "SW",
+                skillName: "Cool",
+                difficultyLevel: difficulty
+            );
+        }
+
+        int finalScore = test[3];
+
+        if (finalScore < difficulty)
+        {
+            // porażka → nadaj/utrzymaj Scared z informacją o sile źródła
+            target.Scared = true;
+            Debug.Log($"<color=#FF7F50>{targetStats.Name} nie udało się opanować strachu przed {mostScaryEnemy.Name}.</color>");
+        }
+        else
+        {
+            target.Scared = false;
+            Debug.Log($"<color=#FF7F50>{targetStats.Name} opanowuje strach przed {mostScaryEnemy.Name}.</color>");
+        }
+    }
+    #endregion
 }

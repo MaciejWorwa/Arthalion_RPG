@@ -33,13 +33,7 @@ public class Unit : MonoBehaviour
 
     public int EntangledUnitId; // Cel unieruchomienia
 
-    //public bool IsFearTestPassed; // Zdał test strachu
-    //public bool IsTerrorTestPassed; // Zdał test grozy
-    //public int FearLevel; // Poziom strachu
-    //public HashSet<Unit> FearedUnits = new HashSet<Unit>(); // Lista jednostek, których się boi
-
-    //STARE
-    public int SpellDuration; // Czas trwania zaklęcia mającego wpływ na tą jednostkę
+    public int FearTestedLevel; // max poziom strachu, przeciw któremu ta jednostka już testowała Opanowanie (0 = brak)
 
     [Header("Modyfikatory")]
     public int AimingBonus;
