@@ -549,51 +549,94 @@ public class MagicManager : MonoBehaviour
         //Zaklęcia zadające obrażenia
         if (!spell.Type.Contains("no-damage") && spell.Type.Contains("offensive"))
         {
-            DealMagicDamage(spellcasterStats, targetStats, spell, rollResult, successLevel);
+            StartCoroutine(DealMagicDamage(spellcasterStats, targetStats, spell, rollResult, successLevel));
         }
     }
 
-    private void DealMagicDamage(Stats spellcasterStats, Stats targetStats, Spell spell, int rollResult, int successLevel)
+    // START: zaktualizowana wersja jako korutyna
+    public IEnumerator DealMagicDamage(
+        Stats spellcasterStats,
+        Stats targetStats,
+        Spell spell,
+        int rollResult,
+        int successLevel)
     {
-        int damage = spell.Type.Contains("constant-strength") ? spell.Strength : successLevel + spell.Strength;
+        if (spellcasterStats == null || targetStats == null || spell == null)
+            yield break;
+
+        int damage = spell.Type != null && spell.Type.Contains("constant-strength")
+            ? spell.Strength
+            : successLevel + spell.Strength;
+
         Debug.Log($"Poziom sukcesu {spellcasterStats.Name}: {successLevel}. Siła zaklęcia: {spell.Strength}");
 
-        //Ustalamy miejsce trafienia
-        string unnormalizedHitLocation = !String.IsNullOrEmpty(CombatManager.Instance.HitLocation) ? CombatManager.Instance.HitLocation : (DiceRollManager.Instance.IsDoubleDigit(rollResult, rollResult) ? CombatManager.Instance.DetermineHitLocation() : CombatManager.Instance.DetermineHitLocation(rollResult));
-        string hitLocation = CombatManager.Instance.NormalizeHitLocation(unnormalizedHitLocation);
+        // === USTALENIE LOKACJI TRAFIENIA (czeka na wybór przy 9–10) ===
+        string unnormalizedHitLocation = CombatManager.Instance.HitLocation;
 
-        if(spell.Arcane == "Cuda" && spellcasterStats.HolyHatred > 0)
+        if (string.IsNullOrEmpty(unnormalizedHitLocation))
         {
-            damage += spellcasterStats.HolyHatred;
-            Debug.Log($"Obrażenia zostają powiększone o {spellcasterStats.HolyHatred} za talent \"Święta Nienawiść\".");
+            // Korutyna sama obsłuży: 1–8 natychmiast, 9–10 panel wyboru, AutoCombat → najsłabsza lokacja
+            string resolved = null;
+            yield return CombatManager.Instance.StartCoroutine(
+                CombatManager.Instance.DetermineHitLocationCoroutine(
+                    rollResult,
+                    targetStats,
+                    onResolved: loc => resolved = loc
+                )
+            );
+            unnormalizedHitLocation = resolved;
         }
 
-        // Sprawdzamy zbroję
-        int armor = CombatManager.Instance.CalculateArmor(targetStats, hitLocation);
+        string hitLocation = CombatManager.Instance.NormalizeHitLocation(unnormalizedHitLocation);
 
-        // Pobranie pancerza dla trafionej lokalizacji
-        List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(hitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[hitLocation] : new List<Weapon>();
-
-        // Sprawdzenie, czy żadna część pancerza nie jest metalowa
-        bool hasMetalArmor = armorByLocation.Any(weapon => weapon.Type.Contains("chain") || weapon.Type.Contains("plate"));
-        int metalArmorValue = armorByLocation.Where(armorItem => (armorItem.Type.Contains("chain") || armorItem.Type.Contains("plate")) && armorItem.Armor - armorItem.Damage > 0).Sum(armorItem => armorItem.Armor - armorItem.Damage);
-
-        if (spell.ArmourIgnoring || _ulguToggle.isOn) armor = 0;
-        if ((spell.MetalArmourIgnoring || _chamonToggle.isOn || _azyrToggle.isOn) && hasMetalArmor)
+        // === TALENT / MODYFIKATORY CUDÓW ===
+        if (spell.Arcane == "Cuda" && spellcasterStats.HolyHatred > 0)
         {
-            armor -= metalArmorValue;
+            damage += spellcasterStats.HolyHatred;
+            Debug.Log($"Obrażenia +{spellcasterStats.HolyHatred} za talent \"Święta Nienawiść\".");
+        }
 
-            // Zwiększenie obrażeń o wartość metalowej zbroi
-            if(_chamonToggle.isOn)
+        // === PANCERZ CELU (bezpiecznie) ===
+        int metalArmorValue = 0;
+        int armor = CombatManager.Instance.CalculateArmor(targetStats, hitLocation, null, out metalArmorValue);
+
+        var inventory = targetStats.GetComponent<Inventory>();
+        var dict = inventory != null ? inventory.ArmorByLocation : null;
+
+        List<Weapon> armorByLocation =
+            (dict != null && dict.ContainsKey(hitLocation) && dict[hitLocation] != null)
+                ? dict[hitLocation]
+                : new List<Weapon>();
+
+
+        // IGNOROWANIE PANCERZA
+        if (spell.ArmourIgnoring || (_ulguToggle != null && _ulguToggle.isOn))
+            armor = 0;
+
+        if ((spell.MetalArmourIgnoring ||
+             (_chamonToggle != null && _chamonToggle.isOn) ||
+             (_azyrToggle != null && _azyrToggle.isOn)) && metalArmorValue != 0)
+        {
+            armor -= metalArmorValue; // może zejść poniżej zera – dalej i tak zclampujesz w ApplyDamageToTarget
+
+            // Chamon: obrażenia + wartość metalowego pancerza
+            if (_chamonToggle != null && _chamonToggle.isOn && metalArmorValue > 0)
             {
                 damage += metalArmorValue;
-                Debug.Log($"{targetStats.Name} otrzymuje {metalArmorValue} dodatkowe obrażenia za metalowy pancerz, gdyż jest celem zaklęcia z Tradycji Metalu.");
+                Debug.Log($"{targetStats.Name} otrzymuje +{metalArmorValue} obrażeń za metalowy pancerz (Tradycja Metalu).");
             }
         }
 
-        // Zadanie obrażeń 
-        CombatManager.Instance.ApplyDamageToTarget(damage, armor, spellcasterStats, targetStats, targetStats.GetComponent<Unit>(), null, spell.WtIgnoring);
+        // === ZADANIE OBRAŻEŃ ===
+        CombatManager.Instance.ApplyDamageToTarget(
+            damage,
+            armor,
+            spellcasterStats,
+            targetStats,
+            targetStats.GetComponent<Unit>()
+        );
 
+        // === KRYTYK / ŚMIERĆ ===
         if (targetStats.TempHealth < 0)
         {
             if (GameManager.IsAutoKillMode)
@@ -602,37 +645,40 @@ public class MagicManager : MonoBehaviour
             }
             else
             {
-                if (targetStats.Daemonic > 0)
-                {
-                    Debug.Log($"<color=red>{targetStats.Name} zostaje odesłany do domeny Chaosu.</color>");
-                }
-                else
-                {
-                    StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation, null, rollResult));
-                }
+                yield return StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation, null, rollResult));
             }
         }
 
-        // Zastosowanie efektu Tradycji Niebios (obrażenia przeskakują na sąsiednie jednostki)
-        if (_azyrToggle.isOn)
+        // === TRADYCJA NIEBIOS: przeskok na sąsiadów ===
+        if (_azyrToggle != null && _azyrToggle.isOn)
         {
             Vector2 targetPos = targetStats.transform.position;
             Unit[] unitsAroundTarget = CombatManager.Instance.GetAdjacentUnits(targetPos, targetStats.GetComponent<Unit>());
 
             foreach (Unit adjacentUnit in unitsAroundTarget)
             {
-                int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(adjacentUnit.GetComponent<Stats>(), hitLocation);
+                if (adjacentUnit == null) continue;
+
+                var adjStats = adjacentUnit.GetComponent<Stats>();
+                int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(adjStats, hitLocation);
+
                 int electricDamage = (spellcasterStats.SW / 10) + UnityEngine.Random.Range(1, 11);
-                Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {electricDamage} obrażeń spowodowanych ładunkiem elektrycznym zaklęcia z Tradycji Niebios.");
+                Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {electricDamage} obrażeń (wyładowanie – Tradycja Niebios).");
 
-                CombatManager.Instance.ApplyDamageToTarget(electricDamage, adjacentUnitArmor, spellcasterStats, adjacentUnit.GetComponent<Stats>(), adjacentUnit);
+                CombatManager.Instance.ApplyDamageToTarget(
+                    electricDamage,
+                    adjacentUnitArmor,
+                    spellcasterStats,
+                    adjStats,
+                    adjacentUnit
+                );
             }
-
         }
 
+        // === KRYTYK Z RZUTU NA MAGIĘ ===
         if (_criticalCastingString == "critical_wound")
         {
-            StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation, null, rollResult));
+            yield return StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation, null, rollResult));
         }
     }
     #endregion

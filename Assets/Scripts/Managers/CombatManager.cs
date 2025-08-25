@@ -334,6 +334,12 @@ public class CombatManager : MonoBehaviour
         bool isMeleeAttack = attackerWeapon.Type.Contains("melee");
         bool isRangedAttack = !isMeleeAttack && attackerWeapon.Type.Contains("ranged");
 
+        if(isRangedAttack && attacker.Blinded)
+        {
+            Debug.Log("Jednostki będące w stanie Oślepienia nie mogą wykonywać ataków dystansowych.");
+            yield break;
+        }
+
         // ZAMIENIĆ NA ODPORNOŚĆ NA OBRAŻENIA FIZYCZNE
         //// Uwzględnienie cechy Eteryczny
         //if (targetStats.Ethereal && attackerWeapon.Quality != "Magiczna")
@@ -479,7 +485,17 @@ public class CombatManager : MonoBehaviour
 
         //Ustalamy miejsce trafienia
         int lowerValue = attackTest[0] > attackTest[1] ? attackTest[1] : attackTest[0];
-        string hitLocation = !String.IsNullOrEmpty(HitLocation) ? HitLocation : (DiceRollManager.Instance.IsDoubleDigit(attackTest[0], attackTest[1]) ? DetermineHitLocation(lowerValue) : DetermineHitLocation(lowerValue));
+        string hitLocation = !string.IsNullOrEmpty(HitLocation) ? HitLocation : null;
+
+        if (string.IsNullOrEmpty(hitLocation))
+        {
+            // uruchom korutynę wyboru lokacji; wynik przyjdzie w callbacku
+            yield return StartCoroutine(DetermineHitLocationCoroutine(
+                lowerValue,
+                targetStats,
+                location => hitLocation = location
+            ));
+        }
 
         if (!String.IsNullOrEmpty(HitLocation))
         {
@@ -528,23 +544,26 @@ public class CombatManager : MonoBehaviour
 
         canParry = isMeleeAttack || hasShield;
 
+        Weapon weaponUsedForParry = null;
+        int parryModifier = 0;
+        int dodgeModifier = CalculateDodgeModifier(target, attacker);
+
         if (canParry)
         {
-            Weapon weaponUsedForParry = GetBestParryWeapon(targetStats, targetWeapon);
-            int parryModifier = CalculateParryModifier(target, targetStats, attackerStats, weaponUsedForParry);
-            int dodgeModifier = CalculateDodgeModifier(target, attacker);
-
-            string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
-            string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
-
-            // Obliczamy sumaryczną wartość parowania i uniku
-            parryValue = targetStats.Zr + parryModifier;
-            dodgeValue = targetStats.Zw + dodgeModifier;
-
-            // Funkcja obrony
-            yield return StartCoroutine(Defense(target, targetStats, weaponUsedForParry, parryValue, dodgeValue, parryModifier, dodgeModifier, canParry));
-
+            weaponUsedForParry = GetBestParryWeapon(targetStats, targetWeapon);
+            parryModifier = CalculateParryModifier(target, targetStats, attackerStats, weaponUsedForParry);
         }
+
+        string parryModifierString = parryModifier != 0 ? $" Modyfikator: {parryModifier}," : "";
+        string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
+
+        // Obliczamy sumaryczną wartość parowania i uniku
+        parryValue = targetStats.Zr + parryModifier;
+        dodgeValue = targetStats.Zw + dodgeModifier;
+
+        // Funkcja obrony
+        yield return StartCoroutine(Defense(target, targetStats, weaponUsedForParry, parryValue, dodgeValue, parryModifier, dodgeModifier, canParry));
+
 
         //W przypadku manualnego ataku sprawdzamy, czy postać powinna zakończyć turę
         if (IsManualPlayerAttack && !attacker.CanMove && !attacker.CanDoAction)
@@ -943,12 +962,12 @@ public class CombatManager : MonoBehaviour
         int[] defenceTest = null;
         if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "unik", "ZW", "Dodge", callback: result => defenceTest = result));
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "unik", "Zw", "Dodge", callback: result => defenceTest = result));
             if (defenceTest == null) yield break;
         }
         else
         {
-            defenceTest = DiceRollManager.Instance.TestSkill(targetStats, "unik", "ZW", "Dodge");
+            defenceTest = DiceRollManager.Instance.TestSkill(targetStats, "unik", "Zw", "Dodge");
         }
 
         DefenceResults = defenceTest;
@@ -1018,7 +1037,8 @@ public class CombatManager : MonoBehaviour
 
         // Modyfikator za celowanie
         attackModifier += attackerUnit.AimingBonus;
-        if (attackerUnit.AimingBonus != 0) Debug.Log($"Uwzględniono modyfikator +{attackerUnit.AimingBonus} za celowanie. Łączny modyfikator: " + attackModifier);
+        if (attackerUnit.AimingBonus > 0) Debug.Log($"Uwzględniono modyfikator +{attackerUnit.AimingBonus} za celowanie. Łączny modyfikator: " + attackModifier);
+        else if (attackerUnit.AimingBonus < 0) Debug.Log($"Uwzględniono modyfikator {attackerUnit.AimingBonus} za celowanie. Łączny modyfikator: " + attackModifier);
 
         // Modyfikator za szarżę
         if (attackerUnit.IsCharging && attackerStats.S > 0)
@@ -1044,11 +1064,17 @@ public class CombatManager : MonoBehaviour
         //Debug.Log($"Uwzględniono modyfikator za jakość broni. Łączny modyfikator: " + attackModifier);
 
 
-        //DODAĆ MODYFIKATORY ZA STANY
-        if (attackerUnit.Prone) attackModifier -= 5;
-        if (attackerUnit.Blinded) attackModifier -= 5;
-        Debug.Log($"Uwzględniono modyfikatory za stany atakującego. Łączny modyfikator: " + attackModifier);
-
+        //MODYFIKATORY ZA STANY
+        if (attackerUnit.Prone)
+        {
+            attackModifier -= 5;
+            Debug.Log($"Uwzględniono modyfikator -5 za Powalenie. Łączny modyfikator: " + attackModifier);
+        }
+        if (attackerUnit.Blinded)
+        {
+            attackModifier -= 5;
+            Debug.Log($"Uwzględniono modyfikator -5 za Oślepienie. Łączny modyfikator: " + attackModifier);
+        }
 
         // Przewaga liczebna
         int adjacentEnemies;
@@ -1062,7 +1088,7 @@ public class CombatManager : MonoBehaviour
 
             if(outNumber != 0)
             {
-                Debug.Log("Uwzględniono modyfikator za przewagę liczebną. Łączny modyfikator: " + attackModifier);
+                Debug.Log($"Uwzględniono modyfikator +{outNumber} za przewagę liczebną. Łączny modyfikator: {attackModifier}");
             }
         }
 
@@ -1073,7 +1099,7 @@ public class CombatManager : MonoBehaviour
             if (attackerStats.Size < targetStats.Size)
             {
                 attackModifier += (attackerStats.Size - targetStats.Size) * 2;
-                Debug.Log($"Uwzględniono modyfikator {(attackerStats.Size - targetStats.Size) * 2} za różnicę rozmiarów. Łączny modyfikator: " + attackModifier);
+                Debug.Log($"Uwzględniono modyfikator +{(attackerStats.Size - targetStats.Size) * 2} za różnicę rozmiarów. Łączny modyfikator: " + attackModifier);
             }
 
             // Sprawdza, czy na linii strzału znajduje się przeszkoda
@@ -1089,14 +1115,14 @@ public class CombatManager : MonoBehaviour
                 if (mapElement != null && mapElement.IsLowObstacle)
                 {
                     attackModifier -= 5;
-                    Debug.Log($"Strzał jest wykonywany w jednostkę znajdującą się za przeszkodą. Zastosowano modyfikator -3 do trafienia. Łączny modyfikator: " + attackModifier);
+                    Debug.Log($"Strzał jest wykonywany w jednostkę znajdującą się za przeszkodą. Zastosowano modyfikator -5 do trafienia. Łączny modyfikator: " + attackModifier);
                     break; // Żeby modyfikator nie kumulował się za każdą przeszkodę
                 }
 
                 if (unit != null && unit != targetUnit && unit != attackerUnit && !_groupOfTargets.Contains(unit))
                 {
                     attackModifier -= 5;
-                    Debug.Log("Na linii strzału znajduje się inna jednostka. Zastosowano modyfikator -3 do trafienia. Łączny modyfikator: " + attackModifier);
+                    Debug.Log("Na linii strzału znajduje się inna jednostka. Zastosowano modyfikator -5 do trafienia. Łączny modyfikator: " + attackModifier);
                     break; // Żeby modyfikator nie kumulował się za każdą postać
                 }
             }
@@ -1283,13 +1309,27 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+    //Celowanie w wybraną lokalizację
     public void SelectHitLocation(string hitLocation)
     {
         HitLocation = hitLocation;
+
+        // Jeśli postać celowała wcześniej to nie dostaje kary do trafienia, ale też nie dostaje bonusu z Percepcji
+        if (Unit.SelectedUnit.GetComponent<Unit>().AimingBonus > 0)
+        {
+            Unit.SelectedUnit.GetComponent<Unit>().AimingBonus = 0; 
+        }
+        else
+        {
+            Unit.SelectedUnit.GetComponent<Unit>().AimingBonus = -3;
+        }
     }
 
     // Metoda określająca miejsce trafienia
-    public string DetermineHitLocation(int rollResult = 0)
+    public IEnumerator DetermineHitLocationCoroutine(
+    int rollResult,
+    Stats targetStats = null,
+    System.Action<string> onResolved = null)
     {
         string hitLocation = rollResult switch
         {
@@ -1299,13 +1339,40 @@ public class CombatManager : MonoBehaviour
             5 => "rightLeg",
             6 => "leftLeg",
             7 or 8 => "head",
-            9 or 10 => "head",  // ZMIENIĆ, ŻEBY DAŁO SIĘ WYBRAĆ JAKĄ SIĘ CHCE
+            9 or 10 => null, // wybór gracza / auto
             _ => ""
         };
 
-        Debug.Log($"Atak jest skierowany w {TranslateHitLocation(hitLocation)}.");
+        // 9–10: wybór
+        if (rollResult is 9 or 10)
+        {
+            // AUTOMATYCZNIE → wybór najsłabszej lokacji
+            if (!IsManualPlayerAttack)
+            {
+                hitLocation = ChooseBestHitLocation(targetStats);
+                HitLocation = hitLocation;
+                onResolved?.Invoke(hitLocation);
+                yield break;
+            }
 
-        return hitLocation;
+            // RĘCZNIE → panel i czekanie
+            HitLocation = null; // zresetuj przed otwarciem panelu
+            _selectHitLocationPanel.SetActive(true);
+            Debug.Log("Wybierz lokalizację ataku.");
+
+            yield return new WaitUntil(() => !string.IsNullOrEmpty(HitLocation));
+
+            // gracz wybrał w SelectHitLocation(...)
+            _selectHitLocationPanel.SetActive(false);
+            hitLocation = HitLocation;
+            onResolved?.Invoke(hitLocation);
+            yield break;
+        }
+
+        // 1–8: bez wyboru
+        HitLocation = hitLocation;
+        onResolved?.Invoke(hitLocation);
+        yield break;
     }
 
     public string NormalizeHitLocation(string hitLocation)
@@ -1338,7 +1405,39 @@ public class CombatManager : MonoBehaviour
         return message;
     }
 
+    private string ChooseBestHitLocation(Stats targetStats, Weapon attackerWeapon = null)
+    {
+        if (targetStats == null) return "head";
+
+        // Kolejność – HEAD wygrywa tylko przy remisie
+        var locs = new[] { "head", "torso", "rightArm", "leftArm", "rightLeg", "leftLeg" };
+
+        int bestArmor = int.MaxValue;
+        string best = "head";
+
+        foreach (var loc in locs)
+        {
+            int armor = CalculateArmor(targetStats, loc, attackerWeapon);
+            if (armor < bestArmor)
+            {
+                bestArmor = armor;
+                best = loc;
+            }
+            // przy remisie zostaje wcześniejszy wybór (HEAD jest pierwsza, więc wygrywa TYLKO gdy wartości równe)
+        }
+
+        return best;
+    }
+
+
+    // prostsza wersja – bez metalu
     public int CalculateArmor(Stats targetStats, string hitLocation, Weapon attackerWeapon = null)
+    {
+        return CalculateArmor(targetStats, hitLocation, attackerWeapon, out _);
+    }
+
+    // pełna wersja – z metalem
+    public int CalculateArmor(Stats targetStats, string hitLocation, Weapon attackerWeapon, out int metalArmorValue)
     {
         string normalizedHitLocation = NormalizeHitLocation(hitLocation);
 
@@ -1352,21 +1451,24 @@ public class CombatManager : MonoBehaviour
         };
 
         Inventory inventory = targetStats.GetComponent<Inventory>();
+        List<Weapon> armorByLocation =
+            (inventory.ArmorByLocation != null && inventory.ArmorByLocation.ContainsKey(normalizedHitLocation))
+            ? inventory.ArmorByLocation[normalizedHitLocation]
+            : new List<Weapon>();
 
-        // Pobranie pancerza dla trafionej lokalizacji
-        List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(normalizedHitLocation) ? inventory.ArmorByLocation[normalizedHitLocation] : new List<Weapon>();
+        metalArmorValue = armorByLocation
+            .Where(w => w != null && w.Type != null &&
+                        w.Type.Any(t => !string.IsNullOrEmpty(t) &&
+                                        (t.Equals("chain", StringComparison.OrdinalIgnoreCase) ||
+                                         t.Equals("plate", StringComparison.OrdinalIgnoreCase))))
+            .Sum(w => Mathf.Max(0, w.Armor - w.Damage));
 
-        // Sprawdzenie, czy żadna część pancerza nie jest metalowa
-        bool noMetalArmor = armorByLocation.All(weapon => weapon.Type.Contains("leather")); // TO SIE MOŻE PRZYDAĆ W PRZYSZŁOŚCI DO NP. ZAKLĘĆ 
-
-        // Broń przebijająca zbroję
         if (attackerWeapon != null && attackerWeapon.Penetrating && armor > 0)
-        {
             armor--;
-        }
 
         return armor;
     }
+
 
     public IEnumerator SelectRiderOrMount(Unit unit)
     {

@@ -404,8 +404,10 @@ public class Stats : MonoBehaviour
     }
 
     //Sprawdza, czy postać specjalizuje się z danej rzeczy
-    public bool HasSpecialist(string skill) => !string.IsNullOrEmpty(skill) && Specialist.Contains(skill);
-    public bool HasSlayer(string skill) => !string.IsNullOrEmpty(skill) && Slayer.Contains(skill);
+    public bool HasSpecialist(string skill) => !string.IsNullOrEmpty(skill) && Specialist != null && Specialist.Any(s => s == skill);
+
+    public bool HasSlayer(string skill) => !string.IsNullOrEmpty(skill) && Slayer != null && Slayer.Any(s => !string.IsNullOrEmpty(s) && s == skill);
+
 
     //Zwraca kopię tej klasy
     public Stats Clone()
