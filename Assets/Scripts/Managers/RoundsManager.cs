@@ -67,17 +67,12 @@ public class RoundsManager : MonoBehaviour
             InitiativeQueueManager.Instance.CalculateAdvantageBasedOnDominance();
         }
 
-        // Jednostki z cechą "Niestabilny"
-        List<Unit> unstableUnits = new List<Unit>();
-
         //Resetuje ilość dostępnych akcji dla wszystkich jednostek
         foreach (Unit unit in UnitsManager.Instance.AllUnits)
         {
             if (unit == null) continue;
 
             Stats stats = unit.GetComponent<Stats>();
-
-            if (stats.Unstable) unstableUnits.Add(unit);
 
             unit.IsTurnFinished = false;
             unit.CanDoAction = true;
@@ -87,8 +82,7 @@ public class RoundsManager : MonoBehaviour
 
             if (unit.Unconscious)
             {
-                unit.CanDoAction = false;
-                unit.CanMove = false;
+                StartCoroutine(StatesManager.Instance.Recover(unit));
             }
             if (unit.Entangled)
             {
@@ -134,50 +128,6 @@ public class RoundsManager : MonoBehaviour
 
             //Aktualizuje osiągnięcia
             stats.RoundsPlayed++;
-        }
-
-        // Uwzględnienie cechy Niestabilny
-        if (unstableUnits.Count > 0)
-        {
-            System.Random random = new System.Random();
-            Unit randomUnit = unstableUnits[random.Next(unstableUnits.Count)];
-            Stats unstableStats = randomUnit.GetComponent<Stats>();
-
-            bool applyDamage = false;
-            int damage = 0;
-
-            if (randomUnit.CompareTag("PlayerUnit") && InitiativeQueueManager.Instance.EnemiesAdvantage > InitiativeQueueManager.Instance.PlayersAdvantage)
-            {
-                damage = InitiativeQueueManager.Instance.EnemiesAdvantage - InitiativeQueueManager.Instance.PlayersAdvantage;
-                applyDamage = true;
-            }
-            else if (randomUnit.CompareTag("EnemyUnit") && InitiativeQueueManager.Instance.PlayersAdvantage > InitiativeQueueManager.Instance.EnemiesAdvantage)
-            {
-                damage = InitiativeQueueManager.Instance.PlayersAdvantage - InitiativeQueueManager.Instance.EnemiesAdvantage;
-                applyDamage = true;
-            }
-
-            if (applyDamage)
-            {
-                unstableStats.TempHealth -= damage;
-                StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, randomUnit.gameObject, damage));
-                randomUnit.DisplayUnitHealthPoints();
-
-                Debug.Log($"<color=#FF7F50>{unstableStats.Name} otrzymuje {damage} obrażeń w związku z cechą \"Niestabilny\".</color>");
-
-                if (unstableStats.TempHealth <= 0)
-                {
-                    if (GameManager.IsAutoKillMode)
-                    {
-                        CombatManager.Instance.HandleDeath(unstableStats, unstableStats.gameObject, null);
-                        Debug.Log($"<color=red>{unstableStats.Name} umiera.</color>");
-                    }
-                    else
-                    {
-                        Debug.Log($"<color=red>Żywotność {unstableStats.Name} spadła poniżej 0.</color>");
-                    }
-                }
-            }
         }
 
         // Wykonuje testy grozy i strachu, jeśli na polu bitwy są jednostki straszne

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public enum SizeCategory
 {
@@ -12,6 +13,8 @@ public enum SizeCategory
     Big = 3,         // duży
     Large = 4       // wielki
 }
+
+
 
 public class Stats : MonoBehaviour
 {
@@ -24,6 +27,9 @@ public class Stats : MonoBehaviour
 
     [Header("Rasa")]
     public string Race;
+
+    [Header("Type")]
+    public string Type;
 
     [Header("Rozmiar")]
     public SizeCategory Size; // Rozmiar
@@ -58,11 +64,15 @@ public class Stats : MonoBehaviour
     public int MaxEncumbrance; // Maksymalny udźwig
     public int ExtraEncumbrance; // Dodatkowe obciążenie za przedmioty niebędące uzbrojeniem
 
-    [Header("Punkty zbroi")]
+    [Header("Zbroja")]
     public int Armor_head;
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
+
+    public int ArmorPenaltyZw; // bieżąca kara z pancerza zastosowana do Zw
+    public int ArmorPenaltyP;  // bieżąca kara z pancerza zastosowana do P
+
 
     [Header("Umiejętności")]
     public int Athletics;
@@ -77,11 +87,8 @@ public class Stats : MonoBehaviour
     public int RangedCombat; // Walka Dystansowa
     public int Spellcasting; // Rzucanie zaklęć
 
-
-
     public int Pray; // Modlitwa
-    public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
-    public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
+
 
     [Header("Talenty")]
     public bool CombatMaster; // Wojownik
@@ -91,6 +98,9 @@ public class Stats : MonoBehaviour
     public bool SpecialistRangedCombat; // Specjalista (Walka Dystansowa)
     public int SurvivalInstinct; // Instynkt Przetrwania
 
+    public string[] Specialist = new string[3]; // null/"" = pusty slot
+    //public List<string> Specialist = new List<string>(); // np. "MeleeCombat", "RangedCombat", "Cool"
+    public List<string> Slayer = new List<string>(); // np. "Undead"
 
     public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
@@ -179,16 +189,6 @@ public class Stats : MonoBehaviour
 
     private void Awake()
     {
-        if (Melee == null)
-        {
-            Melee = new Dictionary<MeleeCategory, int>();
-        }
-
-        if (Ranged == null)
-        {
-            Ranged = new Dictionary<RangedCategory, int>();
-        }
-
         Overall = CalculateOverall();
     }
 
@@ -402,6 +402,10 @@ public class Stats : MonoBehaviour
             UnitsManager.Instance.UpdateUnitPanel(Unit.SelectedUnit);
         }
     }
+
+    //Sprawdza, czy postać specjalizuje się z danej rzeczy
+    public bool HasSpecialist(string skill) => !string.IsNullOrEmpty(skill) && Specialist.Contains(skill);
+    public bool HasSlayer(string skill) => !string.IsNullOrEmpty(skill) && Slayer.Contains(skill);
 
     //Zwraca kopię tej klasy
     public Stats Clone()

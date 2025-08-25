@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using Unity.VisualScripting;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 
 public class InventoryManager : MonoBehaviour
@@ -171,6 +172,7 @@ public class InventoryManager : MonoBehaviour
         if (Unit.SelectedUnit == null || InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons.Count == 0) return;
 
         GameObject unit = Unit.SelectedUnit;
+        Stats stats = unit.GetComponent<Stats>();
 
         int selectedIndex = InventoryScrollViewContent.GetComponent<CustomDropdown>().GetSelectedIndex();
 
@@ -209,14 +211,15 @@ public class InventoryManager : MonoBehaviour
         List<Weapon> equippedArmors = unit.GetComponent<Inventory>().EquippedArmors;
         if (equippedArmors.Contains(selectedWeapon))
         {
+            CalculateArmorPenalties(stats, unit.GetComponent<Inventory>().EquippedArmors);
             equippedArmors.Remove(selectedWeapon);
         }
 
         UpdateInventoryDropdown(unit.GetComponent<Inventory>().AllWeapons, true);
         CheckForEquippedWeapons();
-        CalculateEncumbrance(unit.GetComponent<Stats>());
+        CalculateEncumbrance(stats);
 
-        Debug.Log($"Przedmiot {selectedWeapon.Name} został usunięty z ekwipunku {unit.GetComponent<Stats>().Name}.");
+        Debug.Log($"Przedmiot {selectedWeapon.Name} został usunięty z ekwipunku {stats.Name}.");
     }
 
     public void RemoveAllWeaponsFromInventory()
@@ -265,6 +268,7 @@ public class InventoryManager : MonoBehaviour
         if (InventoryScrollViewContent.GetComponent<CustomDropdown>().SelectedButton == null && selectedIndex == 0) return;
 
         GameObject unit = Unit.SelectedUnit;
+        Stats stats = unit.GetComponent<Stats>();
         if (selectedIndex == 0)
         {
             selectedIndex = InventoryScrollViewContent.GetComponent<CustomDropdown>().GetSelectedIndex();
@@ -279,49 +283,53 @@ public class InventoryManager : MonoBehaviour
         // Wybiera przedmiot z ekwipunku
         Weapon selectedWeapon = unit.GetComponent<Inventory>().AllWeapons[selectedIndex - 1];
 
+        // Sprawdza wymagania
+        if (!CheckWeaponRequirements(selectedWeapon, stats)) return;
+
         // Sprawdzamy, czy to element pancerza
         if (selectedWeapon.Type.Any(t => t == "head" || t == "torso" || t == "arms" || t == "legs"))
         {
             List<Weapon> equippedArmors = unit.GetComponent<Inventory>().EquippedArmors;
 
-            // Sprawdzamy, czy istnieje już pancerz na tej samej lokacji
-            bool hasAnotherArmor = equippedArmors.Any(armor => armor.Type.Intersect(selectedWeapon.Type).Any());
-            bool isArmorFlexible = false;
+            // Wyciągamy lokalizacje (head/torso/arms/legs)
+            var armorLocations = selectedWeapon.Type.Where(t => t == "head" || t == "torso" || t == "arms" || t == "legs");
 
-            if (hasAnotherArmor)
-            {
-                // Sprawdzamy tylko pancerze dla tej samej lokalizacji (np. "head", "torso", "arms", "legs")
-                isArmorFlexible = equippedArmors
-                    .Where(armor => armor.Type.Intersect(selectedWeapon.Type).Any())  // Filtrujemy pancerze tylko dla tej lokalizacji
-                    .All(armor => armor.Flexible) || selectedWeapon.Flexible;
-            }
+            // Wyciągamy typ zbroi (leather/chain/plate)
+            var armorTypes = selectedWeapon.Type.Where(t => t == "leather" || t == "chain" || t == "plate");
+
+            bool hasSameTypeOnSameLocation = equippedArmors.Any(armor =>
+                armor.Type.Any(t => armorLocations.Contains(t)) && // ta sama lokalizacja
+                armor.Type.Any(t => armorTypes.Contains(t))        // ten sam typ zbroi
+            );
 
             if (equippedArmors.Contains(selectedWeapon))
             {
                 equippedArmors.Remove(selectedWeapon);
+                CalculateArmorPenalties(stats, unit.GetComponent<Inventory>().EquippedArmors);
 
                 if (!SaveAndLoadManager.Instance.IsLoading)
                 {
-                    Debug.Log($"{unit.GetComponent<Stats>().Name} zdjął {selectedWeapon.Name}.");
+                    Debug.Log($"{stats.Name} zdjął {selectedWeapon.Name}.");
                 }
             }
-            else if (!hasAnotherArmor || isArmorFlexible)
+            else if (!hasSameTypeOnSameLocation)
             {
                 equippedArmors.Add(selectedWeapon);
+                CalculateArmorPenalties(stats, unit.GetComponent<Inventory>().EquippedArmors);
 
                 if (!SaveAndLoadManager.Instance.IsLoading)
                 {
-                    Debug.Log($"{unit.GetComponent<Stats>().Name} założył {selectedWeapon.Name}.");
+                    Debug.Log($"{stats.Name} założył {selectedWeapon.Name}.");
                 }
             }
             else
             {
-                Debug.Log("Nie można łączyć elementów pancerza, jeśli żaden z nich nie posiada cechy \"Giętki\".");
+                Debug.Log("Nie można łączyć tych elementów pancerza.");
                 return;
             }
 
             CheckForEquippedWeapons();
-            CalculateEncumbrance(unit.GetComponent<Stats>());
+            CalculateEncumbrance(stats);
             return;
         }
 
@@ -366,7 +374,7 @@ public class InventoryManager : MonoBehaviour
 
             if(!SaveAndLoadManager.Instance.IsLoading)
             {
-                Debug.Log($"{unit.GetComponent<Stats>().Name} odłożył {selectedWeapon.Name}.");
+                Debug.Log($"{stats.Name} odłożył {selectedWeapon.Name}.");
             }
 
             CheckForEquippedWeapons();
@@ -412,7 +420,7 @@ public class InventoryManager : MonoBehaviour
 
         if (!SaveAndLoadManager.Instance.IsLoading)
         {
-            Debug.Log($"{unit.GetComponent<Stats>().Name} dobył/a {selectedWeapon.Name}.");
+            Debug.Log($"{stats.Name} dobył/a {selectedWeapon.Name}.");
 
             //Aktualizuje pasek przewagi w bitwie
             int newOverall = Unit.SelectedUnit.GetComponent<Stats>().CalculateOverall();
@@ -580,8 +588,6 @@ public class InventoryManager : MonoBehaviour
             || weaponData.Type.Contains("legs");
     }
 
-
-
     public void SelectHand(bool rightHand)
     {
         SelectedHand = rightHand ? 0 : 1;
@@ -634,26 +640,69 @@ public class InventoryManager : MonoBehaviour
             button.transform.Find("hand_text").gameObject.SetActive(false);
         }
     }
+    private bool CheckWeaponRequirements(Weapon weapon, Stats stats)
+    {
+        if (stats.S < weapon.S)
+        {
+            Debug.Log($"{stats.Name} nie spełnia wymagania Siły ({weapon.S}).");
+            return false;
+        }
+        if (stats.Zr < weapon.Zr)
+        {
+            Debug.Log($"{stats.Name} nie spełnia wymagania Zręczności ({weapon.Zr}).");
+            return false;
+        }
+        return true;
+    }
+
+    private void CalculateArmorPenalties(Stats stats, List<Weapon> equippedArmors)
+    {
+        // 1) Zdejmij poprzednie kary, żeby nie kumulować modyfikacji
+        stats.Zw -= stats.ArmorPenaltyZw;
+        stats.P -= stats.ArmorPenaltyP;
+
+        // 2) Wyzeruj zapamiętane kary
+        stats.ArmorPenaltyZw = 0;
+        stats.ArmorPenaltyP = 0;
+
+        // 3) Policz bieżące maksymalne kary z założonych elementów
+        int maxZwPenalty = 0;
+        int maxPPenalty = 0;
+
+        foreach (var armor in equippedArmors)
+        {
+            if (armor.Zw < maxZwPenalty) maxZwPenalty = armor.Zw; // np. -2
+            if (armor.P < maxPPenalty) maxPPenalty = armor.P;  // np. -1
+        }
+
+        // 4) Zapisz nowe kary…
+        stats.ArmorPenaltyZw = maxZwPenalty;
+        stats.ArmorPenaltyP = maxPPenalty;
+
+        // 5) …i nałóż je na aktualne cechy
+        stats.Zw += stats.ArmorPenaltyZw;
+        stats.P += stats.ArmorPenaltyP;
+    }
     #endregion
 
     #region Encumbrance
     public void CalculateEncumbrance(Stats stats)
     {
         Inventory inventory = stats.GetComponent<Inventory>();
-        int totalEncumbrance = 0;
+        int totalEncumbrance = inventory.AllWeapons.Count;
 
-        foreach (var weapon in inventory.AllWeapons)
-        {
-            int encumbrance = weapon.Encumbrance;
+        //foreach (var weapon in inventory.AllWeapons)
+        //{
+        //    int encumbrance = weapon.Encumbrance;
 
-            // Jeśli jest to element pancerza założony na siebie, zmniejszamy obciążenie o 1, ale nie poniżej 0
-            if (inventory.EquippedArmors.Contains(weapon))
-            {
-                encumbrance = Mathf.Max(0, encumbrance - 1);
-            }
+        //    // Jeśli jest to element pancerza założony na siebie, zmniejszamy obciążenie o 1, ale nie poniżej 0
+        //    if (inventory.EquippedArmors.Contains(weapon))
+        //    {
+        //        encumbrance = Mathf.Max(0, encumbrance - 1);
+        //    }
 
-            totalEncumbrance += encumbrance;
-        }
+        //    totalEncumbrance += encumbrance;
+        //}
 
         totalEncumbrance += stats.ExtraEncumbrance;
 
@@ -730,18 +779,6 @@ public class InventoryManager : MonoBehaviour
                 textInput.GetComponent<UnityEngine.UI.Toggle>().isOn = false;
                 return;
             }
-            if ((attributeName == "Precise" && selectedWeapon.Imprecise) || (attributeName == "Imprecise" && selectedWeapon.Precise))
-            {
-                Debug.Log("Broń z cechą \"Nieprecyzyjna\" nie może posiadać jednocześnie cechy \"Precyzyjna\".");
-                textInput.GetComponent<UnityEngine.UI.Toggle>().isOn = false;
-                return;
-            }
-            if ((attributeName == "Damaging" && selectedWeapon.Undamaging) || (attributeName == "Undamaging" && selectedWeapon.Damaging))
-            {
-                Debug.Log("Broń z cechą \"Tępa\" nie może posiadać jednocześnie cechy \"Przebijająca\".");
-                textInput.GetComponent<UnityEngine.UI.Toggle>().isOn = false;
-                return;
-            }
 
             bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn;
             field.SetValue(selectedWeapon, boolValue);
@@ -754,7 +791,7 @@ public class InventoryManager : MonoBehaviour
             {
                 selectedWeapon = ChooseWeaponToAttack(unit);
 
-                if (!selectedWeapon.Type.Contains("ranged") || selectedWeapon.Category == "entangling" || selectedWeapon.Category == "throwing")
+                if (!selectedWeapon.Type.Contains("ranged"))
                 {
                     Debug.Log("Aktualnie dobyta broń nie korzysta z amunicji.");
                     value = "Brak";
@@ -970,7 +1007,7 @@ public class InventoryManager : MonoBehaviour
             {
                 if (i < allWeapons.Count) // Upewniamy się, że indeks nie wykracza poza listę
                 {
-                    bool isBroken = allWeapons[i].Damage > 0;
+                    bool isBroken = allWeapons[i].Broken;
                     DisplayBrokenWeapons(buttons[i], isBroken);
                 }
             }
@@ -1194,42 +1231,23 @@ public class InventoryManager : MonoBehaviour
         ResetToBaseWeaponStats(weapon);
 
         // Nakładamy efekty amunicji na bazową broń
-        if (effect.S.HasValue) weapon.S = weapon.BaseWeaponStats.S + effect.S.Value;
-        if (effect.AttackRange.HasValue) weapon.AttackRange = weapon.BaseWeaponStats.AttackRange + effect.AttackRange.Value;
+        if (effect.Damage.HasValue) weapon.Damage = weapon.BaseWeaponStats.Damage + effect.Damage.Value; 
+        if (effect.AttackRangeMultiplier.HasValue) weapon.AttackRange = weapon.BaseWeaponStats.AttackRange * effect.AttackRangeMultiplier.Value;
+        else if (effect.AttackRange.HasValue) weapon.AttackRange = weapon.BaseWeaponStats.AttackRange + effect.AttackRange.Value;
         if (effect.ReloadTime.HasValue) weapon.ReloadTime = weapon.BaseWeaponStats.ReloadTime + effect.ReloadTime.Value;
-        if (effect.Accurate.HasValue) weapon.Accurate = effect.Accurate.Value;
         if (effect.Penetrating.HasValue) weapon.Penetrating = effect.Penetrating.Value;
-        if (effect.Impale.HasValue) weapon.Impale = effect.Impale.Value;
-        if (effect.Slash.HasValue) weapon.Slash = effect.Slash.Value;
-        if (effect.Undamaging.HasValue) weapon.Undamaging = effect.Undamaging.Value;
-        if (effect.Imprecise.HasValue) weapon.Imprecise = effect.Imprecise.Value;
-        if (effect.Dangerous.HasValue) weapon.Dangerous = effect.Dangerous.Value;
         if (effect.Pummel.HasValue) weapon.Pummel = effect.Pummel.Value;
-        if (effect.Impact.HasValue) weapon.Impact = effect.Impact.Value;
-        if (effect.Spread.HasValue) weapon.Spread = effect.Spread.Value;
-        if (effect.Precise.HasValue) weapon.Precise = effect.Precise.Value;
-        if (effect.Blast.HasValue) weapon.Blast = effect.Blast.Value;
     }
 
     public void ResetToBaseWeaponStats(Weapon weapon)
     {
         if (weapon.BaseWeaponStats == null) return;
 
-        weapon.S = weapon.BaseWeaponStats.S;
+        weapon.Damage = weapon.BaseWeaponStats.Damage;
         weapon.AttackRange = weapon.BaseWeaponStats.AttackRange;
         weapon.ReloadTime = weapon.BaseWeaponStats.ReloadTime;
-        weapon.Accurate = weapon.BaseWeaponStats.Accurate;
         weapon.Penetrating = weapon.BaseWeaponStats.Penetrating;
-        weapon.Impale = weapon.BaseWeaponStats.Impale;
-        weapon.Slash = weapon.BaseWeaponStats.Slash;
-        weapon.Undamaging = weapon.BaseWeaponStats.Undamaging;
-        weapon.Imprecise = weapon.BaseWeaponStats.Imprecise;
-        weapon.Dangerous = weapon.BaseWeaponStats.Dangerous;
         weapon.Pummel = weapon.BaseWeaponStats.Pummel;
-        weapon.Impact = weapon.BaseWeaponStats.Impact;
-        weapon.Spread = weapon.BaseWeaponStats.Spread;
-        weapon.Precise = weapon.BaseWeaponStats.Precise;
-        weapon.Blast = weapon.BaseWeaponStats.Blast;
     }
 
     #endregion

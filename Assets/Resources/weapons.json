@@ -1,867 +1,604 @@
 {
   "Weapons": [
     {
-      "Name": "Arkan",
-      "Category": "entangling",
-      "Type": [ "ranged", "throwing", "no-damage" ],
-      "AttackRange": 2,
-      "Entangle": true
-    },
-    {
-      "Name": "Bicz",
-      "Category": "entangling",
-      "Type": [ "ranged", "strength-based" ],
-      "AttackRange": 3,
-      "S": 2,
-      "Entangle": true
-    },
-    {
-      "Name": "Bolas",
-      "Category": "throwing",
-      "Type": [ "ranged", "throwing", "strength-based" ],
-      "AttackRange": 3,
-      "S": 0,
-      "Entangle": true
-    },
-    {
-      "Name": "Bomba",
-      "Category": "explosives",
-      "Type": [ "ranged", "throwing" ],
-      "AttackRange": 1,
-      "S": 12,
-      "Impact": true,
-      "Dangerous": true,
-      "Blast": 5
-    },
-    {
-      "Name": "Bomba żużlowa",
-      "Category": "explosives",
-      "Type": [ "ranged", "throwing" ],
-      "AttackRange": 1,
-      "S": 14,
-      "Impact": true,
-      "Dangerous": true,
-      "Blast": 3,
-      "Penetrating": true
-    },
-    {
       "Name": "Broń improwizowana",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 1,
-      "Encumbrance": 1,
-      "Undamaging": true,
-      "Unbalanced": true
-    },
-    {
-      "Name": "Bułat",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 1,
-      "Slash": 1
-    },
-    {
-      "Name": "Buzdygan",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 1,
-      "Unbalanced": true,
-      "Pummel": true
+      "Type": [
+        "melee"
+      ],
+      "Damage": 0,
+      "AttackRange": 1.5
     },
     {
       "Name": "Broń naturalna",
-      "Type": [ "melee", "natural-weapon" ],
+      "Type": [
+        "melee",
+        "natural-weapon"
+      ],
       "AttackRange": 1.5,
       "S": 4,
       "NaturalWeapon": true
     },
     {
-      "Name": "Cep bojowy",
-      "Category": "flail",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 3,
-      "Encumbrance": 1,
-      "Imprecise": true,
-      "Wrap": true,
-      "Distract": true
+      "Name": "Bicz",
+      "Type": [
+        "melee"
+      ],
+      "AttackRange": 2.0,
+      "Zr": 3,
+      "Damage": 2,
+      "Fast": true
     },
     {
-      "Name": "Długi łuk",
-      "Category": "bow",
-      "Type": [ "ranged", "strength-based" ],
-      "TwoHanded": true,
-      "AttackRange": 50,
-      "S": 4,
-      "Encumbrance": 3,
-      "Damaging": true,
-      "AmmoType": "Strzała"
-    },
-    {
-      "Name": "Elfi łuk",
-      "Category": "bow",
-      "Type": [ "ranged", "strength-based" ],
-      "TwoHanded": true,
-      "AttackRange": 75,
-      "S": 4,
-      "Encumbrance": 2,
-      "Damaging": true,
-      "Precise": true,
-      "AmmoType": "Strzała"
-    },
-    {
-      "Name": "Flamberg",
-      "Category": "twohanded",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 5,
-      "Encumbrance": 3,
-      "Hack": true,
-      "Damaging": true,
-      "Slash": 2
-    },
-    {
-      "Name": "Floret",
-      "Category": "fencing",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 3,
-      "Encumbrance": 1,
-      "Fast": true,
-      "Impale": true,
-      "Precise": true,
-      "Undamaging": true
-    },
-    {
-      "Name": "Garłacz",
-      "Category": "blackpowder",
-      "Type": [ "ranged" ],
-      "TwoHanded": true,
-      "AttackRange": 10,
-      "S": 8,
-      "Encumbrance": 1,
-      "Dangerous": true,
-      "ReloadTime": 2,
-      "Blackpowder": true,
-      "Blast": 3,
-      "Damaging": true,
-      "AmmoType": "Śrut i proch"
-    },
-    {
-      "Name": "Glewia",
-      "Category": "polearm",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 3,
-      "Defensive": true,
-      "Impale": true
-    },
-    {
-      "Name": "Halabarda",
-      "Category": "polearm",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 3,
-      "Defensive": true,
-      "Impale": true
-    },
-    {
-      "Name": "Kastet",
-      "Category": "brawling",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 2
-    },
-    {
-      "Name": "Kiścień",
-      "Category": "flail",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 6,
-      "Encumbrance": 2,
-      "Tiring": true,
-      "Impact": true,
-      "Wrap": true,
-      "Distract": true
-    },
-    {
-      "Name": "Korbacz",
-      "Category": "flail",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 5,
-      "Encumbrance": 1,
-      "Wrap": true,
-      "Distract": true
-    },
-    {
-      "Name": "Kostur",
-      "Category": "polearm",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 2,
+      "Name": "Buława",
+      "Type": [
+        "melee"
+      ],
+      "Damage": 2,
       "Pummel": true,
-      "Defensive": true
+      "AttackRange": 1.5
     },
     {
-      "Name": "Krasnoludzki kilof",
-      "Category": "twohanded",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 6,
-      "Encumbrance": 3,
-      "Damaging": true,
-      "Impale": true
-    },
-    {
-      "Name": "Krasnoludzka kusza",
-      "Category": "crossbow",
-      "Type": [ "ranged" ],
+      "Name": "Ciężka kusza",
+      "Type": [
+        "ranged"
+      ],
       "TwoHanded": true,
-      "AttackRange": 40,
-      "S": 9,
-      "Encumbrance": 3,
-      "ReloadTime": 2,
-      "Precise": true,
-      "Damaging": true,
+      "S": 3,
+      "Damage": 4,
+      "AttackRange": 25.0,
+      "ReloadTime": 1,
+      "Slow": true,
+      "Penetrating": true,
       "AmmoType": "Bełt"
     },
     {
-      "Name": "Krasnoludzka rusznica",
-      "Category": "blackpowder",
-      "Type": [ "ranged" ],
-      "AttackRange": 25,
-      "S": 9,
-      "Encumbrance": 2,
-      "ReloadTime": 3,
-      "Damaging": true,
-      "Blackpowder": true,
-      "Penetrating": true,
-      "AmmoType": "Pocisk i proch"
+      "Name": "Dmuchawka",
+      "Type": [
+        "ranged"
+      ],
+      "Zr": 2,
+      "Damage": 0,
+      "AttackRange": 8.0,
+      "AmmoType": "Strzałka"
     },
     {
-      "Name": "Krasnoludzki pistolet",
-      "Category": "blackpowder",
-      "Type": [ "ranged" ],
-      "AttackRange": 15,
-      "S": 8,
-      "Encumbrance": 1,
-      "ReloadTime": 1,
-      "Damaging": true,
-      "Blackpowder": true,
-      "Pistol": true,
-      "Penetrating": true,
-      "AmmoType": "Pocisk i proch"
+      "Name": "Długi łuk",
+      "Type": [
+        "ranged"
+      ],
+      "TwoHanded": true,
+      "S": 2,
+      "Damage": 3,
+      "AttackRange": 20.0,
+      "AmmoType": "Strzała"
+    },
+    {
+      "Name": "Glewia",
+      "Type": [
+        "melee"
+      ],
+      "TwoHanded": true,
+      "AttackRange": 2.0,
+      "S": 2,
+      "Damage": 3,
+      "Penetrating": true
+    },
+    {
+      "Name": "Halabarda",
+      "Type": [
+        "melee"
+      ],
+      "TwoHanded": true,
+      "AttackRange": 2.0,
+      "S": 3,
+      "Damage": 4,
+      "Penetrating": true
+    },
+    {
+      "Name": "Kij",
+      "Type": [
+        "melee"
+      ],
+      "TwoHanded": true,
+      "AttackRange": 2.0,
+      "Damage": 1,
+      "Pummel": true
+    },
+    {
+      "Name": "Kiścień",
+      "Type": [
+        "melee"
+      ],
+      "Zr": 2,
+      "Damage": 3,
+      "Pummel": true,
+      "AttackRange": 1.5
     },
     {
       "Name": "Krótki łuk",
-      "Category": "bow",
-      "Type": [ "ranged", "strength-based" ],
+      "Type": [
+        "ranged"
+      ],
       "TwoHanded": true,
-      "AttackRange": 10,
-      "S": 2,
-      "Encumbrance": 1,
+      "Damage": 1,
+      "AttackRange": 10.0,
       "AmmoType": "Strzała"
     },
     {
       "Name": "Kusza",
-      "Category": "crossbow",
-      "Type": [ "ranged" ],
+      "Type": [
+        "ranged"
+      ],
       "TwoHanded": true,
-      "AttackRange": 30,
-      "S": 9,
-      "Encumbrance": 2,
+      "Damage": 3,
+      "AttackRange": 15.0,
       "ReloadTime": 1,
       "AmmoType": "Bełt"
     },
     {
-      "Name": "Kusza pistoletowa",
-      "Category": "crossbow",
-      "Type": [ "ranged" ],
-      "AttackRange": 5,
-      "S": 7,
-      "Pistol": true,
-      "AmmoType": "Bełt"
-    },
-    {
-      "Name": "Łamacz mieczy",
-      "Category": "parry",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 3,
-      "Encumbrance": 1,
-      "TrapBlade": true,
-      "Defensive": true
-    },
-    {
-      "Name": "Łapacz",
-      "Category": "polearm",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 2,
-      "Encumbrance": 3,
-      "Defensive": true,
-      "Entangle": true
-    },
-    {
       "Name": "Łuk",
-      "Category": "bow",
-      "Type": [ "ranged", "strength-based" ],
+      "Type": [
+        "ranged"
+      ],
       "TwoHanded": true,
-      "AttackRange": 25,
-      "S": 3,
-      "Encumbrance": 2,
+      "Damage": 2,
+      "AttackRange": 12.0,
       "AmmoType": "Strzała"
     },
     {
       "Name": "Miecz",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
+      "Type": [
+        "melee"
+      ],
       "Damage": 2,
-      "Encumbrance": 1
+      "AttackRange": 1.5
     },
     {
       "Name": "Miecz dwuręczny",
-      "Category": "twohanded",
-      "Type": [ "melee" ],
+      "Type": [
+        "melee"
+      ],
       "TwoHanded": true,
-      "AttackRange": 1.5,
+      "S": 2,
       "Damage": 3,
-      "Encumbrance": 1,
-      "Slow": true
+      "Slow": true,
+      "AttackRange": 1.5
     },
     {
-      "Name": "Miecz Dzikiej Kniei",
-      "Category": "twohanded",
-      "Type": [ "melee" ],
+      "Name": "Muszkiet",
+      "Type": [
+        "ranged"
+      ],
       "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 2,
-      "Fast": true,
-      "Damaging": true
+      "Zr": 3,
+      "Damage": 5,
+      "AttackRange": 25.0,
+      "ReloadTime": 3,
+      "Slow": true,
+      "Penetrating": true,
+      "AmmoType": "Pocisk i proch"
     },
     {
       "Name": "Młot bojowy",
-      "Category": "twohanded",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 6,
-      "Encumbrance": 3,
-      "Slow": true,
+      "Type": [
+        "melee"
+      ],
+      "Damage": 2,
       "Pummel": true,
-      "Damaging": true
+      "Penetrating": true,
+      "AttackRange": 1.5
     },
     {
-      "Name": "Młot jednoręczny",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 1,
-      "Unbalanced": true,
-      "Pummel": true
-    },
-    {
-      "Name": "Młot krasnoludzki",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 2,
-      "Pummel": true
-    },
-    {
-      "Name": "Muszkiet hochlandzki",
-      "Category": "blackpowder",
-      "Type": [ "ranged" ],
+      "Name": "Młot dwuręczny",
+      "Type": [
+        "melee"
+      ],
       "TwoHanded": true,
-      "AttackRange": 50,
-      "S": 9,
-      "Encumbrance": 3,
-      "ReloadTime": 4,
-      "ReloadLeft": 0,
-      "Accurate": true,
-      "Precise": true,
-      "Damaging": true,
-      "Blackpowder": true,
-      "AmmoType": "Pocisk i proch"
+      "S": 4,
+      "Damage": 4,
+      "Pummel": true,
+      "Slow": true,
+      "AttackRange": 1.5
     },
     {
       "Name": "Nadziak",
-      "Category": "twohanded",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 5,
-      "Encumbrance": 3,
-      "Impale": true,
-      "Damaging": true,
-      "Tiring": true
+      "Type": [
+        "melee"
+      ],
+      "Damage": 2,
+      "Penetrating": true,
+      "AttackRange": 1.5
     },
     {
       "Name": "Nóż",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 1,
-      "Undamaging": true
+      "Type": [
+        "melee"
+      ],
+      "Damage": 1,
+      "Fast": true,
+      "AttackRange": 1.5
     },
     {
       "Name": "Nóż do rzucania",
-      "Category": "throwing",
-      "Type": [ "melee", "throwing" ],
-      "AttackRange": 2,
-      "S": 2
-    },
-    {
-      "Name": "Ostrze wojenne Eonirów",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 3,
-      "Precise": true
+      "Type": [
+        "melee",
+        "throwing"
+      ],
+      "Zr": 2,
+      "Damage": 1,
+      "AttackRange": 10.0
     },
     {
       "Name": "Oszczep",
-      "Category": "throwing",
-      "Type": [ "ranged", "throwing" ],
-      "AttackRange": 3,
-      "S": 3,
-      "Encumbrance": 1,
-      "Impale": true
-    },
-    {
-      "Name": "Pałka",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 1,
-      "Unbalanced": true,
-      "Undamaging": true
+      "Type": [
+        "ranged",
+        "throwing",
+        "strength-based"
+      ],
+      "Zr": 2,
+      "AttackRange": 10.0,
+      "Penetrating": true
     },
     {
       "Name": "Pawęż",
-      "Category": "basic",
-      "Type": [ "melee", "shield" ],
-      "AttackRange": 1.5,
-      "S": 2,
-      "Encumbrance": 4,
-      "Shield": 3,
-      "Defensive": true,
-      "Undamaging": true,
+      "Type": [
+        "melee",
+        "shield"
+      ],
+      "S": 3,
+      "Damage": -1,
+      "Defensive": 4,
+      "Pummel": true,
       "Slow": true,
-      "Tiring": true
+      "AttackRange": 1.5
+    },
+    {
+      "Name": "Pałka",
+      "Type": [
+        "melee"
+      ],
+      "Damage": 1,
+      "Pummel": true,
+      "AttackRange": 1.5
+    },
+    {
+      "Name": "Pałka z kolcami",
+      "Type": [
+        "melee"
+      ],
+      "Damage": 2,
+      "Penetrating": true,
+      "AttackRange": 1.5
     },
     {
       "Name": "Pistolet",
-      "Category": "blackpowder",
-      "Type": [ "ranged" ],
-      "AttackRange": 10,
-      "S": 8,
-      "ReloadTime": 1,
-      "Damaging": true,
-      "Blackpowder": true,
-      "Pistol": true,
+      "Type": [
+        "ranged"
+      ],
+      "Zr": 3,
+      "Damage": 4,
+      "AttackRange": 10.0,
+      "ReloadTime": 2,
       "AmmoType": "Pocisk i proch"
-    },
-    {
-      "Name": "Pistolet samopowtarzalny",
-      "Category": "engineering",
-      "Type": [ "ranged" ],
-      "AttackRange": 5,
-      "S": 8,
-      "Encumbrance": 1,
-      "ReloadTime": 4,
-      "AmmoMax": 4,
-      "Damaging": true,
-      "Blackpowder": true,
-      "Pistol": true,
-      "Dangerous": true,
-      "AmmoType": "Pocisk i proch"
-    },
-    {
-      "Name": "Półtorak",
-      "Category": "twohanded",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 5,
-      "Encumbrance": 3,
-      "Defensive": true,
-      "Damaging": true
     },
     {
       "Name": "Proca",
-      "Category": "sling",
-      "Type": [ "ranged" ],
-      "AttackRange": 30,
-      "S": 6,
-      "AmmoType": "Pocisk kamienny"
-    },
-    {
-      "Name": "Proca drzewcowa",
-      "Category": "sling",
-      "Type": [ "ranged" ],
-      "TwoHanded": true,
-      "AttackRange": 50,
-      "S": 7,
-      "Encumbrance": 2,
+      "Type": [
+        "ranged"
+      ],
+      "Zr": 2,
+      "Damage": 2,
+      "AttackRange": 10.0,
       "AmmoType": "Pocisk kamienny"
     },
     {
       "Name": "Puklerz",
-      "Category": "basic",
-      "Type": [ "melee", "shield" ],
-      "AttackRange": 1.5,
-      "S": 1,
-      "Shield": 1,
-      "Defensive": true,
-      "Undamaging": true
+      "Type": [
+        "melee",
+        "shield"
+      ],
+      "Damage": -1,
+      "Defensive": 1,
+      "Pummel": true,
+      "AttackRange": 1.5
     },
     {
       "Name": "Rapier",
-      "Category": "fencing",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 1,
+      "Type": [
+        "melee"
+      ],
+      "Zr": 2,
+      "Damage": 2,
       "Fast": true,
-      "Impale": true
+      "Defensive": 1,
+      "AttackRange": 1.5
     },
     {
-      "Name": "Rusznica",
-      "Category": "blackpowder",
-      "Type": [ "ranged" ],
-      "TwoHanded": true,
-      "AttackRange": 25,
-      "S": 9,
-      "Encumbrance": 2,
-      "Dangerous": true,
-      "ReloadTime": 3,
-      "Blackpowder": true,
-      "Damaging": true,
-      "AmmoType": "Pocisk i proch"
-    },
-    {
-      "Name": "Rusznica dwulufowa",
-      "Category": "blackpowder",
-      "Type": [ "ranged" ],
-      "TwoHanded": true,
-      "AttackRange": 25,
-      "S": 9,
-      "Encumbrance": 3,
-      "Dangerous": true,
-      "AmmoMax": 2,
-      "ReloadTime": 4,
-      "Blackpowder": true,
-      "Damaging": true,
-      "AmmoType": "Pocisk i proch"
-    },
-    {
-      "Name": "Sierpak",
-      "Category": "polearm",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 3,
-      "Trip": true,
-      "Defensive": true
+      "Name": "Sieć",
+      "Type": [
+        "ranged",
+        "throwing",
+        "no-damage"
+      ],
+      "Zr": 2,
+      "AttackRange": 4.0,
+      "Entangle":  true,
+      "Penetrating": true
     },
     {
       "Name": "Szabla",
-      "Category": "cavalry",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 1,
-      "Slash": 1
-    },
-    {
-      "Name": "Szpada",
-      "Category": "fencing",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 2,
-      "Encumbrance": 1,
+      "Type": [
+        "melee"
+      ],
+      "Zr": 2,
+      "Damage": 2,
       "Fast": true,
-      "Impale": true,
-      "Precise": true
+      "AttackRange": 1.5
     },
     {
       "Name": "Sztylet",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 2
+      "Type": [
+        "melee"
+      ],
+      "Damage": 1,
+      "Fast": true,
+      "AttackRange": 1.5
     },
     {
       "Name": "Tarcza",
-      "Category": "basic",
-      "Type": [ "melee", "shield" ],
-      "AttackRange": 1.5,
-      "S": 2,
-      "Encumbrance": 1,
-      "Shield": 2,
-      "Defensive": true,
-      "Undamaging": true
-    },
-    {
-      "Name": "Tarcza duża",
-      "Category": "basic",
-      "Type": [ "melee", "shield" ],
-      "AttackRange": 1.5,
-      "S": 3,
-      "Encumbrance": 3,
-      "Shield": 3,
-      "Defensive": true,
-      "Undamaging": true
-    },
-    {
-      "Name": "Tasak",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 3,
-      "Encumbrance": 1,
-      "Hack": true
-    },
-    {
-      "Name": "Tłuk",
-      "Category": "brawling",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 1,
-      "Unbalanced": true,
+      "Type": [
+        "melee",
+        "shield"
+      ],
+      "Damage": -1,
+      "Defensive": 2,
       "Pummel": true,
-      "Undamaging": true
+      "AttackRange": 1.5
     },
     {
       "Name": "Topór",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 1,
-      "Unbalanced": true,
-      "Hack": true
+      "Type": [
+        "melee"
+      ],
+      "Damage": 2,
+      "AttackRange": 1.5
     },
     {
-      "Name": "Topór brodaty",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 2,
-      "TrapBlade": true
-    },
-    {
-      "Name": "Topór drzewcowy",
-      "Category": "polearm",
-      "Type": [ "melee" ],
+      "Name": "Topór dwuręczny",
+      "Type": [
+        "melee"
+      ],
       "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 4,
-      "Encumbrance": 3,
-      "Defensive": true,
-      "Penetrating": true,
-      "Impale": true
-    },
-    {
-      "Name": "Topór zabójców",
-      "Category": "twohanded",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 6,
-      "Encumbrance": 4,
-      "Impact": true,
-      "Penetrating": true
-    },
-    {
-      "Name": "Topór do rzucania",
-      "Category": "throwing",
-      "Type": [ "ranged", "throwing" ],
-      "AttackRange": 2,
       "S": 3,
-      "Encumbrance": 1,
-      "Hack": true
-    },
-    {
-      "Name": "Wielki topór",
-      "Category": "twohanded",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 1.5,
-      "S": 6,
-      "Encumbrance": 3,
-      "Impact": true,
-      "Hack": true,
-      "Tiring": true
+      "Damage": 4,
+      "Slow": true,
+      "Penetrating": true,
+      "AttackRange": 1.5
     },
     {
       "Name": "Włócznia",
-      "Category": "polearm",
-      "Type": [ "melee" ],
+      "Type": [
+        "melee"
+      ],
       "TwoHanded": true,
-      "AttackRange": 2,
-      "S": 4,
-      "Encumbrance": 2,
-      "Impale": true
-    },
-    {
-      "Name": "Włócznia Eonirów",
-      "Category": "polearm",
-      "Type": [ "melee" ],
-      "TwoHanded": true,
-      "AttackRange": 2,
-      "S": 4,
-      "Encumbrance": 1,
+      "AttackRange": 2.0,
+      "Damage": 2,
       "Penetrating": true
     },
     {
-      "Name": "Żelazna patelnia",
-      "Category": "basic",
-      "Type": [ "melee" ],
-      "AttackRange": 1.5,
-      "S": 3,
-      "Encumbrance": 1,
-      "Defensive": true
-    },
-    {
-      "Name": "Czepiec kolczy",
-      "Type": [ "head" ],
-      "Category": "chain",
-      "Armor": 2,
-      "Encumbrance": 2,
-      "Flexible": true,
-      "Partial": true
-    },
-    {
-      "Name": "Hełm",
-      "Type": [ "head" ],
-      "Category": "plate",
-      "Armor": 2,
-      "Encumbrance": 2,
-      "Impenetrable": true,
-      "WeakPoints": true
-    },
-    {
-      "Name": "Hełm otwarty",
-      "Type": [ "head" ],
-      "Category": "plate",
-      "Armor": 2,
-      "Encumbrance": 1,
-      "Partial": true
-    },
-    {
-      "Name": "Kaftan kolczy",
-      "Type": [ "torso" ],
-      "Category": "chain",
-      "Armor": 2,
-      "Encumbrance": 2,
-      "Flexible": true
-    },
-    {
-      "Name": "Kolczuga",
-      "Type": [ "arms", "torso" ],
-      "Category": "chain",
-      "Armor": 2,
-      "Encumbrance": 3,
-      "Flexible": true
-    },
-    {
-      "Name": "Kolet",
-      "Type": [ "torso" ],
-      "Category": "leather",
-      "Armor": 2,
-      "Encumbrance": 2,
-      "WeakPoints": true
-    },
-    {
-      "Name": "Nagolenniki płytowe",
-      "Type": [ "legs" ],
-      "Category": "plate",
-      "Armor": 2,
-      "Encumbrance": 3,
-      "Impenetrable": true,
-      "WeakPoints": true
-    },
-    {
-      "Name": "Napierśnik",
-      "Type": [ "torso" ],
-      "Category": "plate",
-      "Armor": 2,
-      "Impenetrable": true,
-      "WeakPoints": true
-    },
-    {
-      "Name": "Naramienniki",
-      "Type": [ "arms" ],
-      "Category": "plate",
-      "Armor": 2,
-      "Encumbrance": 3,
-      "Impenetrable": true,
-      "WeakPoints": true
-    },
-    {
-      "Name": "Nogawice kolcze",
-      "Type": [ "legs" ],
-      "Category": "chain",
-      "Armor": 2,
-      "Encumbrance": 3,
-      "Flexible": true
-    },
-    {
       "Name": "Skórzany hełm",
-      "Type": [ "head" ],
-      "Category": "leather",
-      "Armor": 1,
-      "Partial": true,
-      "Flexible": true
+      "Type": [
+        "head",
+        "leather"
+      ],
+      "Armor": 1
     },
     {
       "Name": "Skórzany kaftan",
-      "Type": [ "torso" ],
-      "Category": "leather",
-      "Armor": 1,
-      "Encumbrance": 1,
-      "Flexible": true
+      "Type": [
+        "torso",
+        "leather"
+      ],
+      "Armor": 1
+    },
+    {
+      "Name": "Skórzane karwasze",
+      "Type": [
+        "arms",
+        "leather"
+      ],
+      "Armor": 1
     },
     {
       "Name": "Skórzana kurta",
-      "Type": [ "arms", "torso" ],
-      "Category": "leather",
-      "Armor": 1,
-      "Encumbrance": 1,
-      "Flexible": true
+      "Type": [
+        "torso",
+        "arms",
+        "leather"
+      ],
+      "Armor": 1
     },
     {
       "Name": "Skórzane nogawice",
-      "Type": [ "legs" ],
-      "Category": "leather",
-      "Armor": 1,
-      "Encumbrance": 1,
-      "Flexible": true
+      "Type": [
+        "legs",
+        "leather"
+      ],
+      "Armor": 1
+    },
+    {
+      "Name": "Czepiec kolczy",
+      "Type": [
+        "head",
+        "chain"
+      ],
+      "Armor": 2,
+      "Zw": -1
+    },
+    {
+      "Name": "Kaftan kolczy",
+      "Type": [
+        "torso",
+        "chain"
+      ],
+      "Armor": 2,
+      "S": 1,
+      "Zw": -1
+    },
+    {
+      "Name": "Kolczuga",
+      "Type": [
+        "torso",
+        "arms",
+        "legs",
+        "chain"
+      ],
+      "Armor": 2,
+      "S": 2,
+      "Zw": -1
+    },
+    {
+      "Name": "Koszulka kolcza",
+      "Type": [
+        "torso",
+        "arms",
+        "chain"
+      ],
+      "Armor": 2,
+      "S": 1,
+      "Zw": -1
+    },
+    {
+      "Name": "Hełm",
+      "Type": [
+        "head",
+        "plate"
+      ],
+      "Armor": 2,
+      "Zw": -1,
+      "P": -1
+    },
+    {
+      "Name": "Płytowe nagolenniki",
+      "Type": [
+        "legs",
+        "plate"
+      ],
+      "Armor": 2,
+      "S": 2,
+      "Zw": -2
+    },
+    {
+      "Name": "Płytowy napierśnik",
+      "Type": [
+        "torso",
+        "plate"
+      ],
+      "Armor": 2,
+      "S": 2,
+      "Zw": -2
+    },
+    {
+      "Name": "Płytowe naramienniki",
+      "Type": [
+        "arms",
+        "plate"
+      ],
+      "Armor": 2,
+      "S": 2,
+      "Zw": -2
+    },
+    {
+      "Name": "Hełm z Czerwonej Stali",
+      "Type": [
+        "head",
+        "plate"
+      ],
+      "Armor": 3,
+      "Zw": -2,
+      "P": -1
+    },
+    {
+      "Name": "Napierśnik z Czerwonej Stali",
+      "Type": [
+        "torso",
+        "plate"
+      ],
+      "Armor": 3,
+      "S": 2,
+      "Zw": -2
+    },
+    {
+      "Name": "Naramienniki z Czerwonej Stali",
+      "Type": [
+        "arms",
+        "plate"
+      ],
+      "Armor": 3,
+      "S": 2,
+      "Zw": -2
+    },
+    {
+      "Name": "Nogawice z Czerwonej Stali",
+      "Type": [
+        "legs",
+        "plate"
+      ],
+      "Armor": 3,
+      "S": 2,
+      "Zw": -2
+    },
+    {
+      "Name": "Zbroja skórzana",
+      "Type": [
+        "head",
+        "torso",
+        "arms",
+        "legs",
+        "leather"
+      ],
+      "Armor": 1
+    },
+    {
+      "Name": "Zbroja kolcza",
+      "Type": [
+        "head",
+        "torso",
+        "arms",
+        "legs",
+        "chain"
+      ],
+      "Armor": 2,
+      "S": 2,
+      "Zw": -1
+    },
+    {
+      "Name": "Zbroja płytowa",
+      "Type": [
+        "head",
+        "torso",
+        "arms",
+        "legs",
+        "plate"
+      ],
+      "Armor": 2,
+      "S": 2,
+      "Zw": -2,
+      "P": -1
+    },
+    {
+      "Name": "Zbroja z Czerwonej Stali",
+      "Type": [
+        "head",
+        "torso",
+        "arms",
+        "legs",
+        "plate"
+      ],
+      "Armor": 3,
+      "S": 2,
+      "Zw": -2,
+      "P": -1
     }
   ]
 }

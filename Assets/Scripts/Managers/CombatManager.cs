@@ -321,7 +321,7 @@ public class CombatManager : MonoBehaviour
             targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
 
             // Uwzględniamy typ amunicji
-            if (attackerWeapon.Type.Contains("ranged") && attackerWeapon.Category != "entangling" && attackerWeapon.Category != "throwing")
+            if (attackerWeapon.Type.Contains("ranged") && !attackerWeapon.Type.Contains("entangling") && !attackerWeapon.Type.Contains("throwing"))
             {
                 if (string.IsNullOrEmpty(attackerWeapon.AmmoType) || attackerWeapon.AmmoType == "Brak")
                 {
@@ -331,9 +331,8 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        bool isMeleeAttack = attackerWeapon.Type.Contains("melee") || (attackerWeapon.Pistol && attackDistance <= 1.5f);
+        bool isMeleeAttack = attackerWeapon.Type.Contains("melee");
         bool isRangedAttack = !isMeleeAttack && attackerWeapon.Type.Contains("ranged");
-        bool hasTwoWeapons = attacker.GetComponent<Inventory>().EquippedWeapons.All(weapon => weapon != null && weapon.Shield == 0 && !weapon.TwoHanded);
 
         // ZAMIENIĆ NA ODPORNOŚĆ NA OBRAŻENIA FIZYCZNE
         //// Uwzględnienie cechy Eteryczny
@@ -478,25 +477,6 @@ public class CombatManager : MonoBehaviour
             Debug.Log($"{attackerStats.Name} korzysta z talentu {talentName}. Wartość niższej kości k10 zostaje podwojona z <color=#4dd2ff>{attackTest[lowerDice]}</color> na <color=#4dd2ff>{attackTest[lowerDice]*2}</color>. Nowy łączny wynik: <color=green>{attackRollResult}</color>.");
         }
 
-        // Uwzględniamy talent SPECJALISTA (Walka Wręcz lub Dystansowa)
-        if (!IsManualPlayerAttack)
-        {
-            bool hasSpecialist = (!isRangedAttack && attackerStats.SpecialistMeleeCombat) || (isRangedAttack && attackerStats.SpecialistRangedCombat);
-
-            int skillLevel = isRangedAttack ? attackerStats.RangedCombat : attackerStats.MeleeCombat;
-
-            if (hasSpecialist && skillLevel > 0 && attackTest[2] < skillLevel + 2) // Tylko jeśli poprzedni rzut był poniżej średniego wyniku
-            {
-                int newSkillRoll = DiceRollManager.Instance.TestSkill(attackerStats, "", "Zr", skillName, attackRollResult, skillReroll: true)[2];
-
-                if (newSkillRoll > attackTest[2])
-                {
-                    attackRollResult += newSkillRoll - attackTest[2];
-                    attackTest[2] = newSkillRoll;
-                }
-            }
-        }
-
         //Ustalamy miejsce trafienia
         int lowerValue = attackTest[0] > attackTest[1] ? attackTest[1] : attackTest[0];
         string hitLocation = !String.IsNullOrEmpty(HitLocation) ? HitLocation : (DiceRollManager.Instance.IsDoubleDigit(attackTest[0], attackTest[1]) ? DetermineHitLocation(lowerValue) : DetermineHitLocation(lowerValue));
@@ -543,7 +523,7 @@ public class CombatManager : MonoBehaviour
         // Sprawdzenie, czy jednostka może próbować parować lub unikać ataku
         Inventory inventory = target.GetComponent<Inventory>();
         bool hasMeleeWeapon = inventory.EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("melee"));
-        bool hasShield = inventory.EquippedWeapons.Any(weapon => weapon != null && weapon.Shield >= 2);
+        bool hasShield = inventory.EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("shield"));
         bool bothUnarmed = attackerWeapon.Id == 0 && targetWeapon.Id == 0;
 
         canParry = isMeleeAttack || hasShield;
@@ -631,31 +611,67 @@ public class CombatManager : MonoBehaviour
 
        
         //// Udana próba pochwycenia przeciwnika
-        //if ((AttackTypes["Grappling"] == true || attackerWeapon.Entangle) && attacker.EntangledUnitId != target.UnitId)
-        //{
-        //    attacker.EntangledUnitId = target.UnitId;
-        //    target.Entangled++;
-        //    target.CanMove = false;
-        //    attacker.CanMove = false;
-        //    MovementManager.Instance.SetCanMoveToggle(false);
-        //    RoundsManager.Instance.FinishTurn();
+        if ((AttackTypes["Grappling"] == true || attackerWeapon.Entangle) && attacker.EntangledUnitId != target.UnitId)
+        {
+            attacker.EntangledUnitId = target.UnitId;
+            target.Entangled = true;
+            target.CanMove = false;
 
-        //    if(AttackTypes["Grappling"] == true)
-        //    {
-        //        Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name}.");
-        //        yield break;
-        //    }
-        //    else if (attackerWeapon.Entangle)
-        //    {
-        //        Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
-        //    }
-        //}
+
+            attacker.CanMove = false;
+
+            MovementManager.Instance.SetCanMoveToggle(false);
+            RoundsManager.Instance.FinishTurn();
+
+            if(AttackTypes["Grappling"] == true)
+            {
+                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name}.");
+                yield break;
+            }
+            else if (attackerWeapon.Entangle)
+            {
+                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
+            }
+        }
+
+        // Udana próba pochwycenia/unieruchomienia
+        bool isThrowing = attackerWeapon.Type != null && attackerWeapon.Type.Contains("throwing");
+
+        // 1) Grappling lub broń Entangle w walce wręcz (nie-throwing):
+        if ((AttackTypes["Grappling"] == true || (attackerWeapon.Entangle && !isThrowing)) && attacker.EntangledUnitId != target.UnitId)
+        {
+            attacker.EntangledUnitId = target.UnitId;
+            target.Entangled = true;
+            target.CanMove = false;
+            attacker.CanMove = false;
+
+            MovementManager.Instance.SetCanMoveToggle(false);
+            RoundsManager.Instance.FinishTurn();
+
+            if (AttackTypes["Grappling"] == true)
+            {
+                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name}.");
+                yield break;
+            }
+            else // Entangle melee
+            {
+                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
+            }
+        }
+        // 2) Broń unieruchamiająca rzucana (np. sieć) – tylko cel unieruchomiony, atakujący pozostaje mobilny
+        else if (attackerWeapon.Entangle && isThrowing && attacker.EntangledUnitId != target.UnitId)
+        {
+            target.Entangled = true;
+            target.CanMove = false;
+
+            Debug.Log($"{attackerStats.Name} unieruchomił/a {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
+        }
 
         if (attackerWeapon.Type.Contains("no-damage")) yield break; //Jeśli broń nie powoduje obrażeń, np. sieć, to pomijamy dalszą część kodu
 
         // 11) OBLICZENIE OBRAŻEŃ
 
-        int armor = CalculateArmor(attackerStats, targetStats, hitLocation, attackRollResult, attackerWeapon);
+        int armor = CalculateArmor(targetStats, hitLocation, attackerWeapon);
         int damage = CalculateDamage(attackRollResult - DefenceResults[3], attackerStats, attackerWeapon);
         Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.");
 
@@ -802,6 +818,14 @@ public class CombatManager : MonoBehaviour
     #region Defense functions
     public IEnumerator Defense(Unit target, Stats targetStats, Weapon targetWeapon, int parryValue, int dodgeValue, int parryModifier, int dodgeModifier, bool canParry)
     {
+        // Jak cel jest nieprzytomny to wynik obrony wynosi 0.
+        if(target.Unconscious)
+        {
+            Debug.Log($"{targetStats.Name} jest nieprzytomny i nie może się bronić.");
+            DefenceResults = new int[] { 0, 1, 0, 0 };
+            yield break;
+        }
+
         if (!GameManager.IsAutoDefenseMode)
         {
             yield return StartCoroutine(ManualDefense(target, targetStats, targetWeapon, parryValue, dodgeValue, parryModifier, dodgeModifier, canParry));
@@ -935,48 +959,6 @@ public class CombatManager : MonoBehaviour
     }
     #endregion
 
-    #region Calculate success level
-    public int[] CalculateSuccessLevel(Weapon weapon, int rollResult, int skillValue, bool isAttack, int modifier = 0)
-    {
-        int successValue = skillValue + modifier - rollResult;
-        int successLevel = (skillValue + modifier) / 10 - rollResult / 10;
-
-        //Uwzględnia dodatkowe cechy broni
-        if (weapon != null)
-        {
-            if (successValue < 0) // Nieudany test
-            {
-                if (weapon.Practical && _isTrainedWeaponCategory) // Uwzględnia zaletę przedmiotu "Praktyczny"
-                {
-                    Debug.Log($"Używamy cechy Praktyczny i podnosimy PS z {successLevel} na {successLevel + 1}");
-                    successLevel++;
-                }
-                else if (weapon.Unrielable) // Uwzględnia zaletę przedmiotu "Zawodny"
-                {
-                    Debug.Log($"Używamy cechy Zawodny i obniżamy PS z {successLevel} na {successLevel - 1}");
-                    successLevel--;
-                }
-            }
-            else if (isAttack) // Udany test
-            {
-                if (weapon.Precise && _isTrainedWeaponCategory) // Uwzględnia zaletę przedmiotu "Precyzyjny"
-                {
-                    Debug.Log($"Używamy cechy Precyzyjny i podnosimy PS z {successLevel} na {successLevel + 1}");
-                    successLevel++;
-                }
-            }
-
-            if (weapon.Imprecise && isAttack) // Uwzględnia zaletę przedmiotu "Nieprecyzyjny"
-            {
-                Debug.Log($"Używamy cechy Nieprecyzyjny i obniżamy PS z {successLevel} na {successLevel - 1}");
-                successLevel--;
-            }
-        }
-
-        return new int[] { successValue, successLevel };
-    }
-    #endregion
-
     #region Calculating distance and validating distance attack
     public float CalculateDistance(GameObject attacker, GameObject target)
     {
@@ -997,14 +979,6 @@ public class CombatManager : MonoBehaviour
         if (attackerWeapon.ReloadLeft != 0)
         {
             Debug.Log($"Broń {attacker.GetComponent<Stats>().Name} wymaga przeładowania.");
-            return false;
-        }
-
-        // Sprawdza, czy cel nie znajduje się zbyt blisko
-        if (attackDistance <= 1.5f && !attackerWeapon.Pistol)
-        {
-            Debug.Log($"{attacker.GetComponent<Stats>().Name} stoi zbyt blisko celu, aby wykonać atak dystansowy.");
-
             return false;
         }
 
@@ -1052,20 +1026,13 @@ public class CombatManager : MonoBehaviour
             attackModifier += attackerStats.S;
             Debug.Log($"Uwzględniono modyfikator +{attackerStats.S} za szarżę. Łączny modyfikator: " + attackModifier);
         }
-
-        // Modyfikator za broń z cechą "Celny"
-        if (attackerWeapon.Accurate && _isTrainedWeaponCategory)
-        {
-            attackModifier += 10;
-            Debug.Log($"Uwzględniono modyfikator za cechę celny. Łączny modyfikator: " + attackModifier);
-        }
-
+     
         // Utrudnienie za atak słabszą ręką
         if (attackerUnit.GetComponent<Inventory>().EquippedWeapons[0] == null || attackerWeapon.Name != attackerUnit.GetComponent<Inventory>().EquippedWeapons[0].Name)
         {
             if (attackerWeapon.Id != 0)
             {
-                attackModifier -= attackerStats.Ambidextrous > 0 ? 20 - Math.Min(20, attackerStats.Ambidextrous * 10) : 20; // Uwzględnia talent oburęczność
+                attackModifier -= 3;
                 Debug.Log($"Uwzględniono modyfikator za atak słabszą ręką. Łączny modyfikator: " + attackModifier);
             }
         }
@@ -1076,8 +1043,10 @@ public class CombatManager : MonoBehaviour
 
         //Debug.Log($"Uwzględniono modyfikator za jakość broni. Łączny modyfikator: " + attackModifier);
 
-      
+
         //DODAĆ MODYFIKATORY ZA STANY
+        if (attackerUnit.Prone) attackModifier -= 5;
+        if (attackerUnit.Blinded) attackModifier -= 5;
         Debug.Log($"Uwzględniono modyfikatory za stany atakującego. Łączny modyfikator: " + attackModifier);
 
 
@@ -1221,7 +1190,6 @@ public class CombatManager : MonoBehaviour
     #region Calculating damage
     int CalculateDamage(int successLevel, Stats attackerStats, Weapon attackerWeapon)
     {
-        Unit attackerUnit = attackerStats.GetComponent<Unit>();
         int damage;
         int strengthModifier = 0;
 
@@ -1229,6 +1197,12 @@ public class CombatManager : MonoBehaviour
         if (attackerStats.Size > SizeCategory.Average && attackerWeapon.Type.Contains("melee") && attackerStats.S > 0)
         {
             strengthModifier = attackerStats.S;
+        }
+
+        //Modyfikator za broń typu strength-based
+        if(attackerWeapon.Type.Contains("strength-based"))
+        {
+            attackerWeapon.Damage = attackerStats.S;
         }
 
         damage = successLevel + strengthModifier + attackerWeapon.Damage;
@@ -1245,49 +1219,6 @@ public class CombatManager : MonoBehaviour
     #region Critical wounds
     public IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, string hitLocation, Weapon attackerWeapon = null, int rollOnAttack = 0)
     {
-        //TA METODA JEST DO ROZBUDOWANIA. Można dodać konkretne dodatkowe efekty np. ogłuszenie, krwawienie itp. w zależności również od lokacji
-
-        // Pobranie pancerza dla trafionej lokalizacji
-        string normalizedHitLocation = NormalizeHitLocation(hitLocation);
-        List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(normalizedHitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[normalizedHitLocation] : new List<Weapon>();
-
-        // Element pancerza, który został trafiony
-        Weapon selectedArmor = armorByLocation
-             .FirstOrDefault(weapon => (weapon.Category == "plate") && weapon.Armor - weapon.Damage > 0) // Najpierw szuka zbroi płytowej lub tarczy, ale tylko jeśli Armor > 0 (inaczej oznacza, że pancerz jest już całkowicie zniszczony)
-             ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "chain" && weapon.Armor - weapon.Damage > 0) // Potem zbroja kolcza, ale tylko jeśli Armor > 0
-             ?? armorByLocation.FirstOrDefault(weapon => weapon.Category == "leather" && weapon.Armor - weapon.Damage > 0); // Na końcu zbroja skórzana, ale tylko jeśli Armor > 0
-
-        if (selectedArmor != null && targetStats.TempHealth >= 0)
-        {
-            _criticalDeflectionPanel.SetActive(true);
-
-            // Najpierw czekamy, aż gracz kliknie którykolwiek przycisk
-            yield return new WaitUntil(() => !_criticalDeflectionPanel.activeSelf);
-
-            if (_criticalDeflection == "damage_armor")
-            {
-                if (selectedArmor.Durable == 0) // Uwzględnienie cechy Wytrzymały
-                {
-                    selectedArmor.Damage++;
-                }
-                else
-                {
-                    selectedArmor.Durable--;
-                }
-
-                string message = $"Trafienie krytyczne jest ignorowane, ale uszkodzono {selectedArmor.Name}.";
-
-                if (selectedArmor.Damage >= selectedArmor.Armor && selectedArmor.Shield == 0 || selectedArmor.Damage >= selectedArmor.Shield && selectedArmor.Shield > 0)
-                {
-                    message += " <color=red>Ten element pancerza jest już uszkodzony tak bardzo, że stał się bezużyteczny.</color>";
-                }
-                Debug.Log(message);
-
-                InventoryManager.Instance.CheckForEquippedWeapons(targetStats.GetComponent<Unit>());
-                yield break;
-            }
-        }
-
         int rollResult = 0;
         int[] criticalWoundTest = null;
         if (!GameManager.IsAutoDiceRollingMode && attackerStats.CompareTag("PlayerUnit"))
@@ -1407,7 +1338,7 @@ public class CombatManager : MonoBehaviour
         return message;
     }
 
-    public int CalculateArmor(Stats attackerStats, Stats targetStats, string hitLocation, int attackRollResult, Weapon attackerWeapon = null)
+    public int CalculateArmor(Stats targetStats, string hitLocation, Weapon attackerWeapon = null)
     {
         string normalizedHitLocation = NormalizeHitLocation(hitLocation);
 
@@ -1425,11 +1356,8 @@ public class CombatManager : MonoBehaviour
         // Pobranie pancerza dla trafionej lokalizacji
         List<Weapon> armorByLocation = inventory.ArmorByLocation.ContainsKey(normalizedHitLocation) ? inventory.ArmorByLocation[normalizedHitLocation] : new List<Weapon>();
 
-        // Sprawdza, czy trafienie jest trafieniem krytycznym
-        bool isCriticalHit = DiceRollManager.Instance.IsDoubleDigit(attackRollResult, attackRollResult);
-
         // Sprawdzenie, czy żadna część pancerza nie jest metalowa
-        bool noMetalArmor = armorByLocation.All(weapon => weapon.Category == "leather"); // TO SIE MOŻE PRZYDAĆ W PRZYSZŁOŚCI DO NP. ZAKLĘĆ 
+        bool noMetalArmor = armorByLocation.All(weapon => weapon.Type.Contains("leather")); // TO SIE MOŻE PRZYDAĆ W PRZYSZŁOŚCI DO NP. ZAKLĘĆ 
 
         // Broń przebijająca zbroję
         if (attackerWeapon != null && attackerWeapon.Penetrating && armor > 0)
@@ -1764,7 +1692,6 @@ public class CombatManager : MonoBehaviour
 
     #endregion
 
-
     #region Reloading
     public void Reload()
     {
@@ -1943,7 +1870,6 @@ public class CombatManager : MonoBehaviour
         return units;
     }
     #endregion
-
 
     #region Stun
     private IEnumerator Stun(Stats attackerStats, Stats targetStats)

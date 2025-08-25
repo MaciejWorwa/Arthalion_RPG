@@ -317,8 +317,7 @@ public class DiceRollManager : MonoBehaviour
     int difficultyLevel = 0,
     int roll1 = 0,
     int roll2 = 0,
-    int skillRoll = 0,
-    bool skillReroll = false)
+    int skillRoll = 0)
     {
         // Pobieranie wartości umiejętności
         int skillValue = 0;
@@ -327,35 +326,6 @@ public class DiceRollManager : MonoBehaviour
             var field = typeof(Stats).GetField(skillName);
             if (field != null)
                 skillValue = (int)field.GetValue(stats);
-        }
-
-        // ===== Użycie talentu SPECJALISTA: przerzut tylko Kości Umiejętności =====
-        if (skillReroll)
-        {
-            int oldSkillRoll = skillRoll;
-
-            // Reroll wyłącznie kości umiejętności zależnie od poziomu (1=k4, 2=k6, 3=k8)
-            switch (skillValue)
-            {
-                case 1: skillRoll = UnityEngine.Random.Range(1, 5); break;  // k4
-                case 2: skillRoll = UnityEngine.Random.Range(1, 7); break;  // k6
-                case 3: skillRoll = UnityEngine.Random.Range(1, 9); break;  // k8
-            }
-
-            // Ustalenie kontekstu do logów (fallback)
-            if (string.IsNullOrEmpty(rollContext))
-            {
-                rollContext = !string.IsNullOrEmpty(skillName) ? skillName :
-                              !string.IsNullOrEmpty(attributeName) ? attributeName : "";
-            }
-
-            string difficultyString = difficultyLevel != 0 ? $"/{difficultyLevel}" : "";
-            string colorString = (difficultyLevel == 0 || modifier >= difficultyLevel) ? "green" : "red";
-            string oldStr = oldSkillRoll > 0 ? $" z <color=#FF7F50>{oldSkillRoll}</color>" : "";
-
-            Debug.Log($"{stats.Name} korzysta z talentu Specjalista i przerzuca Kość Umiejętności{oldStr} na <color=#FF7F50>{skillRoll}</color>. Nowy łączny wynik: <color={colorString}>{modifier}{difficultyString}</color>.");
-
-            return new int[] { 0, 0, skillRoll, 0 };
         }
 
         // Losowanie kości tylko jeśli nie podano gotowych wyników
@@ -392,6 +362,57 @@ public class DiceRollManager : MonoBehaviour
         }
 
         int finalScore = roll1 + roll2 + skillRoll + attributeValue2 + modifier;
+
+        // ===== Użycie talentu SPECJALISTA: warunkowy przerzut Kości Umiejętności =====
+        if (stats.HasSpecialist(skillName) && skillValue >= 1 && skillValue <= 3 && (GameManager.IsAutoDiceRollingMode || stats.CompareTag("EnemyUnit")))
+        {
+            int oldSkillRoll = skillRoll;
+
+            // średnie wartości dla k4/k6/k8
+            float avg = skillValue switch
+            {
+                1 => 2.5f, // k4
+                2 => 3.5f, // k6
+                3 => 4.5f, // k8
+                _ => 0f
+            };
+
+            bool shouldReroll = false;
+
+            if (difficultyLevel > 0)
+            {
+                if (finalScore < difficultyLevel)
+                    shouldReroll = true;      // zawsze przerzut – nie spełniasz trudności
+                else
+                    shouldReroll = false;     // spełniasz trudność – nie przerzucasz
+            }
+            else // difficultyLevel == 0
+            {
+                if (oldSkillRoll < avg)
+                    shouldReroll = true;      // brak poziomu trudności – przerzut tylko przy wcześniejszym rzucie poniżej średniej
+            }
+
+            if (shouldReroll)
+            {
+                // przerzut
+                switch (skillValue)
+                {
+                    case 1: skillRoll = UnityEngine.Random.Range(1, 5); break;  // k4
+                    case 2: skillRoll = UnityEngine.Random.Range(1, 7); break;  // k6
+                    case 3: skillRoll = UnityEngine.Random.Range(1, 9); break;  // k8
+                }
+
+                // logi
+                if (string.IsNullOrEmpty(rollContext))
+                    rollContext = !string.IsNullOrEmpty(skillName) ? skillName :
+                                  !string.IsNullOrEmpty(attributeName) ? attributeName : "";
+
+                string oldStr = oldSkillRoll > 0 ? $" z <color=#FF7F50>{oldSkillRoll}</color>" : "";
+                Debug.Log($"{stats.Name} korzysta z talentu Specjalista i przerzuca Kość Umiejętności{oldStr} na <color=#FF7F50>{skillRoll}</color>.");
+
+                finalScore = roll1 + roll2 + skillRoll + attributeValue2 + modifier;
+            }
+        }
 
         if (string.IsNullOrEmpty(rollContext))
         {

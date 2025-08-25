@@ -644,6 +644,7 @@ public class StatsData
     public int Exp; // Punkty doświadczenia
     public string Name;
     public string Race;
+    public string Type;
 
     public SizeCategory Size; // Rozmiar
 
@@ -676,10 +677,14 @@ public class StatsData
     public int MaxEncumbrance; // Maksymalny udźwig
     public int ExtraEncumbrance; // Dodatkowe obciążenie za przedmioty niebędące uzbrojeniem
 
+    [Header("Zbroja")]
     public int Armor_head;
     public int Armor_arms;
     public int Armor_torso;
     public int Armor_legs;
+
+    public int ArmorPenaltyZw; // bieżąca kara z pancerza zastosowana do Zw
+    public int ArmorPenaltyP;  // bieżąca kara z pancerza zastosowana do P
 
 
     [Header("Umiejętności")]
@@ -693,8 +698,6 @@ public class StatsData
     public int RangedCombat; // Walka Dystansowa
     public int Spellcasting; // Rzucanie zaklęć
     public int Pray; // Modlitwa
-    public Dictionary<MeleeCategory, int> Melee; // Słownik przechowujący umiejętność Broń Biała dla każdej kategorii broni
-    public Dictionary<RangedCategory, int> Ranged; // Słownik przechowujący umiejętność Broń Zasięgowa dla każdej kategorii broni
 
     [Header("Talenty")]
     public bool CombatMaster; // Mistrz walki
@@ -703,6 +706,9 @@ public class StatsData
     public bool SpecialistMeleeCombat; // Specjalista (Walka Wręcz)
     public bool SpecialistRangedCombat; // Specjalista (Walka Dystansowa)
     public int SurvivalInstinct; // Instynkt Przetrwania
+
+    public string[] Specialist = new string[3];
+    public List<string> Slayer = new List<string>(); // np. "Undead"
 
     public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
@@ -854,63 +860,34 @@ public class WeaponData
     public string Name;
     public string[] Type;
     public string Quality;
-    public string Category;
-    public int Encumbrance; // Obciążenie
-    public int Damage; // Uszkodzenie
+    public int Damage; // Obrażenia
+    public bool Broken; // Uszkodzenie broni
     public bool TwoHanded;
     public bool NaturalWeapon;
     public float AttackRange;
-    public int S;
     public int ReloadTime;
     public int ReloadLeft;
     public string AmmoType; // Rodzaj amunicji
-    public int AmmoMax; // Maksymalna ilość amunicji w magazynku broni ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public int AmmoLeft; // Aktualna ilość amunicji w magazynku broni ---------------------- (MECHANIKA DO WPROWADZENIA)
 
-    //OGÓLNE
-    public int Durable; // Wytrzymały
-    public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
-    public bool Shoddy; //Tandetny
-    public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
-    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Lightweight; // Poręczny (redukuje obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
+    [Header("Wymagania")]
+    public int S;
+    public int Zr;
+
+    [Header("Kary")]
+    public int Zw;
+    public int P;
 
     //BROŃ
-    public bool Accurate; // Celny (+10 do trafienia)
-    public bool Blackpowder; // Prochowa
-    public int Blast; // Wybuchowa
-    public bool Damaging; // Przebijająca
-    public bool Dangerous; // Niebezpieczna
-    public int Defensive; // Parujący
-    public bool Distract; // Dekoncentrujący (Powoduje cofanie się)
-    public bool Entangle; // Unieruchamiający  ---------------------- DZIAŁA JAKO TAKO, MOŻLIWE ŻE TRZEBA BĘDZIE POPRAWIĆ
+    public int Defensive; // Parująca
+    public bool Entangle; //Unieruchamiająca
     public bool Fast; // Szybka
-    public bool Hack; // Rąbiąca
-    public bool Impact; // Druzgoczący
-    public bool Impale; // Nadziewający (str. 298)
-    public bool Imprecise; // Nieprecyzyjna (zmiejsza poziom testu ataku o 1)
-    public bool Penetrating; // Przekłuwająca
-    public bool Pistol; // Pistolet
-    public bool Precise; // Precyzyjna (zwiększa poziom udanego testu ataku o 1)
-    public bool Pummel; // Ogłuszający
-    public int Slash; // Sieczna
-    public bool Slow; // Powolny
-    public int Shield; // Tarcza
-    public int Spread; // Rozrzucająca
-    public bool Tiring; // Ciężka
-    public bool TrapBlade; // Łamacz mieczy ---------------------- (MECHANIKA DO WPROWADZENIA, powiązać z cechą Wytrzymały (Durable) str. 292)
-    public bool Trip; // Przewracająca
-    public bool Unbreakable; // Niełamliwa ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Undamaging; // Tępy
-    public bool Unbalanced; // Niewyważona
-    public bool Wrap; // Plącząca (utrudnia parowanie o 1 PS)
+    public bool Penetrating; // Przebijająca
+    public bool Pummel; // Ogłuszająca
+    public bool Slow; // Powolna
+    public bool Magical;
 
     //PANCERZ
     public int Armor;
-    public bool Flexible; // Giętki
-    public bool Impenetrable; // Nieprzebijalny
-    public bool Partial; // Częściowy
-    public bool WeakPoints; // Wrażliwe punkty
 
     public WeaponData(Weapon weapons)
     {
@@ -940,19 +917,9 @@ public class ArmorData
     public string Quality;
     public string Category;
     public int Encumbrance; // Obciążenie
-    public int Damage; // Uszkodzenie
+    public bool Broken; // Uszkodzenie
 
-    // NOWE PONIŻEJ
-    public bool Bulky; // Nieporęczny (zwiększa obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public int Durable; // Wytrzymały (str. 292) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Flexible; // Giętki  ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Impenetrable; // Nieprzebijalny ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Lightweight; // Poręczny (redukuje obciążenie o 1) ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Partial; // Częściowy  ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Practical; // Praktyczny (redukuje poziom porażki o 1)
-    public bool Shoddy; //Tandetny  ---------------------- (MECHANIKA DO WPROWADZENIA)
-    public bool Unrielable; // Zawodny (zwiększa poziom porażki o 1)
-    public bool WeakPoints; // Wrażliwe punkty  ---------------------- (MECHANIKA DO WPROWADZENIA)
+    public bool Flexible;  // Można na niego ubierać inną zbroję
 
     public ArmorData(Armor armors)
     {

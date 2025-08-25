@@ -44,8 +44,6 @@ public class MagicManager : MonoBehaviour
 
     [Header("Panele do manualnego zarządzania")]
     [SerializeField] private GameObject _dispellPanel;
-    private bool _wantsToDispell;
-    private bool _dispellDone;
 
     [Header("Panel do manualnego zarządzania krytycznym splecieniem zaklęcia")]
     [SerializeField] private GameObject _criticalCastingPanel;
@@ -185,7 +183,6 @@ public class MagicManager : MonoBehaviour
         unit.CanCastSpell = false;
         _criticalCastingString = "";
         _overcastingStrings.Clear();
-        _dispellDone = false;
 
         int rollResult = 0;
         int[] castingTest = null;
@@ -334,7 +331,7 @@ public class MagicManager : MonoBehaviour
                 string dodgeModifierString = dodgeModifier != 0 ? $" Modyfikator: {dodgeModifier}," : "";
 
                 // Obliczamy sumaryczną wartość parowania i uniku
-                MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
+                //MeleeCategory targetMeleeSkill = EnumConverter.ParseEnum<MeleeCategory>(targetWeapon.Category) ?? MeleeCategory.Basic;
                 parryValue = targetStats.Zr + parryModifier;
                 dodgeValue = targetStats.Dodge + targetStats.Zw + dodgeModifier;
 
@@ -388,7 +385,6 @@ public class MagicManager : MonoBehaviour
     {
         IsTargetSelecting = false;
         _castSpellButton.GetComponent<UnityEngine.UI.Image>().color = Color.white;
-        _wantsToDispell = false;
 
         if (Unit.SelectedUnit != null)
         {
@@ -573,14 +569,14 @@ public class MagicManager : MonoBehaviour
         }
 
         // Sprawdzamy zbroję
-        int armor = CombatManager.Instance.CalculateArmor(spellcasterStats, targetStats, hitLocation, rollResult);
+        int armor = CombatManager.Instance.CalculateArmor(targetStats, hitLocation);
 
         // Pobranie pancerza dla trafionej lokalizacji
         List<Weapon> armorByLocation = targetStats.GetComponent<Inventory>().ArmorByLocation.ContainsKey(hitLocation) ? targetStats.GetComponent<Inventory>().ArmorByLocation[hitLocation] : new List<Weapon>();
 
         // Sprawdzenie, czy żadna część pancerza nie jest metalowa
-        bool hasMetalArmor = armorByLocation.Any(weapon => weapon.Category == "chain" || weapon.Category == "plate");
-        int metalArmorValue = armorByLocation.Where(armorItem => (armorItem.Category == "chain" || armorItem.Category == "plate") && armorItem.Armor - armorItem.Damage > 0).Sum(armorItem => armorItem.Armor - armorItem.Damage);
+        bool hasMetalArmor = armorByLocation.Any(weapon => weapon.Type.Contains("chain") || weapon.Type.Contains("plate"));
+        int metalArmorValue = armorByLocation.Where(armorItem => (armorItem.Type.Contains("chain") || armorItem.Type.Contains("plate")) && armorItem.Armor - armorItem.Damage > 0).Sum(armorItem => armorItem.Armor - armorItem.Damage);
 
         if (spell.ArmourIgnoring || _ulguToggle.isOn) armor = 0;
         if ((spell.MetalArmourIgnoring || _chamonToggle.isOn || _azyrToggle.isOn) && hasMetalArmor)
@@ -625,7 +621,7 @@ public class MagicManager : MonoBehaviour
 
             foreach (Unit adjacentUnit in unitsAroundTarget)
             {
-                int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(spellcasterStats, adjacentUnit.GetComponent<Stats>(), hitLocation, rollResult);
+                int adjacentUnitArmor = CombatManager.Instance.CalculateArmor(adjacentUnit.GetComponent<Stats>(), hitLocation);
                 int electricDamage = (spellcasterStats.SW / 10) + UnityEngine.Random.Range(1, 11);
                 Debug.Log($"{adjacentUnit.Stats.Name} otrzymuje {electricDamage} obrażeń spowodowanych ładunkiem elektrycznym zaklęcia z Tradycji Niebios.");
 

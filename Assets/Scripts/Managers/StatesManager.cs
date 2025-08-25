@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using TMPro;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 
 public class StatesManager : MonoBehaviour
@@ -52,10 +53,9 @@ public class StatesManager : MonoBehaviour
         {
             yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(
                 stats: stats,
-                rollContext: "Atletyki na ugaszenie płomieni",
+                rollContext: "Atletykę na ugaszenie płomieni",
                 attributeName: "Zw", 
                 skillName: "Athletics",
-                modifier: 0,
                 difficultyLevel: difficulty,
                 callback: res => test = res
             ));
@@ -65,11 +65,9 @@ public class StatesManager : MonoBehaviour
         {
             test = DiceRollManager.Instance.TestSkill(
                 stats: stats,
-                rollContext: "ugaszenie płomieni",
+                rollContext: "Atletykę na ugaszenie płomieni",
                 attributeName: "Zw",
                 skillName: "Athletics",
-                modifier: 0,
-                roll1: 0, roll2: 0, skillRoll: 0,
                 difficultyLevel: difficulty
             );
         }
@@ -302,6 +300,49 @@ public class StatesManager : MonoBehaviour
         else
         {
             Debug.Log($"<color=#FF7F50>{stats.Name} odzyskuje przytomność.</color>");
+        }
+    }
+
+    public IEnumerator Recover(Unit unit)
+    {
+        Stats stats = unit.GetComponent<Stats>();
+
+        // 1) Próba odzyskania przytomności: wymagający (14+) test Kondycji
+        int difficulty = 14;
+        int[] test = null;
+
+        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(
+                stats: stats,
+                rollContext: "Kondycję na odzyskanie przytomności",
+                attributeName: "K",
+                difficultyLevel: difficulty,
+                callback: res => test = res
+            ));
+            if (test == null) yield break; // anulowano panel
+        }
+        else
+        {
+            test = DiceRollManager.Instance.TestSkill(
+                stats: stats,
+                rollContext: "Kondycję na odzyskanie przytomności",
+                attributeName: "K",
+                difficultyLevel: difficulty
+            );
+        }
+
+        int finalScore = test[3];
+        if (finalScore >= difficulty)
+        {
+            unit.Unconscious = false;
+            Debug.Log($"<color=#FF7F50>{stats.Name} odzyskuje przytomność.</color>");
+            yield break;
+        }
+        else
+        {
+            unit.CanDoAction = false;
+            unit.CanMove = false;
         }
     }
 

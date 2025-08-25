@@ -89,7 +89,7 @@ public class MovementManager : MonoBehaviour
             {
                 if (u.UnitId == unit.EntangledUnitId && u.Entangled)
                 { 
-                    if (attackerWeapon != null && attackerWeapon.Category == "entangling")
+                    if (attackerWeapon != null && attackerWeapon.Type.Contains("entangling"))
                     {
                         float effectiveAttackRange = attackerWeapon.AttackRange;
 

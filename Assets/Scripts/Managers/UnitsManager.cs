@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.UIElements;
 using static UnityEngine.Rendering.DebugUI;
 
@@ -859,6 +860,82 @@ public class UnitsManager : MonoBehaviour
         // Pobiera nazwę cechy z nazwy obiektu InputField (bez "_input")
         string attributeName = textInput.name.Replace("_input", "");
 
+        // --- SPECJALNA OBSŁUGA: Specialist1/2/3 (bez refleksji) ---
+        if (attributeName.StartsWith("Specialist"))
+        {
+            // 0) pewność, że mamy Stats
+            if (stats == null)
+            {
+                Debug.LogError("[EditAttribute] Brak komponentu Stats na SelectedUnit.");
+                return;
+            }
+
+            // 1) numer slotu
+            if (!int.TryParse(attributeName.Substring("Specialist".Length), out int number) ||
+                number < 1 || number > 3)
+            {
+                Debug.LogWarning($"[EditAttribute] Nieprawidłowy indeks w nazwie '{attributeName}'. Oczekiwałem 1..3.");
+                return;
+            }
+            int slot = number - 1;
+
+            // 2) upewnij się, że tablica istnieje i ma rozmiar 3
+            if (stats.Specialist == null || stats.Specialist.Length != 3)
+                stats.Specialist = new string[3] { null, null, null };
+
+            // 3) komponenty UI
+            var toggle = textInput.GetComponent<UnityEngine.UI.Toggle>();
+            var dropdown = textInput.GetComponentInChildren<TMP_Dropdown>(true);
+
+            if (toggle == null || dropdown == null)
+            {
+                Debug.LogWarning($"[{attributeName}] Brak Toggle lub TMP_Dropdown.");
+                return;
+            }
+
+            bool isOn = toggle.isOn;
+
+            // 4) odczytaj nazwę z dropdowna -> PL -> EN
+            string pl = (dropdown.options != null && dropdown.options.Count > 0)
+                ? dropdown.options[dropdown.value].text
+                : null;
+
+            string key = !string.IsNullOrEmpty(pl) ? ToSkillKey(pl) : null;
+
+            // 5) jeśli odznaczone albo brak klucza – czyścimy slot i kończymy
+            if (!isOn || string.IsNullOrEmpty(key))
+            {
+                stats.Specialist[slot] = null;
+                UpdateUnitPanel(Unit.SelectedUnit);
+                if (!SaveAndLoadManager.Instance.IsLoading)
+                {
+                    int newOverall = stats.CalculateOverall();
+                    InitiativeQueueManager.Instance.CalculateDominance();
+                }
+                return;
+            }
+
+            // 6) deduplikacja (bez ryzyka NRE, bo tablica istnieje)
+            for (int i = 0; i < 3; i++)
+            {
+                if (i != slot && string.Equals(stats.Specialist[i], key, StringComparison.Ordinal))
+                    stats.Specialist[i] = null;
+            }
+
+            // 7) zapis do wybranego slotu
+            stats.Specialist[slot] = key;
+
+            // 8) UI/aktualizacje jak u Ciebie
+            UpdateUnitPanel(Unit.SelectedUnit);
+            if (!SaveAndLoadManager.Instance.IsLoading)
+            {
+                int newOverall = stats.CalculateOverall();
+                InitiativeQueueManager.Instance.CalculateDominance();
+            }
+            return; // ważne: nie wchodzimy w refleksję
+        }
+
+
         // Szukamy zwykłego pola w klasie Stats
         FieldInfo field = stats.GetType().GetField(attributeName);
 
@@ -955,6 +1032,7 @@ public class UnitsManager : MonoBehaviour
             InitiativeQueueManager.Instance.CalculateDominance();
         }
     }
+
     #endregion
 
     #region Update unit panel (at the top of the screen)
@@ -1074,6 +1152,39 @@ public class UnitsManager : MonoBehaviour
         {
             string attributeName = inputField.name.Replace("_input", "");
             Stats stats = unit.GetComponent<Stats>();
+
+            // --- SPECJALNE: Specialist1/2/3 ---
+            if (attributeName.StartsWith("Specialist"))
+            {
+                if (int.TryParse(attributeName.Substring("Specialist".Length), out int number) &&
+                    number >= 1 && number <= 3)
+                {
+                    int slot = number - 1;
+
+                    var toggle = inputField.GetComponent<UnityEngine.UI.Toggle>();
+                    var dropdown = inputField.GetComponentInChildren<TMP_Dropdown>(true);
+
+                    if (toggle != null && dropdown != null)
+                    {
+                        string key = (stats.Specialist != null && slot < stats.Specialist.Length)
+                            ? stats.Specialist[slot]
+                            : null;
+
+                        bool hasValue = !string.IsNullOrEmpty(key);
+                        toggle.isOn = hasValue;
+
+                        if (hasValue)
+                        {
+                            string pl = ToPolishSkill(key);            // EN -> PL
+                            int idx = FindDropdownIndexByText(dropdown, pl);
+                            if (idx >= 0) dropdown.value = idx;
+                        }
+                        // else: zostaw dropdown bez zmian albo ustaw domyślne:
+                        // else { dropdown.value = 0; }
+                    }
+                }
+                continue; // nie przechodź do refleksji
+            }
 
             FieldInfo field = stats.GetType().GetField(attributeName);
             if (field == null)
@@ -1201,5 +1312,40 @@ public class UnitsManager : MonoBehaviour
 
         if (enemyUnitExists && playerUnitExists) return true;
         else return false;
+    }
+
+    // === FUNKCJE POMOCNICZE DO SPECJALISTY ===
+    // PL -> EN
+    private static readonly Dictionary<string, string> SkillPlToEn = new()
+    {
+        { "Leczenie", "Healing" },
+        { "Rzucanie Zaklęć", "Spellcasting" },
+        { "Walka Dystansowa", "RangedCombat" },
+        { "Walka Wręcz", "MeleeCombat" },
+        // ...uzupełnij pełną listę
+    };
+
+    private static readonly Dictionary<string, string> SkillEnToPl =
+        SkillPlToEn.ToDictionary(kv => kv.Value, kv => kv.Key);
+
+    private string ToSkillKey(string polishName) // PL -> EN
+    {
+        return SkillPlToEn.TryGetValue(polishName, out var en)
+            ? en
+            : polishName.Replace(" ", "");
+    }
+
+    private string ToPolishSkill(string englishKey) // EN -> PL
+    {
+        return SkillEnToPl.TryGetValue(englishKey, out var pl)
+            ? pl
+            : englishKey;
+    }
+
+    private int FindDropdownIndexByText(TMP_Dropdown dd, string text)
+    {
+        for (int i = 0; i < dd.options.Count; i++)
+            if (dd.options[i].text == text) return i;
+        return -1;
     }
 }
