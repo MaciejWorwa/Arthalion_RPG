@@ -14,8 +14,6 @@ public enum SizeCategory
     Large = 4       // wielki
 }
 
-
-
 public class Stats : MonoBehaviour
 {
     public int Id;
@@ -75,32 +73,30 @@ public class Stats : MonoBehaviour
 
 
     [Header("Umiejętności")]
-    public int Athletics;
-    public int Channeling; // Splatanie magii
+    public int Athletics; // Atletyka
     public int Cool; // Opanowanie
     public int Dodge; // Unik
     public int Endurance; // Odporność
-    public int MagicLanguage; // Język magiczny
-
-
     public int MeleeCombat; // Walka Wręcz
     public int RangedCombat; // Walka Dystansowa
+    public int Reflex; // Refleks
     public int Spellcasting; // Rzucanie zaklęć
 
     public int Pray; // Modlitwa
+    public int Channeling; // Splatanie magii
+    public int MagicLanguage; // Język magiczny
 
 
     [Header("Talenty")]
     public bool CombatMaster; // Wojownik
+    public bool Fast; // Szybki
     public int Pitiless; // Bezlitosny
     public bool Sharpshooter; // Strzelec wyborowy
-    public bool SpecialistMeleeCombat; // Specjalista (Walka Wręcz)
-    public bool SpecialistRangedCombat; // Specjalista (Walka Dystansowa)
     public int SurvivalInstinct; // Instynkt Przetrwania
 
+    public string[] Resistance = new string[4]; // np. ["Fizyczne", "Ogień"]
+    public string[] Slayer = new string[3];
     public string[] Specialist = new string[3]; // null/"" = pusty slot
-    //public List<string> Specialist = new List<string>(); // np. "MeleeCombat", "RangedCombat", "Cool"
-    public List<string> Slayer = new List<string>(); // np. "Undead"
 
     public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał
@@ -208,6 +204,8 @@ public class Stats : MonoBehaviour
 
         TempPL = MaxPL;
 
+        if (Fast) Sz += 2;
+
         // Aktualizuje udźwig
         MaxEncumbrance = Math.Max(1, 6 + S);
     }
@@ -284,7 +282,6 @@ public class Stats : MonoBehaviour
         }
     }
 
-
     public int CalculateOverall()
     {
         // Sumowanie wszystkich cech głównych
@@ -328,6 +325,7 @@ public class Stats : MonoBehaviour
 
         return overall;
     }
+
     public int GetEffectiveStat(string statName)
     {
         int baseValue = 0;
@@ -406,8 +404,7 @@ public class Stats : MonoBehaviour
     //Sprawdza, czy postać specjalizuje się z danej rzeczy
     public bool HasSpecialist(string skill) => !string.IsNullOrEmpty(skill) && Specialist != null && Specialist.Any(s => s == skill);
 
-    public bool HasSlayer(string skill) => !string.IsNullOrEmpty(skill) && Slayer != null && Slayer.Any(s => !string.IsNullOrEmpty(s) && s == skill);
-
+    public bool HasSlayer(string skill) => !string.IsNullOrEmpty(skill) && Slayer != null && Slayer.Any(s => s == skill);
 
     //Zwraca kopię tej klasy
     public Stats Clone()

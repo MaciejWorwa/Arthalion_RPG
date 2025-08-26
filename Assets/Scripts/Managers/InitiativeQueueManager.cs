@@ -151,15 +151,6 @@ public class InitiativeQueueManager : MonoBehaviour
         TextMeshProUGUI initiativeText = optionObj.transform.Find("Initiative_Text").GetComponent<TextMeshProUGUI>();
         initiativeText.text = pair.Value.ToString();
 
-        // Jeśli jednostka posiada broń z cechą "Szybka" to wyświetla odpowiednią ikonkę obok wartości inicjatywy
-        optionObj.transform.Find("Icons/FastWeapon_Image").gameObject.SetActive(pair.Key.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Fast));
-
-        // Jeśli jednostka posiada broń z cechą "Powolna" to wyświetla odpowiednią ikonkę obok wartości inicjatywy
-        optionObj.transform.Find("Icons/SlowWeapon_Image").gameObject.SetActive(pair.Key.GetComponent<Inventory>().EquippedWeapons.Any(w => w != null && w.Slow));
-
-        // Jeśli jednostka posiada talent woltyżerka i dosiada wierzchowca to wyświetla odpowiednią ikonkę obok wartości inicjatywy
-        optionObj.transform.Find("Icons/MoveFirst_Image").gameObject.SetActive(pair.Key.IsMounted && pair.Key.GetComponent<Stats>().Vaulting > 0);
-
         return optionObj;
     }
 
@@ -230,32 +221,6 @@ public class InitiativeQueueManager : MonoBehaviour
         {
             DominanceBar.gameObject.SetActive(true);
         }
-    }
-
-    public void CalculateAdvantageBasedOnDominance()
-    {
-        //TYMCZASOWE WYŁĄCZENIE TEJ FUNKCJONALNOŚCI, BO NIE JESTEM PEWNY, CZY JĄ CHCĘ
-
-        /*
-        float dominanceThreshold = DominanceBar.maxValue * 0.10f; // 10% maksymalnej wartości
-        float difference = Mathf.Abs(DominanceBar.value - (DominanceBar.maxValue / 2));
-
-        if (difference >= dominanceThreshold)
-        {
-            if (DominanceBar.value < DominanceBar.maxValue / 2)
-            {
-                CalculateAdvantage("PlayerUnit", -1);
-                CalculateAdvantage("EnemyUnit", 1);
-                Debug.Log($"Przewaga przeciwników została zwiększona, a sojuszników zmniejszona o 1.");
-            }
-            else
-            {
-                CalculateAdvantage("EnemyUnit", -1);
-                CalculateAdvantage("PlayerUnit", 1);
-                Debug.Log($"Przewaga sojuszników została zwiększona, a przeciwników zmniejszona o 1.");
-            }
-        }
-        */
     }
 
     public void CalculateAdvantage(string unitTag, int value)

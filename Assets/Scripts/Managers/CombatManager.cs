@@ -71,8 +71,6 @@ public class CombatManager : MonoBehaviour
     private string _criticalDeflection;
     [SerializeField] private UnityEngine.UI.Button _armorDamageButton;
 
-    private bool _isTrainedWeaponCategory; // Określa, czy atakujący jest wyszkolony w używaniu broni, którą atakuje
-
     public bool IsManualPlayerAttack;
 
     private Unit[] _groupOfTargets;
@@ -472,15 +470,53 @@ public class CombatManager : MonoBehaviour
         }
         attackRollResult = attackTest[3];
 
-        // Uwzględnienie talentu WOJOWNIK lub STRZELEC WYBOROWY – podwaja niższą k10
-        bool doubleLowerDice = (!isRangedAttack && attackerStats.CombatMaster) || (isRangedAttack && attackerStats.Sharpshooter);
-        if (doubleLowerDice)
-        {
-            int lowerDice = attackTest[0] <= attackTest[1] ? 0 : 1;
-            attackRollResult += attackTest[lowerDice];
 
-            string talentName = isRangedAttack ? "Strzelec Wyborowy" : "Wojownik";
-            Debug.Log($"{attackerStats.Name} korzysta z talentu {talentName}. Wartość niższej kości k10 zostaje podwojona z <color=#4dd2ff>{attackTest[lowerDice]}</color> na <color=#4dd2ff>{attackTest[lowerDice]*2}</color>. Nowy łączny wynik: <color=green>{attackRollResult}</color>.");
+        // ============== TALENTY ZABÓJCA, WOJOWNIK I STRZELEC WYBOROWY =================
+        //
+        // Podwojenie niższej k10: wybierz ŹRÓDŁO (Slayer > CombatMaster/Scharpshooter)
+        bool hasSharpshooterOrCombatMaster =
+            (!isRangedAttack && attackerStats.CombatMaster) ||
+            (isRangedAttack && attackerStats.Sharpshooter);
+
+        // Sprawdzenie Slayera — dopasowanie typu celu (case-insensitive), z tłumaczeniem PL
+        bool hasSlayerMatch = false;
+        string matchedTypePl = null;
+
+        if (attackerStats.Slayer != null && targetStats != null && !string.IsNullOrEmpty(targetStats.Type))
+        {
+            foreach (var t in attackerStats.Slayer)
+            {
+                if (string.IsNullOrEmpty(t)) continue;
+                if (string.Equals(t, targetStats.Type, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    hasSlayerMatch = true;
+                    matchedTypePl = UnitsManager.SlayerEnToPl.TryGetValue(t, out var pl) ? pl : t;
+                    break;
+                }
+            }
+        }
+
+        // Priorytet: Slayer > Wojownik/Strzelec Wyborowy (nie sumują się)
+        bool shouldDoubleLowerDice = hasSlayerMatch || (!hasSlayerMatch && hasSharpshooterOrCombatMaster);
+
+        if (shouldDoubleLowerDice)
+        {
+            int lowerIndex = attackTest[0] <= attackTest[1] ? 0 : 1;
+            attackRollResult += attackTest[lowerIndex]; // dodaj niższą kość drugi raz = podwojenie
+
+            if (hasSlayerMatch)
+            {
+                Debug.Log($"{attackerStats.Name} korzysta z talentu Zabójca ({matchedTypePl}). " +
+                          $"Wartość niższej kości k10 zostaje podwojona z <color=#4dd2ff>{attackTest[lowerIndex]}</color> " +
+                          $"na <color=#4dd2ff>{attackTest[lowerIndex] * 2}</color>. Nowy łączny wynik: <color=green>{attackRollResult}</color>.");
+            }
+            else
+            {
+                string talentName = isRangedAttack ? "Strzelec Wyborowy" : "Wojownik";
+                Debug.Log($"{attackerStats.Name} korzysta z talentu {talentName}. " +
+                          $"Wartość niższej kości k10 zostaje podwojona z <color=#4dd2ff>{attackTest[lowerIndex]}</color> " +
+                          $"na <color=#4dd2ff>{attackTest[lowerIndex] * 2}</color>. Nowy łączny wynik: <color=green>{attackRollResult}</color>.");
+            }
         }
 
         //Ustalamy miejsce trafienia
@@ -692,7 +728,7 @@ public class CombatManager : MonoBehaviour
 
         int armor = CalculateArmor(targetStats, hitLocation, attackerWeapon);
         int damage = CalculateDamage(attackRollResult - DefenceResults[3], attackerStats, attackerWeapon);
-        Debug.Log($"{attackerStats.Name} zadaje {damage} obrażeń.");
+        //.Log($"{attackerStats.Name} zadaje {damage} obrażeń.");
 
         // 12) ZADANIE OBRAŻEŃ
 
@@ -727,7 +763,7 @@ public class CombatManager : MonoBehaviour
         ChangeAttackType(); // Resetuje typ ataku
     }
 
-    public void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Stats targetStats, Unit target, Weapon attackerWeapon = null, bool isCorrosiveBloodReaction = false)
+    public void ApplyDamageToTarget(int damage, int armor, Stats attackerStats, Stats targetStats, Unit target, Weapon attackerWeapon = null, string damageType = "Physical")
     {
         int finalDamage = 0;
 
@@ -746,6 +782,40 @@ public class CombatManager : MonoBehaviour
 
         if (finalDamage > 0)
         {
+            // --- ODPORNOŚCI (Resistance) — pełna odporność: 0 dmg ---
+            // Zasada: jeśli to atak bronią i broń NIE jest magiczna → Physical.
+            // Jeśli broń jest Magical → NIE traktujemy jako Physical (brak typu).
+            if (targetStats.Resistance != null && targetStats.Resistance.Length > 0)
+            {
+                string effectiveDamageType = !string.IsNullOrEmpty(damageType) ? damageType : null;
+
+                if (attackerWeapon != null && attackerWeapon.Magical)
+                {
+                    effectiveDamageType = null;
+                }
+
+                // Jeśli nie mamy typu (np. magiczna broń bez typu) – odporności nie mają do czego się odnieść
+                if (!string.IsNullOrEmpty(effectiveDamageType))
+                {
+                    bool immune = false;
+                    foreach (var r in targetStats.Resistance)
+                    {
+                        if (string.IsNullOrWhiteSpace(r)) continue;
+                        var rEn = UnitsManager.ResistancePlToEn.TryGetValue(r, out var map) ? map : r; // znormalizuj do EN
+                        if (string.Equals(rEn, damageType, StringComparison.OrdinalIgnoreCase)) { immune = true; break; }
+                    }
+
+                    if (immune)
+                    {
+                        var dmgPl = UnitsManager.ResistanceEnToPl.TryGetValue(damageType, out var pl) ? pl : damageType;
+                        Debug.Log($"{targetStats.Name} jest odporny/a na {dmgPl}. Obrażenia zostały zignorowane.");
+
+                        StartCoroutine(AnimationManager.Instance.PlayAnimation("parry", null, target.gameObject));
+                        return;
+                    }
+                }
+            }
+
             targetStats.TempHealth -= finalDamage;
 
             if (armor != 0)
@@ -1234,7 +1304,7 @@ public class CombatManager : MonoBehaviour
         damage = successLevel + strengthModifier + attackerWeapon.Damage;
 
         string strenghtBonusString = strengthModifier != 0 ? $" Modyfikator z Siły: {strengthModifier}." : "";
-        Debug.Log($"Różnica w rzutach: {successLevel}.{strenghtBonusString} Siła broni: {attackerWeapon.Damage}. Łączne obrażenia: {damage}");
+        Debug.Log($"Różnica w rzutach: {successLevel}.{strenghtBonusString} Siła broni: {attackerWeapon.Damage}. Łączne obrażenia zadane przez {attackerStats.Name}: <color=#4dd2ff>{damage}</color>");
 
         if (damage < 0) damage = 0;
 

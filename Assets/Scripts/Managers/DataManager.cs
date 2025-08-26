@@ -688,27 +688,30 @@ public class StatsData
 
 
     [Header("Umiejętności")]
-    public int Athletics;
-    public int Channeling; // Splatanie magii
+    public int Athletics; // Atletyka
     public int Cool; // Opanowanie
     public int Dodge; // Unik
     public int Endurance; // Odporność
-    public int MagicLanguage; // Język magiczny
     public int MeleeCombat; // Walka Wręcz
     public int RangedCombat; // Walka Dystansowa
+    public int Reflex; // Refleks
     public int Spellcasting; // Rzucanie zaklęć
+
     public int Pray; // Modlitwa
+    public int Channeling; // Splatanie magii
+    public int MagicLanguage; // Język magiczny
+
 
     [Header("Talenty")]
     public bool CombatMaster; // Mistrz walki
+    public bool Fast; // Szybki
     public int Pitiless; // Bezlitosny
     public bool Sharpshooter; // Strzelec wyborowy
-    public bool SpecialistMeleeCombat; // Specjalista (Walka Wręcz)
-    public bool SpecialistRangedCombat; // Specjalista (Walka Dystansowa)
     public int SurvivalInstinct; // Instynkt Przetrwania
 
+    public string[] Resistance = new string[4]; // np. ["Fizyczne", "Ogień"]
+    public string[] Slayer = new string[3];
     public string[] Specialist = new string[3];
-    public List<string> Slayer = new List<string>(); // np. "Undead"
 
     public int AethyricAttunement; // Zmysł Magii
     public int AccurateShot; // Celny strzał

@@ -62,6 +62,8 @@ public class UnitsManager : MonoBehaviour
     public bool IsSavedUnitsManaging = false;
     public List<Unit> AllUnits = new List<Unit>();
 
+    private bool _isPopulatingUI;
+
     void Start()
     {
         //Wczytuje listę wszystkich jednostek
@@ -423,7 +425,9 @@ public class UnitsManager : MonoBehaviour
             InventoryManager.Instance.CalculateEncumbrance(stats);
 
             //Ustala początkową inicjatywę i dodaje jednostkę do kolejki inicjatywy
-            stats.Initiative = stats.P + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
+            Unit.SelectedUnit = unit.gameObject;
+            UpdateInitiative();
+            Unit.SelectedUnit = null;
 
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit);
         }
@@ -794,6 +798,7 @@ public class UnitsManager : MonoBehaviour
             }
 
             //Aktualizuje aktualną żywotność
+            stats.CalculateMaxHealth();
             stats.TempHealth = stats.MaxHealth;
 
             // Aktualizuje udźwig
@@ -801,10 +806,9 @@ public class UnitsManager : MonoBehaviour
             InventoryManager.Instance.DisplayEncumbrance(stats);
 
             //Ustala inicjatywę i aktualizuje kolejkę inicjatywy
-            stats.Initiative = stats.P + UnityEngine.Random.Range(1, 11);
             InitiativeQueueManager.Instance.RemoveUnitFromInitiativeQueue(unit.GetComponent<Unit>());
             InitiativeQueueManager.Instance.AddUnitToInitiativeQueue(unit.GetComponent<Unit>());
-            InitiativeQueueManager.Instance.UpdateInitiativeQueue();
+            UpdateInitiative();
 
             //Dodaje do ekwipunku początkową broń adekwatną dla danej jednostki i wyposaża w nią
             if (unit.GetComponent<Stats>().PrimaryWeaponNames != null && unit.GetComponent<Stats>().PrimaryWeaponNames.Count > 0 && changeName)
@@ -831,28 +835,46 @@ public class UnitsManager : MonoBehaviour
     {
         if (Unit.SelectedUnit == null) return;
 
-        GameObject unit = Unit.SelectedUnit;
-        Stats stats = unit.GetComponent<Stats>();
+        GameObject unitGO = Unit.SelectedUnit;
+        Unit unit = unitGO.GetComponent<Unit>();
+        Stats stats = unitGO.GetComponent<Stats>();
+        Inventory inventory = unitGO.GetComponent<Inventory>();
+        if (unit == null || stats == null) return;
 
-        //Ustala nową inicjatywę
-        stats.Initiative = stats.P + (stats.CombatReflexes * 10) + UnityEngine.Random.Range(1, 11);
+        // 1) Rzut 2k10
+        int roll = UnityEngine.Random.Range(1, 11) + UnityEngine.Random.Range(1, 11);
 
-        //Uwzględnienie kary do Zręczności za pancerz
-        if (stats.Armor_head >= 3 || stats.Armor_torso >= 3 || stats.Armor_arms >= 3 || stats.Armor_legs >= 3)
+        // 2) Podstawa: wyższa z P lub Zw
+        int baseAttr = Mathf.Max(stats.P, stats.Zw);
+
+        // 3) Modyfikator za cechę broni (Fast/Slow) – na podstawie EquippedWeapons
+        int weaponMod = 0;
+        bool hasFast = false, hasSlow = false;
+
+        if (inventory != null && inventory.EquippedWeapons != null)
         {
-            stats.Initiative -= 10;
+            hasFast = inventory.EquippedWeapons.Any(w => w != null && w.Fast);
+            hasSlow = inventory.EquippedWeapons.Any(w => w != null && w.Slow);
+
+            // Jeżeli występują obie cechy naraz (np. dwie bronie), traktujemy jako 0 (neutralizują się).
+            if (hasFast && !hasSlow) weaponMod = 3;
+            else if (hasSlow && !hasFast) weaponMod = -3;
+            else weaponMod = 0;
         }
 
-        //Aktualizuje kolejkę inicjatywy
-        InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] = stats.P;
+        // 4) Finalna inicjatywa wg zasad: 2k10 + max(P, Zw) ± modyfikatory broni
+        stats.Initiative = roll + baseAttr + weaponMod;
+
+        // 5) Aktualizacja kolejki inicjatywy — wpisujemy RZECZYWISTĄ wartość
+        InitiativeQueueManager.Instance.InitiativeQueue[unit] = stats.Initiative;
         InitiativeQueueManager.Instance.UpdateInitiativeQueue();
 
-        UpdateUnitPanel(unit);
+        UpdateUnitPanel(unitGO);
     }
 
     public void EditAttribute(GameObject textInput)
     {
-        if (Unit.SelectedUnit == null) return;
+        if (Unit.SelectedUnit == null || _isPopulatingUI) return;
 
         Unit unit = Unit.SelectedUnit.GetComponent<Unit>();
         Stats stats = Unit.SelectedUnit.GetComponent<Stats>();
@@ -860,81 +882,37 @@ public class UnitsManager : MonoBehaviour
         // Pobiera nazwę cechy z nazwy obiektu InputField (bez "_input")
         string attributeName = textInput.name.Replace("_input", "");
 
-        // --- SPECJALNA OBSŁUGA: Specialist1/2/3 (bez refleksji) ---
-        if (attributeName.StartsWith("Specialist"))
+        // --- Talenty i cechy w formie tablic ---
+        if (HandleTalentListEdit("Specialist", attributeName, textInput, stats, ToSkillKey))
         {
-            // 0) pewność, że mamy Stats
-            if (stats == null)
-            {
-                Debug.LogError("[EditAttribute] Brak komponentu Stats na SelectedUnit.");
-                return;
-            }
-
-            // 1) numer slotu
-            if (!int.TryParse(attributeName.Substring("Specialist".Length), out int number) ||
-                number < 1 || number > 3)
-            {
-                Debug.LogWarning($"[EditAttribute] Nieprawidłowy indeks w nazwie '{attributeName}'. Oczekiwałem 1..3.");
-                return;
-            }
-            int slot = number - 1;
-
-            // 2) upewnij się, że tablica istnieje i ma rozmiar 3
-            if (stats.Specialist == null || stats.Specialist.Length != 3)
-                stats.Specialist = new string[3] { null, null, null };
-
-            // 3) komponenty UI
-            var toggle = textInput.GetComponent<UnityEngine.UI.Toggle>();
-            var dropdown = textInput.GetComponentInChildren<TMP_Dropdown>(true);
-
-            if (toggle == null || dropdown == null)
-            {
-                Debug.LogWarning($"[{attributeName}] Brak Toggle lub TMP_Dropdown.");
-                return;
-            }
-
-            bool isOn = toggle.isOn;
-
-            // 4) odczytaj nazwę z dropdowna -> PL -> EN
-            string pl = (dropdown.options != null && dropdown.options.Count > 0)
-                ? dropdown.options[dropdown.value].text
-                : null;
-
-            string key = !string.IsNullOrEmpty(pl) ? ToSkillKey(pl) : null;
-
-            // 5) jeśli odznaczone albo brak klucza – czyścimy slot i kończymy
-            if (!isOn || string.IsNullOrEmpty(key))
-            {
-                stats.Specialist[slot] = null;
-                UpdateUnitPanel(Unit.SelectedUnit);
-                if (!SaveAndLoadManager.Instance.IsLoading)
-                {
-                    int newOverall = stats.CalculateOverall();
-                    InitiativeQueueManager.Instance.CalculateDominance();
-                }
-                return;
-            }
-
-            // 6) deduplikacja (bez ryzyka NRE, bo tablica istnieje)
-            for (int i = 0; i < 3; i++)
-            {
-                if (i != slot && string.Equals(stats.Specialist[i], key, StringComparison.Ordinal))
-                    stats.Specialist[i] = null;
-            }
-
-            // 7) zapis do wybranego slotu
-            stats.Specialist[slot] = key;
-
-            // 8) UI/aktualizacje jak u Ciebie
             UpdateUnitPanel(Unit.SelectedUnit);
             if (!SaveAndLoadManager.Instance.IsLoading)
             {
                 int newOverall = stats.CalculateOverall();
                 InitiativeQueueManager.Instance.CalculateDominance();
             }
-            return; // ważne: nie wchodzimy w refleksję
+            return; // nie wchodzimy w refleksję
         }
-
+        if (HandleTalentListEdit("Slayer", attributeName, textInput, stats, ToSlayerKey))
+        {
+            UpdateUnitPanel(Unit.SelectedUnit);
+            if (!SaveAndLoadManager.Instance.IsLoading)
+            {
+                int newOverall = stats.CalculateOverall();
+                InitiativeQueueManager.Instance.CalculateDominance();
+            }
+            return; // nie wchodzimy w refleksję
+        }
+        if (HandleTalentListEdit("Resistance", attributeName, textInput, stats, ToResistanceKey))
+        {
+            UpdateUnitPanel(Unit.SelectedUnit);
+            if (!SaveAndLoadManager.Instance.IsLoading)
+            {
+                int newOverall = stats.CalculateOverall();
+                InitiativeQueueManager.Instance.CalculateDominance();
+            }
+            return; // nie wchodzimy w refleksję
+        }
 
         // Szukamy zwykłego pola w klasie Stats
         FieldInfo field = stats.GetType().GetField(attributeName);
@@ -972,8 +950,23 @@ public class UnitsManager : MonoBehaviour
         else if (field.FieldType == typeof(bool))
         {
             bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn;
-            field.SetValue(stats, boolValue);
+
+            if (field.Name == "Fast")
+            {
+                bool oldValue = (bool)field.GetValue(stats);
+                if (oldValue != boolValue) // tylko jeśli wartość się zmienia
+                {
+                    field.SetValue(stats, boolValue);
+                    stats.Sz += boolValue ? 1 : -1;
+                    StartCoroutine(MovementManager.Instance.UpdateMovementRange(1));
+                }
+            }
+            else
+            {
+                field.SetValue(stats, boolValue);
+            }
         }
+
         else if (field.FieldType == typeof(string))
         {
             string value = textInput.GetComponent<TMP_InputField>().text;
@@ -1146,109 +1139,89 @@ public class UnitsManager : MonoBehaviour
 
     public void LoadAttributes(GameObject unit)
     {
-        GameObject[] attributeInputFields = GameObject.FindGameObjectsWithTag("Attribute");
-
-        foreach (var inputField in attributeInputFields)
+        _isPopulatingUI = true;
+        try
         {
-            string attributeName = inputField.name.Replace("_input", "");
-            Stats stats = unit.GetComponent<Stats>();
+            var stats = unit.GetComponent<Stats>();
+            var u = unit.GetComponent<Unit>(); // do inicjatywy
+            GameObject[] attributeInputFields = GameObject.FindGameObjectsWithTag("Attribute");
 
-            // --- SPECJALNE: Specialist1/2/3 ---
-            if (attributeName.StartsWith("Specialist"))
+            foreach (var inputField in attributeInputFields)
             {
-                if (int.TryParse(attributeName.Substring("Specialist".Length), out int number) &&
-                    number >= 1 && number <= 3)
+                string attributeName = inputField.name.Replace("_input", "");
+
+                // --- Talenty/cechy w formie tablic 3-slotowych (bez eventów!) ---
+                if (HandleTalentListLoad("Specialist", attributeName, inputField, stats, ToPolishSkill))
+                    continue;
+                if (HandleTalentListLoad("Slayer", attributeName, inputField, stats, ToPolishSlayer))
+                    continue;
+                if (HandleTalentListLoad("Resistance", attributeName, inputField, stats, ToPolishResistance))
+                    continue;
+
+                FieldInfo field = stats.GetType().GetField(attributeName);
+                if (field == null) continue;
+
+                object value = field.GetValue(stats);
+
+                if (field.FieldType == typeof(int))
                 {
-                    int slot = number - 1;
+                    int intValue = (int)value;
+                    if (attributeName == "Flight") intValue *= 2;
 
-                    var toggle = inputField.GetComponent<UnityEngine.UI.Toggle>();
-                    var dropdown = inputField.GetComponentInChildren<TMP_Dropdown>(true);
-
-                    if (toggle != null && dropdown != null)
-                    {
-                        string key = (stats.Specialist != null && slot < stats.Specialist.Length)
-                            ? stats.Specialist[slot]
-                            : null;
-
-                        bool hasValue = !string.IsNullOrEmpty(key);
-                        toggle.isOn = hasValue;
-
-                        if (hasValue)
-                        {
-                            string pl = ToPolishSkill(key);            // EN -> PL
-                            int idx = FindDropdownIndexByText(dropdown, pl);
-                            if (idx >= 0) dropdown.value = idx;
-                        }
-                        // else: zostaw dropdown bez zmian albo ustaw domyślne:
-                        // else { dropdown.value = 0; }
-                    }
+                    SetInputFieldValueWithoutNotify(inputField, intValue);
                 }
-                continue; // nie przechodź do refleksji
-            }
+                else if (field.FieldType == typeof(bool))
+                {
+                    SetToggleValueWithoutNotify(inputField, (bool)value);
+                }
+                else if (field.FieldType == typeof(string))
+                {
+                    SetInputFieldValueWithoutNotify(inputField, (string)value);
+                }
+                else if (field.FieldType.IsEnum)
+                {
+                    SetDropdownValueWithoutNotify(inputField, value);
+                    continue;
+                }
 
-            FieldInfo field = stats.GetType().GetField(attributeName);
-            if (field == null)
-                continue;
-
-            object value = field.GetValue(stats);
-
-            if (field.FieldType == typeof(int))
-            {
-                // Rzutujemy na zmienną, żeby móc ją modyfikować
-                int intValue = (int)value;
-
-                if (attributeName == "Flight") intValue *= 2;
-
-                SetInputFieldValue(inputField, intValue);
-            }
-            else if (field.FieldType == typeof(bool))
-            {
-                SetToggleValue(inputField, (bool)value);
-            }
-            else if (field.FieldType == typeof(string))
-            {
-                SetInputFieldValue(inputField, (string)value);
-            }
-            else if (field.FieldType.IsEnum)
-            {
-                SetDropdownValue(inputField, value);
-                continue;
-            }
-
-            if (attributeName == "Initiative")
-            {
-                InitiativeQueueManager.Instance.InitiativeQueue[unit.GetComponent<Unit>()] = stats.Initiative;
-                InitiativeQueueManager.Instance.UpdateInitiativeQueue();
+                if (attributeName == "Initiative")
+                {
+                    InitiativeQueueManager.Instance.InitiativeQueue[u] = stats.Initiative;
+                    InitiativeQueueManager.Instance.UpdateInitiativeQueue();
+                }
             }
         }
+        finally { _isPopulatingUI = false; }
     }
 
-    private void SetInputFieldValue(GameObject inputField, int value)
+    private void SetInputFieldValueWithoutNotify(GameObject go, int value)
     {
-        var tmpField = inputField.GetComponent<TMPro.TMP_InputField>();
-        if (tmpField != null) tmpField.text = value.ToString();
-
-        var slider = inputField.GetComponent<UnityEngine.UI.Slider>();
-        if (slider != null) slider.value = value;
+        var inp = go.GetComponent<TMPro.TMP_InputField>();
+        if (inp != null) inp.SetTextWithoutNotify(value.ToString());
     }
-    private void SetInputFieldValue(GameObject inputField, string value)
+    private void SetInputFieldValueWithoutNotify(GameObject go, string value)
     {
-        var tmpField = inputField.GetComponent<TMPro.TMP_InputField>();
-        if (tmpField != null) tmpField.text = value;
+        var inp = go.GetComponent<TMPro.TMP_InputField>();
+        if (inp != null) inp.SetTextWithoutNotify(value ?? "");
     }
-    private void SetToggleValue(GameObject inputField, bool value)
+    private void SetToggleValueWithoutNotify(GameObject go, bool value)
     {
-        var toggle = inputField.GetComponent<UnityEngine.UI.Toggle>();
-        if (toggle != null) toggle.isOn = value;
+        var t = go.GetComponent<UnityEngine.UI.Toggle>();
+        if (t != null) t.SetIsOnWithoutNotify(value);
     }
-    private void SetDropdownValue(GameObject inputField, object enumValue)
+    private void SetDropdownValueWithoutNotify(GameObject go, object enumValue)
     {
-        var dropdown = inputField.GetComponent<TMPro.TMP_Dropdown>();
-        if (dropdown != null)
-        {
-            int index = Array.IndexOf(Enum.GetValues(enumValue.GetType()), enumValue);
-            if (index >= 0) dropdown.value = index;
-        }
+        var dd = go.GetComponentInChildren<TMPro.TMP_Dropdown>(true);
+        if (dd == null || enumValue == null) return;
+        var values = Enum.GetValues(enumValue.GetType());
+        int idx = Array.IndexOf(values, enumValue);
+        if (idx >= 0) dd.SetValueWithoutNotify(idx);
+    }
+    private int FindDropdownIndexByText(TMP_Dropdown dd, string text)
+    {
+        for (int i = 0; i < dd.options.Count; i++)
+            if (dd.options[i].text == text) return i;
+        return -1;
     }
 
     public void ChangeTemporaryHealthPoints(int amount)
@@ -1314,6 +1287,8 @@ public class UnitsManager : MonoBehaviour
         else return false;
     }
 
+
+
     // === FUNKCJE POMOCNICZE DO SPECJALISTY ===
     // PL -> EN
     private static readonly Dictionary<string, string> SkillPlToEn = new()
@@ -1342,10 +1317,155 @@ public class UnitsManager : MonoBehaviour
             : englishKey;
     }
 
-    private int FindDropdownIndexByText(TMP_Dropdown dd, string text)
+    // === FUNKCJE POMOCNICZE DO ZABÓJCY ===
+    // PL -> EN
+    public static readonly Dictionary<string, string> SlayerPlToEn = new()
     {
-        for (int i = 0; i < dd.options.Count; i++)
-            if (dd.options[i].text == text) return i;
-        return -1;
+        { "Bestie i zwierzęta", "Beast" },
+        { "Nieumarli", "Undead" },
+        { "Smoki", "Dragon" },
+        { "Trolle i olbrzymy", "Giant" },
+        // ...uzupełnij pełną listę
+    };
+
+    public static readonly Dictionary<string, string> SlayerEnToPl =
+        SlayerPlToEn.ToDictionary(kv => kv.Value, kv => kv.Key);
+
+    private string ToSlayerKey(string polishName) // PL -> EN
+    {
+        return SlayerPlToEn.TryGetValue(polishName, out var en)
+            ? en
+            : polishName.Replace(" ", "");
+    }
+
+    private string ToPolishSlayer(string englishKey) // EN -> PL
+    {
+        return SlayerEnToPl.TryGetValue(englishKey, out var pl)
+            ? pl
+            : englishKey;
+    }
+
+    // === FUNKCJE POMOCNICZE DO ODPORNOŚCI ===
+    // PL -> EN
+    public static readonly Dictionary<string, string> ResistancePlToEn = new()
+    {
+        { "Zimno", "Ice" },
+        { "Obrażenia fizyczne", "Physical" },
+        { "Ogień", "Fire" },
+        { "Elektryczność", "Electric" },
+        { "Zatrucie", "Poison" }
+    };
+    public static readonly Dictionary<string, string> ResistanceEnToPl =
+        ResistancePlToEn.ToDictionary(kv => kv.Value, kv => kv.Key);
+
+    private string ToResistanceKey(string label)
+    {
+        if (string.IsNullOrWhiteSpace(label)) return null;
+        label = label.Trim();
+        // PL -> EN; jeśli już EN lub brak w słowniku, zwracamy jak jest
+        return ResistancePlToEn.TryGetValue(label, out var en) ? en : label;
+    }
+
+    private string ToPolishResistance(string englishKey) // EN -> PL
+    {
+        return ResistanceEnToPl.TryGetValue(englishKey, out var pl)
+            ? pl
+            : englishKey;
+    }
+
+
+
+
+    // Edycja jednego slotu listy-3 (Specialist/Slayer/itp.) na podstawie Toggle + Dropdown
+    private bool HandleTalentListEdit(string baseName, string attributeName, GameObject textInput, Stats stats, Func<string, string> toKey, int slots = 3)
+    {
+        if (!attributeName.StartsWith(baseName)) return false;
+        if (!int.TryParse(attributeName.Substring(baseName.Length), out int number) || number < 1 || number > slots) return false;
+
+        int slot = number - 1;
+
+        // Pobierz pole tablicy z Stats via refleksję
+        var arrField = typeof(Stats).GetField(baseName, BindingFlags.Public | BindingFlags.Instance);
+        if (arrField == null)
+        {
+            Debug.LogWarning($"W Stats brakuje pola '{baseName}'.");
+            return true; // zatrzymujemy standardową ścieżkę
+        }
+
+        var arr = arrField.GetValue(stats) as string[];
+        if (arr == null || arr.Length != slots)
+        {
+            arr = new string[slots];
+            arrField.SetValue(stats, arr);
+        }
+
+        var toggle = textInput.GetComponent<UnityEngine.UI.Toggle>();
+        var dropdown = textInput.GetComponentInChildren<TMP_Dropdown>(true);
+        if (toggle == null || dropdown == null)
+        {
+            Debug.LogWarning($"[{attributeName}] Brak Toggle lub TMP_Dropdown.");
+            return true;
+        }
+
+        bool isOn = toggle.isOn;
+        string pl = (dropdown.options != null && dropdown.options.Count > 0) ? dropdown.options[dropdown.value].text : null;
+        string key = !string.IsNullOrEmpty(pl) ? toKey(pl) : null;
+
+        // Odznaczone lub brak klucza => czyścimy slot
+        if (!isOn || string.IsNullOrEmpty(key))
+        {
+            arr[slot] = null;
+            arrField.SetValue(stats, arr);
+            return true;
+        }
+
+        // Deduplikacja: usuń ten sam klucz z innych slotów
+        for (int i = 0; i < slots; i++)
+        {
+            if (i != slot && string.Equals(arr[i], key, StringComparison.Ordinal))
+                arr[i] = null;
+        }
+
+        // Zapis
+        arr[slot] = key;
+        arrField.SetValue(stats, arr);
+
+        return true; // obsłużone, nie wchodzimy w standardową refleksję
+    }
+
+    // Wczytywanie jednego slotu listy-3 do UI (Dropdown + Toggle)
+    private bool HandleTalentListLoad(string baseName, string attributeName, GameObject inputField,
+                                      Stats stats, Func<string, string> toPolish, int slots = 3)
+    {
+        if (!attributeName.StartsWith(baseName)) return false;
+        if (!int.TryParse(attributeName.Substring(baseName.Length), out int number) || number < 1 || number > slots)
+            return true; // traktujemy jako obsłużone (nic nie robimy)
+
+        int slot = number - 1;
+
+        var toggle = inputField.GetComponent<UnityEngine.UI.Toggle>();
+        var dropdown = inputField.GetComponentInChildren<TMPro.TMP_Dropdown>(true);
+
+        var arrField = typeof(Stats).GetField(baseName, BindingFlags.Public | BindingFlags.Instance);
+        if (arrField == null) return true;
+
+        var arr = arrField.GetValue(stats) as string[];
+        if (arr == null || arr.Length != slots)
+        {
+            arr = new string[slots];
+            arrField.SetValue(stats, arr);
+        }
+
+        string key = arr[slot];
+        bool has = !string.IsNullOrEmpty(key);
+
+        if (toggle != null) toggle.SetIsOnWithoutNotify(has);
+        if (has && dropdown != null)
+        {
+            string pl = toPolish(key);
+            int idx = FindDropdownIndexByText(dropdown, pl);
+            if (idx >= 0) dropdown.SetValueWithoutNotify(idx);
+        }
+        return true;
     }
 }

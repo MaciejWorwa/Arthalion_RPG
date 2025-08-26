@@ -49,7 +49,7 @@
       "Sturdy": 1
     },
     {
-      "Race": "Niziołek",
+      "Race": "Gnom",
       "Size": 2,
       "PrimaryWeaponNames": [ "Miecz", "Proca" ],
       "WW": 10,
@@ -69,6 +69,7 @@
     },
     {
       "Race": "Równy Żywiołom",
+      "Type": "Undead",
       "Size": 2,
       "PrimaryWeaponNames": [ "Miecz dwuręczny" ],
       "S": 3,
@@ -86,43 +87,28 @@
       "Pitiless": 2,
       "CombatMaster": true
     },
-    {
-      "Race": "14 strach",
+     {
+      "Race": "Wilk",
+      "Type": "Beast",
       "Size": 2,
-      "PrimaryWeaponNames": [ "Miecz dwuręczny" ],
-      "S": 3,
-      "K": 3,
-      "Zw": 2,
-      "Zr": 5,
-      "Int": 2,
-      "P": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": 1
+        }
+      ],
+      "S": 0,
+      "K": 2,
+      "Zw": 3,
+      "Zr": 0,
+      "Int": -3,
+      "P": 5,
       "Ch": -2,
-      "SW": 5,
-      "Sz": 4,
-      "NaturalArmor": 3,
-      "Scary": 14,
-      "Undead": true,
-      "Pitiless": 2,
-      "CombatMaster": true
-    },
-    {
-      "Race": "18 strach",
-      "Size": 2,
-      "PrimaryWeaponNames": [ "Miecz dwuręczny" ],
-      "S": 3,
-      "K": 3,
-      "Zw": 2,
-      "Zr": 5,
-      "Int": 2,
-      "P": 2,
-      "Ch": -2,
-      "SW": 5,
-      "Sz": 4,
-      "NaturalArmor": 3,
-      "Scary": 18,
-      "Undead": true,
-      "Pitiless": 2,
-      "CombatMaster": true
+      "SW": 0,
+      "Sz": 14,
+      "Athletics": 2,
+      "Reflex": 2
     },
     {
       "Race": "Amfisbena",
@@ -1558,6 +1544,7 @@
     },
     {
       "Race": "Wilk",
+      "Type": "Beast",
       "Size": 3,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
       "PrimaryWeaponAttributes": [

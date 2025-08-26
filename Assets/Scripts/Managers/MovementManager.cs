@@ -403,23 +403,7 @@ public class MovementManager : MonoBehaviour
             modifier = 1;
         }
 
-        //Modyfikator za przeciążenie
-        if (stats.MaxEncumbrance - stats.CurrentEncumbrance < 0 && stats.CurrentEncumbrance < stats.MaxEncumbrance * 2)
-        {
-            stats.TempSz = Math.Max(3, stats.Sz - 1);
-        }
-        else if (stats.MaxEncumbrance - stats.CurrentEncumbrance < 0 && stats.CurrentEncumbrance < stats.MaxEncumbrance * 3)
-        {
-            stats.TempSz = Math.Max(2, stats.Sz - 2);
-        }
-        else if (stats.CurrentEncumbrance > stats.MaxEncumbrance * 3)
-        {
-            stats.TempSz = 0;
-        }
-        else
-        {
-            stats.TempSz = stats.Sz;
-        }
+        stats.TempSz = stats.Sz;
 
         // Uwzględnienie szybkości wierzchowca
         if(unit.IsMounted && unit.Mount != null)
@@ -461,14 +445,13 @@ public class MovementManager : MonoBehaviour
             }
             else
             {
-                runTest = DiceRollManager.Instance.TestSkill(stats, "Zw", "Athletics");
+                runTest = DiceRollManager.Instance.TestSkill(stats, "Atletykę", "Zw", "Athletics");
             }
             rollResult = runTest[3];
 
 
             //Oblicza obecną szybkość
-            stats.TempSz *= modifier;
-            stats.TempSz += rollResult - 12;
+            stats.TempSz = Math.Max(stats.Sz, rollResult / 2);
         }
         else if(unit.IsFlying)
         {
@@ -487,12 +470,6 @@ public class MovementManager : MonoBehaviour
                 //Oblicza obecną szybkość
                 stats.TempSz *= modifier;
             }
-        }
-
-        // Uwzględnia cechę Skoczny
-        if((unit.IsRunning || unit.IsCharging) && stats.Bounce)
-        {
-            stats.TempSz *= 2;
         }
 
         // Uwzględnia powalenie

@@ -414,6 +414,23 @@ public class DiceRollManager : MonoBehaviour
             }
         }
 
+        // ===== Talent TWARDZIEL (Hardy): podwajamy niższą kość przy rzucie na Kondycję =====
+        if (stats.Hardy && attributeName == "K")
+        {
+            int oldValue = 0;
+            if (roll1 <= roll2)
+            {
+                oldValue = roll1;
+                roll1 *= 2;
+            }
+            else
+            {
+                oldValue = roll2;
+                roll2 *= 2;
+            }
+            Debug.Log($"{stats.Name} korzysta z talentu Twardziel – niższa kość zostaje podwojona z <color=#4dd2ff>{oldValue}</color> na <color=#4dd2ff>{oldValue * 2}</color>.");
+        }
+
         if (string.IsNullOrEmpty(rollContext))
         {
             rollContext = !string.IsNullOrEmpty(skillName) ? skillName :

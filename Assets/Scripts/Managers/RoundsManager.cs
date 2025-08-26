@@ -61,12 +61,6 @@ public class RoundsManager : MonoBehaviour
 
         Debug.Log($"<color=#4dd2ff>------------------------------------------------------------------------------------ RUNDA {RoundNumber} ------------------------------------------------------------------------------------</color>");
 
-        //Aktualizuje przewagę, jeśli któraś ze stron wyraźnie dominuje siłą
-        if (UnitsManager.Instance.BothTeamsExist())
-        {
-            InitiativeQueueManager.Instance.CalculateAdvantageBasedOnDominance();
-        }
-
         //Resetuje ilość dostępnych akcji dla wszystkich jednostek
         foreach (Unit unit in UnitsManager.Instance.AllUnits)
         {
