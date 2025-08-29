@@ -15,7 +15,7 @@
         "natural-weapon"
       ],
       "AttackRange": 1.5,
-      "S": 4,
+      "Damage": 0,
       "NaturalWeapon": true
     },
     {
@@ -165,20 +165,6 @@
       "AttackRange": 1.5
     },
     {
-      "Name": "Muszkiet",
-      "Type": [
-        "ranged"
-      ],
-      "TwoHanded": true,
-      "Zr": 3,
-      "Damage": 5,
-      "AttackRange": 25.0,
-      "ReloadTime": 3,
-      "Slow": true,
-      "Penetrating": true,
-      "AmmoType": "Pocisk i proch"
-    },
-    {
       "Name": "Młot bojowy",
       "Type": [
         "melee"
@@ -201,6 +187,20 @@
       "AttackRange": 1.5
     },
     {
+      "Name": "Muszkiet",
+      "Type": [
+        "ranged"
+      ],
+      "TwoHanded": true,
+      "Zr": 3,
+      "Damage": 5,
+      "AttackRange": 25.0,
+      "ReloadTime": 3,
+      "Slow": true,
+      "Penetrating": true,
+      "AmmoType": "Pocisk i proch"
+    },
+    {
       "Name": "Nadziak",
       "Type": [
         "melee"
@@ -214,7 +214,7 @@
       "Type": [
         "melee"
       ],
-      "Damage": 1,
+      "Damage": 0,
       "Fast": true,
       "AttackRange": 1.5
     },
@@ -322,7 +322,7 @@
       ],
       "Zr": 2,
       "AttackRange": 4.0,
-      "Entangle":  true,
+      "Entangle": true,
       "Penetrating": true
     },
     {

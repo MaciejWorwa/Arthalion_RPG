@@ -33,11 +33,6 @@ public class DiceRollManager : MonoBehaviour
     // Zmienne do przechowywania wyniku
     public bool IsWaitingForRoll;
 
-    // Wyniki rzutów
-    private int Roll1;
-    private int Roll2;
-    private int SkillRoll;
-
     [SerializeField] private TMP_InputField _roll1InputField;
     [SerializeField] private TMP_InputField _roll2InputField;
     [SerializeField] private TMP_InputField _skillRollInputField;
@@ -216,98 +211,6 @@ public class DiceRollManager : MonoBehaviour
     }
 
     #region Attributes and skills tests
-    //public int[] TestSkill(
-    // Stats stats,
-    // string rollContext,              // kontekst do logów
-    // string attributeName,            // może być null
-    // string skillName = null,
-    // int modifier = 0,
-    // int difficultyLevel = 0,
-    // int roll1 = 0,
-    // int roll2 = 0,
-    // int skillRoll = 0,
-    // bool skillReroll = false)
-    //{
-    //    // Pobieranie wartości umiejętności
-    //    int skillValue = 0;
-    //    if (!string.IsNullOrEmpty(skillName))
-    //    {
-    //        var field = typeof(Stats).GetField(skillName);
-    //        if (field != null)
-    //            skillValue = (int)field.GetValue(stats);
-    //    }
-
-    //    // Losowanie kości tylko jeśli nie podano gotowych wyników
-    //    if (roll1 == 0)
-    //    {
-    //        roll1 = UnityEngine.Random.Range(1, 11);
-    //        roll2 = UnityEngine.Random.Range(1, 11);
-
-    //        switch (skillValue)
-    //        {
-    //            case 1: skillRoll = UnityEngine.Random.Range(1, 5); break;  // k4
-    //            case 2: skillRoll = UnityEngine.Random.Range(1, 7); break;  // k6
-    //            case 3: skillRoll = UnityEngine.Random.Range(1, 9); break;  // k8
-    //            default:
-    //                // brak kostki umiejętności
-    //                break;
-    //        }
-    //    }
-
-    //    // Modyfikator z panelu jednostki
-    //    if (RollModifier != 0)
-    //        modifier += RollModifier;
-
-    //    // Modyfikator za Strach
-    //    if (stats.GetComponent<Unit>().Scared && !stats.GetComponent<Unit>().Blinded) modifier -= 2;
-
-    //    // Pobieranie wartości CECHY — bezpiecznie, gdy attributeName == null
-    //    int attributeValue = 0;
-    //    if (!string.IsNullOrEmpty(attributeName))
-    //    {
-    //        var attributeField = typeof(Stats).GetField(attributeName);
-    //        if (attributeField != null)
-    //            attributeValue = (int)attributeField.GetValue(stats);
-    //    }
-
-    //    int finalScore = roll1 + roll2 + skillRoll + attributeValue + modifier;
-
-    //    if(string.IsNullOrEmpty(rollContext))
-    //    {
-    //        rollContext = !string.IsNullOrEmpty(skillName) ? skillName :
-    //                      !string.IsNullOrEmpty(attributeName) ? attributeName : "";
-    //    }
-
-    //    string modifierString = modifier != 0 ? $" Inne modyfikatory: {modifier}." : "";
-    //    string attrString = attributeValue != 0 ? $" Modyfikator z cechy: {attributeValue}." : "";
-    //    string difficultyLevelString = difficultyLevel != 0 ? $"/{difficultyLevel}" : "";
-
-    //    string color = (difficultyLevel == 0 || finalScore >= difficultyLevel) ? "green" : "red";
-
-    //    string roll1Str = $"<color=#4dd2ff>{roll1}</color>";
-    //    string roll2Str = $"<color=#4dd2ff>{roll2}</color>";
-    //    string skillRollStr = skillRoll != 0 ? $" + <color=#FF7F50>{skillRoll}</color>" : "";
-
-    //    Debug.Log($"{stats.Name} rzuca na {rollContext}: {roll1Str} + {roll2Str}{skillRollStr} = <color=#4dd2ff>{roll1 + roll2 + skillRoll}</color>." + $"{attrString}{modifierString} Łączny wynik: <color={color}>{finalScore}{difficultyLevelString}</color>.");
-
-    //    if (difficultyLevel != 0 && IsDoubleDigit(roll1, roll2))
-    //    {
-    //        if (finalScore >= difficultyLevel)
-    //        {
-    //            Debug.Log($"{stats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
-    //            stats.FortunateEvents++;
-    //        }
-    //        else
-    //        {
-    //            Debug.Log($"{stats.Name} wyrzucił <color=red>PECHA</color>!");
-    //            stats.UnfortunateEvents++;
-    //        }
-    //    }
-
-    //    ResetRollModifier();
-    //    return new int[] { roll1, roll2, skillRoll, finalScore };
-    //}
-
     public int[] TestSkill(
     Stats stats,
     string rollContext,              // kontekst do logów
@@ -362,6 +265,25 @@ public class DiceRollManager : MonoBehaviour
         }
 
         int finalScore = roll1 + roll2 + skillRoll + attributeValue2 + modifier;
+
+        // ===== Cecha Bezrozumny =====
+        if (stats.Unmeaning && (attributeName == "SW" || attributeName == "Ch" || attributeName == "Int"))
+        {
+            // Jeśli jest poziom trudności – osiągnij go dokładnie; jeśli brak, daj „bezpieczny” wysoki wynik
+            finalScore = (difficultyLevel > 0) ? difficultyLevel : 20;
+
+            // Ustal etykietę kontekstu jak w Twojej logice
+            if (string.IsNullOrEmpty(rollContext))
+                rollContext = !string.IsNullOrEmpty(skillName) ? skillName :
+                              !string.IsNullOrEmpty(attributeName) ? attributeName : "";
+
+            Debug.Log($"<color=red>{stats.Name} posiada cechę Bezrozumny – nie może wykonywać testów opartych na Inteligencji, Charyźmie ani Sile Woli.</color>");
+
+            ResetRollModifier();
+
+            // Zwracamy „puste” kości (żeby nie odpalić sekcji SZCZĘŚCIE/PECH) i finalny wynik
+            return new int[] { 0, 0, 0, finalScore };
+        }
 
         // ===== Użycie talentu SPECJALISTA: warunkowy przerzut Kości Umiejętności =====
         if (stats.HasSpecialist(skillName) && skillValue >= 1 && skillValue <= 3 && (GameManager.IsAutoDiceRollingMode || stats.CompareTag("EnemyUnit")))

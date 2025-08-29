@@ -11,61 +11,545 @@
     },
     {
       "Race": "Elf",
-      "Size": 3,
+      "Size": 2,
       "PrimaryWeaponNames": [ "Miecz", "Łuk" ],
-      "WW": 30,
-      "US": 30,
-      "S": 20,
-      "Wt": 20,
-      "I": 40,
-      "Zw": 30,
-      "Zr": 30,
-      "Int": 30,
-      "SW": 30,
-      "Ogd": 20,
       "Sz": 5,
-      "PP": 0,
-      "Resilience": 0,
-      "ExtraPoints": 2
-    },
-    {
-      "Race": "Krasnolud",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Buzdygan", "Miecz", "Topór", "Młot jednoręczny" ],
-      "WW": 30,
-      "US": 20,
-      "S": 20,
-      "Wt": 30,
-      "I": 20,
-      "Zw": 10,
-      "Zr": 30,
-      "Int": 20,
-      "SW": 40,
-      "Ogd": 10,
-      "Sz": 3,
-      "PP": 0,
-      "Resilience": 2,
-      "ExtraPoints": 2,
-      "Sturdy": 1
+      "ExtraPoints": 3
     },
     {
       "Race": "Gnom",
-      "Size": 2,
-      "PrimaryWeaponNames": [ "Miecz", "Proca" ],
-      "WW": 10,
-      "US": 30,
-      "S": 10,
-      "Wt": 20,
-      "I": 20,
-      "Zw": 20,
-      "Zr": 30,
-      "Int": 20,
-      "SW": 30,
-      "Ogd": 30,
+      "Size": 1,
+      "PrimaryWeaponNames": [ "Miecz", "Krótki łuk" ],
       "Sz": 3,
-      "PP": 0,
-      "Resilience": 2,
-      "ExtraPoints": 3
+      "ExtraPoints": 5
+    },
+    {
+      "Race": "Krasnolud",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Buzdygan", "Miecz", "Topór", "Młot bojowy" ],
+      "Sz": 3,
+      "ExtraPoints": 4
+    },
+    {
+      "Race": "Demon",
+      "Type": "Undead",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Topór dwuręczny" ],
+      "S": 8,
+      "K": 6,
+      "Zw": 0,
+      "Zr": 0,
+      "Int": 4,
+      "P": 2,
+      "Ch": 5,
+      "SW": 8,
+      "Sz": 5,
+      "Scary": 20,
+      "Undead": true,
+      "Tough": true,
+      "Spellcasting": 3,
+      "Magic": [ "Death" ],
+      "Chosen": true
+    },
+    {
+      "Race": "Drimhar",
+      "Type": "Giant",
+      "PrimaryWeaponNames": [ "Pałka", "Topór dwuręczny", "Młot dwuręczny", "Pałka z kolcami", "Włócznia" ],
+      "Size": 3,
+      "S": 5,
+      "K": 4,
+      "Zw": -2,
+      "Zr": 0,
+      "Int": -2,
+      "P": -2,
+      "Ch": -3,
+      "SW": 3,
+      "Sz": 4,
+      "MeleeCombat": 2,
+      "Hardy": true,
+      "Scary": 12,
+      "NaturalArmor": 1
+    },
+    {
+      "Race": "Duch",
+      "Type": "Undead",
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": -2
+        }
+      ],
+      "Size": 2,
+      "S": -2,
+      "K": -2,
+      "Zw": 2,
+      "Zr": 0,
+      "Int": 2,
+      "P": 2,
+      "Ch": 2,
+      "SW": 3,
+      "Sz": 4,
+      "Undead": true,
+      "Flight": 8,
+      "Resistance": [ "Physical" ],
+      "Scary": 14,
+      "Dodge": 1
+    },
+    {
+      "Race": "Dzik",
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "Size": 2,
+      "S": 3,
+      "K": 3,
+      "Zw": 0,
+      "Zr": 0,
+      "Int": -3,
+      "P": 2,
+      "Ch": -3,
+      "SW": 0,
+      "Sz": 5
+    },
+    {
+      "Race": "Goblin",
+      "Type": "Humanoid",
+      "PrimaryWeaponNames": [ "Miecz", "Pałka", "Topór", "Tarcza", "Łuk", "Włócznia" ],
+      "Size": 1,
+      "S": -2,
+      "K": 0,
+      "Zw": 2,
+      "Zr": 2,
+      "Int": -2,
+      "P": 0,
+      "Ch": -2,
+      "SW": 0,
+      "Sz": 4,
+      "Dodge": 1,
+      "MeleeCombat": 1,
+      "RangedCombat": 1
+    },
+    {
+      "Race": "Goblin Szaman",
+      "Type": "Humanoid",
+      "PrimaryWeaponNames": [ "Kij" ],
+      "Size": 1,
+      "S": -1,
+      "K": 1,
+      "Zw": 2,
+      "Zr": 2,
+      "Int": 4,
+      "P": 0,
+      "Ch": 0,
+      "SW": 3,
+      "Sz": 8,
+      "Spellcasting": 2,
+      "Dodge": 1,
+      "Intimidate": 1,
+      "Magic": [ "Fire", "Ice", "Earth", "Water", "Air", "Death" ],
+      "NaturalArmor": 1
+    },
+    {
+      "Race": "Hasai",
+      "Type": "Beast",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Poisonous",
+          "Value": 2
+        }
+      ],
+      "Resistance": [ "Ice", "Poison" ],
+      "S": 1,
+      "K": 3,
+      "Zw": 4,
+      "Zr": 0,
+      "Int": -3,
+      "P": 5,
+      "Ch": -3,
+      "SW": 0,
+      "Sz": 5,
+      "Reflex": 2
+    },
+    {
+      "Race": "Koń",
+      "Type": "Beast",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": -2
+        }
+      ],
+      "S": 4,
+      "K": 5,
+      "Zw": 2,
+      "Zr": -2,
+      "Int": -3,
+      "P": 2,
+      "Ch": -2,
+      "SW": 0,
+      "Sz": 7,
+      "Athletics": 1
+    },
+    {
+      "Race": "Krwiopij",
+      "Type": "Beast",
+      "Size": 0,
+      "PrimaryWeaponNames": [ "Bron naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": -2
+        }
+      ],
+      "S": -5,
+      "K": -4,
+      "Zw": 5,
+      "Zr": 0,
+      "Int": -5,
+      "P": 2,
+      "Ch": -5,
+      "SW": -3,
+      "Sz": 2,
+      "Reflex": 3,
+      "Flight": 6,
+      "Resistance": [ "Poison" ]
+    },
+    {
+      "Race": "Krwiożerczy Ogar",
+      "Type": "Beast",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 3,
+      "K": 2,
+      "Zw": 3,
+      "Zr": 0,
+      "Int": -3,
+      "P": 2,
+      "Ch": -5,
+      "SW": 0,
+      "Sz": 6,
+      "Athletics": 2,
+      "Reflex": 2,
+      "Pitiless": 1,
+      "Hungry": true
+    },
+    {
+      "Race": "Kuc",
+      "Type": "Beast",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": -2
+        }
+      ],
+      "S": 2,
+      "K": 3,
+      "Zw": 2,
+      "Zr": -2,
+      "Int": -3,
+      "P": 2,
+      "Ch": -2,
+      "SW": 0,
+      "Sz": 5,
+      "Athletics": 1
+    },
+    {
+      "Race": "Kurhaniec",
+      "Type": "Beast",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 3,
+      "K": 5,
+      "Zw": 3,
+      "Zr": 0,
+      "Int": -3,
+      "P": 3,
+      "Ch": -3,
+      "SW": 0,
+      "Sz": 6,
+      "Athletics": 3,
+      "Reflex": 2,
+      "Hungry": true
+    },
+    {
+      "Race": "Licz",
+      "Type": "Undead",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Kij" ],
+      "S": 2,
+      "K": 4,
+      "Zw": 2,
+      "Zr": 3,
+      "Int": 6,
+      "P": 2,
+      "Ch": 3,
+      "SW": 6,
+      "Sz": 5,
+      "Undead": true,
+      "BlackMagic": true,
+      "Scary": 16,
+      "Spellcasting": 3,
+      "Dodge": 2,
+      "Magic": [ "Death" ],
+      "NaturalArmor": 5
+    },
+    {
+      "Race": "Liściopiór",
+      "Type": "Beast",
+      "Size": 1,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": 1
+        }
+      ],
+      "S": -2,
+      "K": 0,
+      "Zw": 4,
+      "Zr": 0,
+      "Int": -3,
+      "P": 5,
+      "Ch": -2,
+      "SW": 0,
+      "Sz": 6,
+      "Reflex": 2,
+      "Flight": 8
+    },
+    {
+      "Race": "Mamut",
+      "Type": "Beast",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 8,
+      "K": 8,
+      "Zw": -3,
+      "Zr": 0,
+      "Int": -2,
+      "P": 2,
+      "Ch": -3,
+      "SW": 0,
+      "Sz": 6,
+      "Hardy": true,
+      "NaturalArmor": 1
+    },
+    {
+      "Race": "Morgras",
+      "Type": "Humanoid",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Topór", "Młot bojowy", "Tarcza", "Buzdygan" ],
+      "S": 2,
+      "K": 3,
+      "Zw": 0,
+      "Zr": 3,
+      "Int": -1,
+      "P": 0,
+      "Ch": -2,
+      "SW": 2,
+      "Sz": 5,
+      "Endurance": 1,
+      "Dodge": 1,
+      "MeleeCombat": 1,
+      "NaturalArmor": 3
+    },
+    {
+      "Race": "Niedźwiedź",
+      "Type": "Beast",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 4,
+      "K": 2,
+      "Zw": 2,
+      "Zr": 0,
+      "Int": -3,
+      "P": 4,
+      "Ch": -2,
+      "SW": 0,
+      "Sz": 5,
+      "Athletics": 1
+    },
+    {
+      "Race": "Nienazwany",
+      "Type": "Undead",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 0,
+      "K": 0,
+      "Zw": 2,
+      "Zr": 0,
+      "Int": 3,
+      "P": 3,
+      "Ch": -3,
+      "SW": 3,
+      "Sz": 4,
+      "Undead": true,
+      "Flight": 4,
+      "Scary": 14,
+      "Spellcasting": 1,
+      "Magic": [ "Death" ]
+    },
+    {
+      "Race": "Nosorożec Włochaty",
+      "Type": "Beast",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 7,
+      "K": 7,
+      "Zw": -2,
+      "Zr": 0,
+      "Int": -3,
+      "P": 2,
+      "Ch": -3,
+      "SW": 0,
+      "Sz": 6,
+      "Hardy": true,
+      "NaturalArmor": 1
+    },
+    {
+      "Race": "Olbrzymi Pająk",
+      "Type": "Beast",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Poisonous",
+          "Value": 2
+        }
+      ],
+      "S": 5,
+      "K": 5,
+      "Zw": 5,
+      "Zr": 0,
+      "Int": -3,
+      "P": 4,
+      "Ch": -3,
+      "SW": 3,
+      "Sz": 6,
+      "Endurance": 2,
+      "Reflex": 2,
+      "Scary": 14,
+      "NaturalArmor": 1,
+      "Resistance": [ "Poison" ]
+    },
+    {
+      "Race": "Olbrzymi Skorpion",
+      "Type": "Beast",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Szczypce", "Kolec jadowy" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Poisonous",
+          "Value": 3
+        }
+      ],
+      "S": 6,
+      "K": 7,
+      "Zw": 4,
+      "Zr": 0,
+      "Int": -3,
+      "P": 3,
+      "Ch": -3,
+      "SW": 4,
+      "Sz": 6,
+      "Endurance": 2,
+      "Reflex": 2,
+      "Scary": 14,
+      "NaturalArmor": 2,
+      "Resistance": [ "Poison" ]
+    },
+    {
+      "Race": "Oprych",
+      "Type": "Humanoid",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Pałka", "Nóż", "Nóż do rzucania" ],
+      "S": 2,
+      "K": 0,
+      "Zw": 2,
+      "Zr": 2,
+      "Int": -2,
+      "P": 0,
+      "Ch": -2,
+      "SW": 0,
+      "Sz": 4,
+      "MeleeCombat": 1,
+      "RangedCombat": 1
+    },
+    {
+      "Race": "Peszak",
+      "Type": "Beast",
+      "Size": 1,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": -2
+        }
+      ],
+      "S": -5,
+      "K": -3,
+      "Zw": 4,
+      "Zr": 0,
+      "Int": 0,
+      "P": 3,
+      "Ch": 3,
+      "SW": -4,
+      "Sz": 4,
+      "SurvivalInstinct": 3
+    },
+    {
+      "Race": "Pomiot Kainera",
+      "Type": "Undead",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 3,
+      "K": 4,
+      "Zw": -2,
+      "Zr": -2,
+      "Int": -5,
+      "P": -2,
+      "Ch": -5,
+      "SW": 0,
+      "Sz": 5,
+      "MeleeCombat": 1,
+      "Pitiless": 1,
+      "Scary": 14,
+      "Hungry": true,
+      "Unmeaning": true
+    },
+    {
+      "Race": "Pożeracz Dusz",
+      "Type": "Undead",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": 2
+        },
+        {
+          "Key": "Penetrating",
+          "Value": true
+        }
+      ],
+      "S": 3,
+      "K": 3,
+      "Zw": 5,
+      "Zr": 5,
+      "Int": 2,
+      "P": 4,
+      "Ch": -4,
+      "SW": 5,
+      "Sz": 7,
+      "MeleeCombat": 3,
+      "Dodge": 3,
+      "Pitiless": 2,
+      "Undead": true,
+      "Scary": 16
     },
     {
       "Race": "Równy Żywiołom",
@@ -87,7 +571,167 @@
       "Pitiless": 2,
       "CombatMaster": true
     },
-     {
+    {
+      "Race": "Smok",
+      "Type": "Dragon",
+      "Size": 4,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 9,
+      "K": 10,
+      "Zw": 2,
+      "Zr": 0,
+      "Int": 4,
+      "P": 3,
+      "Ch": 2,
+      "SW": 8,
+      "Sz": 5,
+      "Scary": 18,
+      "Tough": true,
+      "Flight": 10,
+      "Resistance": [ "Fire", "Poison", "Ice", "Electricity" ],
+      "NaturalArmor": 3,
+      "MeleeCombat": 3,
+      "Cool": 3
+    },
+    {
+      "Race": "Szczur",
+      "Type": "Beast",
+      "Size": 0,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": -2
+        }
+      ],
+      "S": -5,
+      "K": -4,
+      "Zw": 3,
+      "Zr": -4,
+      "Int": -5,
+      "P": 3,
+      "Ch": -5,
+      "SW": -3,
+      "Sz": 4
+    },
+    {
+      "Race": "Szkielet",
+      "Type": "Undead",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Miecz", "Topór", "Buzdygan", "Młot bojowy", "Włócznia", "Puklerz" ],
+      "S": -1,
+      "K": -1,
+      "Zw": 0,
+      "Zr": 0,
+      "Int": -5,
+      "P": -2,
+      "Ch": -5,
+      "SW": 0,
+      "Sz": 4,
+      "Undead": true,
+      "Scary": 10,
+      "NaturalArmor": 1,
+      "Unmeaning": true
+    },
+    {
+      "Race": "Topielica",
+      "Type": "Undead",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 0,
+      "K": 1,
+      "Zw": 0,
+      "Zr": 0,
+      "Int": 0,
+      "P": 2,
+      "Ch": 3,
+      "SW": 3,
+      "Sz": 4,
+      "Undead": true,
+      "Scary": 13,
+      "Resistance": [ "Water" ],
+      "Endurance": 2
+    },
+    {
+      "Race": "Torfun",
+      "Type": "Humanoid",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": 1
+        }
+      ],
+      "S": 3,
+      "K": 3,
+      "Zw": 0,
+      "Zr": 0,
+      "Int": -2,
+      "P": 3,
+      "Ch": -5,
+      "SW": 0,
+      "Sz": 4,
+      "Stink": true
+    },
+    {
+      "Race": "Troll",
+      "Type": "Beast",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Pałka" ],
+      "S": 5,
+      "K": 4,
+      "Zw": -2,
+      "Zr": -2,
+      "Int": -4,
+      "P": -3,
+      "Ch": -3,
+      "SW": 0,
+      "Sz": 4,
+      "MeleeCombat": 1,
+      "Hardy": true,
+      "Hungry": true,
+      "Scary": 12,
+      "NaturalArmor": 3
+    },
+    {
+      "Race": "Upiór",
+      "Type": "Undead",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Miecz dwuręczny" ],
+      "S": 2,
+      "K": 0,
+      "Zw": 2,
+      "Zr": 0,
+      "Int": 2,
+      "P": 2,
+      "Ch": 2,
+      "SW": 4,
+      "Sz": 4,
+      "Undead": true,
+      "Scary": 16,
+      "Resistance": [ "Physical" ],
+      "Dodge": 1,
+      "MeleeCombat": 2,
+      "NaturalArmor": 3
+    },
+    {
+      "Race": "Wargul",
+      "Type": "Beast",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "S": 5,
+      "K": 6,
+      "Zw": -2,
+      "Zr": -2,
+      "Int": -3,
+      "P": 3,
+      "Ch": -2,
+      "SW": 0,
+      "Sz": 5,
+      "Hardy": true
+    },
+    {
       "Race": "Wilk",
       "Type": "Beast",
       "Size": 2,
@@ -106,1582 +750,114 @@
       "P": 5,
       "Ch": -2,
       "SW": 0,
-      "Sz": 14,
+      "Sz": 7,
       "Athletics": 2,
       "Reflex": 2
     },
     {
-      "Race": "Amfisbena",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 50,
-      "US": 0,
-      "S": 45,
-      "Wt": 40,
-      "I": 35,
-      "Zw": 40,
-      "Zr": 0,
-      "Int": 30,
-      "SW": 45,
-      "Ogd": 10,
-      "Sz": 4,
-      "NaturalArmor": 2,
-      "Venom": true,
-      "VenomModifier": -20,
-      "Stride": true,
-      "Notebook": "Aby uzyskać przewagę liczebną nad Amfisbeną potrzebna jest przewaga 4:1 zamiast 2:1"
-    },
-    {
-      "Race": "Bestia bagienna",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "Quality",
-          "Value": "Magiczna"
-        }
-      ],
-      "WW": 35,
-      "US": 0,
-      "S": 50,
-      "Wt": 55,
-      "I": 10,
-      "Zw": 15,
-      "Zr": 10,
-      "Int": 0,
-      "SW": 0,
-      "Ogd": 0,
-      "Sz": 4,
-      "Regeneration": true,
-      "Unstable": true
-    },
-    {
-      "Race": "Brzytwodziób",
-      "Size": 2,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 38,
-      "US": 0,
-      "S": 22,
-      "Wt": 34,
-      "I": 30,
-      "Zw": 24,
-      "Zr": 0,
-      "Int": 10,
-      "SW": 24,
-      "Ogd": 0,
-      "Sz": 2,
-      "Bestial": true,
-      "Hardy": 1,
-      "Flight": 45,
-      "StrikeMIghtyBlow": 1,
-      "Notebook": "Każdy kto otrzyma ranę od brzytwodzioba musi zdać Test Odporności +20, albo dostanie stan krwawienie. W roju ich WW wzrasta do 48, a Żywotność do 55"
-    },
-    {
-      "Race": "Brzytwogor",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 45,
-      "US": 0,
-      "S": 55,
-      "Wt": 45,
-      "I": 33,
-      "Zw": 35,
-      "Zr": 0,
-      "Int": 5,
-      "SW": 30,
-      "Ogd": 0,
-      "Sz": 7,
-      "NaturalArmor": 1,
-      "Bestial": true,
-      "Stride": true,
-      "Distracting": true,
-      "Frenzy": true,
-      "StrikeMightyBlow": 1
-    },
-    {
-      "Race": "Chimera",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "Quality",
-          "Value": "Magiczna"
-        }
-      ],
-      "WW": 65,
-      "US": 55,
-      "S": 63,
-      "Wt": 52,
-      "I": 50,
-      "Zw": 54,
-      "Zr": 0,
-      "Int": 24,
-      "SW": 40,
-      "Ogd": 0,
-      "Sz": 6,
-      "NaturalArmor": 2,
-      "Terror": 1,
-      "Bestial": true,
-      "Flight": 40,
-      "Notebook": "Nie może być zaskoczona ani nie dotyczy jej przewaga liczebna przeciwników"
-    },
-    {
-      "Race": "Czerw bagienny",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 50,
-      "US": 0,
-      "S": 60,
-      "Wt": 55,
-      "I": 10,
-      "Zw": 30,
-      "Zr": 0,
-      "Int": 30,
-      "SW": 45,
-      "Ogd": 0,
-      "Sz": 3,
-      "NaturalArmor": 2,
-      "Bestial": true,
-      "Notebook": "Może walczyć w zapasach jednocześnie z 5-cioma celami, jeśli są mniejsze od niego"
-    },
-    {
-      "Race": "Demonetka Slaanesha",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 60,
-      "US": 50,
-      "S": 40,
-      "Wt": 30,
-      "I": 65,
-      "Zw": 60,
-      "Zr": 35,
-      "Int": 30,
-      "SW": 70,
-      "Ogd": 45,
-      "Sz": 4,
-      "Champion": true,
-      "Daemonic": 8,
-      "Unstable": true,
-      "Fear": 2,
-      "Distracting": true
-    },
-    {
-      "Race": "Duch",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "Quality",
-          "Value": "Magiczna"
-        },
-        {
-          "Key": "S",
-          "Value": 3
-        }
-      ],
-      "WW": 30,
-      "US": 0,
-      "S": 30,
-      "Wt": 30,
-      "I": 10,
-      "Zw": 30,
-      "Zr": 20,
-      "Int": 15,
-      "SW": 15,
-      "Ogd": 0,
-      "Sz": 6,
-      "Fear": 2,
-      "Ethereal": true,
-      "Undead": true,
-      "Unstable": true
-    },
-    {
-      "Race": "Dzik",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 3
-        }
-      ],
-      "WW": 35,
-      "US": 0,
-      "S": 33,
-      "Wt": 35,
-      "I": 33,
-      "Zw": 35,
-      "Zr": 0,
-      "Int": 10,
-      "SW": 10,
-      "Ogd": 0,
-      "Sz": 7,
-      "NaturalArmor": 1,
-      "Bestial": true,
-      "Stride": true
-    },
-    {
-      "Race": "Dżabersmok",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 45,
-      "US": 40,
-      "S": 55,
-      "Wt": 50,
-      "I": 20,
-      "Zw": 35,
-      "Zr": 0,
-      "Int": 10,
-      "SW": 20,
-      "Ogd": 0,
-      "Sz": 7,
-      "Bestial": true,
-      "CorrosiveBlood": true,
-      "Venom": true,
-      "Distracting": true,
-      "NaturalArmor": 3,
-      "Bounce": true
-    },
-    {
-      "Race": "Fimir",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Bułat", "Młot jednoręczny", "Buzdygan", "Pałka", "Miecz", "Topór", "Wielki topór", "Włócznia", "Tarcza", "Łuk" ],
-      "WW": 35,
-      "US": 20,
-      "S": 45,
-      "Wt": 40,
-      "I": 30,
-      "Zw": 20,
-      "Zr": 20,
-      "Int": 30,
-      "SW": 30,
-      "Ogd": 15,
-      "Sz": 6,
-      "NaturalArmor": 2,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Ghul",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Bułat", "Młot jednoręczny", "Buzdygan", "Pałka", "Miecz", "Topór" ],
-      "WW": 30,
-      "US": 0,
-      "S": 35,
-      "Wt": 30,
-      "I": 30,
-      "Zw": 35,
-      "Zr": 25,
-      "Int": 20,
-      "SW": 20,
-      "Ogd": 5,
-      "Sz": 4
-    },
-    {
-      "Race": "Goblin",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Włócznia", "Bułat", "Łuk", "Krótki łuk", "Puklerz", "Tarcza", "Miecz", "Pałka", "Nadziak" ],
-      "WW": 25,
-      "US": 30,
-      "S": 30,
-      "Wt": 30,
-      "I": 20,
-      "Zw": 35,
-      "Zr": 30,
-      "Int": 30,
-      "SW": 20,
-      "Ogd": 20,
-      "Sz": 4,
-      "NaturalArmor": 1,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Gor",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Włócznia", "Łuk", "Puklerz", "Tarcza", "Miecz", "Pałka", "Nadziak" ],
-      "WW": 45,
-      "US": 30,
-      "S": 35,
-      "Wt": 45,
-      "I": 30,
-      "Zw": 35,
-      "Zr": 25,
-      "Int": 25,
-      "SW": 30,
-      "Ogd": 25,
-      "Sz": 4,
-      "NaturalArmor": 1,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Gryf",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 50,
-      "US": 0,
-      "S": 50,
-      "Wt": 50,
-      "I": 45,
-      "Zw": 60,
-      "Zr": 0,
-      "Int": 20,
-      "SW": 40,
-      "Ogd": 0,
-      "Sz": 6,
-      "NaturalArmor": 1,
-      "Bestial": true,
-      "Flight": 15
-    },
-    {
-      "Race": "Hipogryf",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 45,
-      "US": 0,
-      "S": 55,
-      "Wt": 50,
-      "I": 20,
-      "Zw": 55,
-      "Zr": 0,
-      "Int": 5,
-      "SW": 35,
-      "Ogd": 0,
-      "Sz": 7,
-      "Bestial": true,
-      "Stride": true,
-      "Belligerent": true,
-      "Flight": 20
-    },
-    {
-      "Race": "Hydra",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 45,
-      "US": 0,
-      "S": 50,
-      "Wt": 55,
-      "I": 15,
-      "Zw": 35,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 25,
-      "Ogd": 0,
-      "Sz": 6,
-      "Bestial": true,
-      "Stride": true,
-      "Regeneration": true,
-      "NaturalArmor": 3
-    },
-    {
-      "Race": "Inżynier spaczenia klanu Skryre",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Pistolet", "Bułat", "Miecz" ],
-      "WW": 30,
-      "US": 45,
-      "S": 30,
-      "Wt": 30,
-      "I": 45,
-      "Zw": 35,
-      "Zr": 45,
-      "Int": 40,
-      "SW": 30,
-      "Ogd": 20,
-      "Sz": 5,
-      "NaturalArmor": 2,
-      "Athletics": 10,
-      "Dodge": 5,
-      "MeleeSerialized": [
-        {
-          "Key": "Basic",
-          "Value": 5
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Blackpowder",
-          "Value": 5
-        }
-      ]
-    },
-    {
-      "Race": "Klanbrat",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Włócznia", "Bułat", "Krótki łuk", "Puklerz", "Miecz", "Pałka", "Łapacz" ],
-      "WW": 30,
-      "US": 30,
-      "S": 30,
-      "Wt": 30,
-      "I": 40,
-      "Zw": 35,
-      "Zr": 30,
-      "Int": 30,
-      "SW": 20,
-      "Ogd": 20,
-      "Sz": 5,
-      "NaturalArmor": 2,
-      "MeleeSerialized": [
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Koń",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 3
-        }
-      ],
-      "WW": 25,
-      "US": 0,
-      "S": 45,
-      "Wt": 35,
-      "I": 15,
-      "Zw": 30,
-      "Zr": 0,
-      "Int": 10,
-      "SW": 10,
-      "Ogd": 10,
-      "Sz": 7,
-      "Bestial": true,
-      "Stride": true
-    },
-    {
-      "Race": "Krwiopuszcz Khorna",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Miecz", "Topór", "Miecz dwuręczny", "Wielki topór" ],
-      "WW": 55,
-      "US": 35,
-      "S": 45,
-      "Wt": 35,
-      "I": 60,
-      "Zw": 40,
-      "Zr": 30,
-      "Int": 25,
-      "SW": 70,
-      "Ogd": 15,
-      "Sz": 5,
-      "Champion": true,
-      "Daemonic": 8,
-      "Unstable": true,
-      "NaturalArmor": 5,
-      "Fear": 3,
-      "Frenzy": true
-    },
-    {
-      "Race": "Kuroliszek",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 40,
-      "US": 52,
-      "S": 35,
-      "Wt": 45,
-      "I": 55,
-      "Zw": 35,
-      "Zr": 0,
-      "Int": 20,
-      "SW": 25,
-      "Ogd": 0,
-      "Sz": 5,
-      "NaturalArmor": 2,
-      "Venom": true,
-      "VenomModifier": -20,
-      "Flight": 30,
-      "Hardy": 1,
-      "Stride": true,
-      "Notebook": "Posiada petryfikujące spojrzenie"
-    },
-    {
-      "Race": "Mantikora",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 55,
-      "US": 0,
-      "S": 55,
-      "Wt": 55,
-      "I": 50,
-      "Zw": 65,
-      "Zr": 0,
-      "Int": 10,
-      "SW": 35,
-      "Ogd": 0,
-      "Sz": 6,
-      "Bestial": true,
-      "Venom": true,
-      "Distracting": true,
-      "NaturalArmor": 2,
-      "Flight": 12
-    },
-    {
-      "Race": "Minotaur",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Wielki topór", "Młot bojowy", "Buzdygan", "Tarcza", "Topór", "Kiścień" ],
-      "WW": 45,
-      "US": 25,
-      "S": 44,
-      "Wt": 45,
-      "I": 20,
-      "Zw": 35,
-      "Zr": 25,
-      "Int": 20,
-      "SW": 30,
-      "Ogd": 15,
-      "Sz": 6,
-      "Hungry": true,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Flail",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Mutant",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Łuk", "Miecz", "Pałka", "Kusza", "Sztylet", "Nóż", "Kastet", "Tłuk", "Topór" ],
-      "WW": 30,
-      "US": 30,
-      "S": 30,
-      "Wt": 30,
-      "I": 30,
-      "Zw": 30,
-      "Zr": 30,
-      "Int": 30,
-      "SW": 30,
-      "Ogd": 30,
-      "Sz": 4,
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Niedźwiedź",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 35,
-      "US": 0,
-      "S": 55,
-      "Wt": 45,
-      "I": 20,
-      "Zw": 25,
-      "Zr": 15,
-      "Int": 10,
-      "SW": 15,
-      "Ogd": 0,
-      "Sz": 4,
-      "NaturalArmor": 1,
-      "Bestial": true,
-      "Stride": true
-    },
-    {
-      "Race": "Nieumarły rycerz",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Miecz dwuręczny", "Półtorak", "Buzdygan", "Kiścień", "Wielki topór", "Młot bojowy", "Tarcza", "Miecz", "Topór" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "Quality",
-          "Value": "Magiczna"
-        },
-        {
-          "Key": "Impale",
-          "Value": true
-        },
-        {
-          "Key": "S",
-          "Value": 5
-        }
-      ],
-      "WW": 50,
-      "US": 35,
-      "S": 45,
-      "Wt": 45,
-      "I": 38,
-      "Zw": 30,
-      "Zr": 20,
-      "Int": 35,
-      "SW": 50,
-      "Ogd": 30,
-      "Sz": 4,
-      "NaturalArmor": 4,
-      "StrikeToInjure": true,
-      "Fear": 2,
-      "Undead": true,
-      "ImmunityToPsychology": true,
-      "CombatMaster": 2,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        },
-        {
-          "Key": "Flail",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Nosorożnik",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 45,
-      "US": 0,
-      "S": 55,
-      "Wt": 50,
-      "I": 23,
-      "Zw": 30,
-      "Zr": 0,
-      "Int": 10,
-      "SW": 10,
-      "Ogd": 0,
-      "Sz": 6,
-      "NaturalArmor": 2,
-      "Bestial": true,
-      "Stride": true,
-      "Belligerent": true,
-      "StrikeMightyBlow": 1
-    },
-    {
-      "Race": "Ogr",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Topór", "Pałka", "Buzdygan", "Kiścień", "Korbacz", "Wielki topór" ],
-      "WW": 30,
-      "US": 20,
-      "S": 45,
-      "Wt": 45,
-      "I": 10,
-      "Zw": 25,
-      "Zr": 20,
-      "Int": 20,
-      "SW": 30,
-      "Ogd": 20,
-      "Sz": 6,
-      "NaturalArmor": 1,
-      "Hungry": true,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Flail",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Olbrzym",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Pałka", "Topór drzewcowy", "Wielki topór", "Kiścień" ],
-      "WW": 30,
-      "US": 30,
-      "S": 65,
-      "Wt": 55,
-      "I": 30,
-      "Zw": 20,
-      "Zr": 15,
-      "Int": 25,
-      "SW": 25,
-      "Ogd": 20,
-      "Sz": 6,
-      "NaturalArmor": 1,
-      "Stride": true,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Flail",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Ork",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Topór", "Miecz", "Łuk", "Buzdygan", "Tarcza", "Korbacz", "Kiścień", "Wielki topór", "Nadziak", "Miecz dwuręczny" ],
-      "WW": 35,
-      "US": 30,
-      "S": 35,
-      "Wt": 45,
-      "I": 20,
-      "Zw": 20,
-      "Zr": 25,
-      "Int": 20,
-      "SW": 35,
-      "Ogd": 20,
-      "Sz": 4,
-      "NaturalArmor": 3,
-      "Belligerent": true,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        },
-        {
-          "Key": "Flail",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Olbrzymi szczur",
-      "Size": 2,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 1
-        }
-      ],
-      "WW": 25,
-      "US": 0,
-      "S": 30,
-      "Wt": 25,
-      "I": 25,
-      "Zw": 35,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 15,
-      "Ogd": 0,
-      "Sz": 4,
-      "Bestial": true,
-      "Stride": true
-    },
-    {
-      "Race": "Pegaz",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 3
-        }
-      ],
-      "WW": 35,
-      "US": 0,
-      "S": 45,
-      "Wt": 40,
-      "I": 30,
-      "Zw": 45,
-      "Zr": 0,
-      "Int": 20,
-      "SW": 25,
-      "Ogd": 0,
-      "Sz": 9,
-      "Stride": true,
-      "Flight": 60
-    },
-    {
-      "Race": "Peryt",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 50,
-      "US": 0,
-      "S": 55,
-      "Wt": 50,
-      "I": 40,
-      "Zw": 35,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 45,
-      "Ogd": 0,
-      "Sz": 6,
-      "Bestial": true,
-      "Frenzy": true,
-      "NaturalArmor": 2,
-      "Flight": 25
-    },
-    {
-      "Race": "Pies",
-      "Size": 2,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 3
-        }
-      ],
-      "WW": 25,
-      "US": 0,
-      "S": 20,
-      "Wt": 20,
-      "I": 35,
-      "Zw": 30,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 10,
-      "Ogd": 15,
-      "Sz": 4,
-      "Bestial": true,
-      "Stride": true
-    },
-    {
-      "Race": "Poganiacz klanu Moulder",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Włócznia", "Bułat", "Bicz", "Miecz", "Łapacz" ],
-      "WW": 45,
-      "US": 45,
-      "S": 40,
-      "Wt": 40,
-      "I": 50,
-      "Zw": 50,
-      "Zr": 30,
-      "Int": 40,
-      "SW": 40,
-      "Ogd": 30,
-      "Sz": 6,
-      "NaturalArmor": 1,
-      "MeleeSerialized": [
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Entangling",
-          "Value": 20
-        }
-      ]
-    },
-    {
-      "Race": "Półgryf",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 35,
-      "US": 0,
-      "S": 55,
-      "Wt": 40,
-      "I": 30,
-      "Zw": 45,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 25,
-      "Ogd": 0,
-      "Sz": 7,
-      "NaturalArmor": 1,
-      "Bestial": true,
-      "Stride": true
-    },
-    {
-      "Race": "Smok",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 65,
-      "US": 60,
-      "S": 65,
-      "Wt": 65,
-      "I": 60,
-      "Zw": 25,
-      "Zr": 15,
-      "Int": 45,
-      "SW": 85,
-      "Ogd": 25,
-      "Sz": 6,
-      "NaturalArmor": 5,
-      "Flight": 40
-    },
-    {
-      "Race": "Snotling",
-      "Size": 2,
-      "PrimaryWeaponNames": [ "Krótki łuk", "Sztylet", "Pałka" ],
-      "WW": 25,
-      "US": 15,
-      "S": 25,
-      "Wt": 20,
-      "I": 20,
-      "Zw": 30,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 30,
-      "Ogd": 0,
-      "Sz": 4,
-      "Bestial": true,
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Stirski szczupak",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 45,
-      "US": 0,
-      "S": 52,
-      "Wt": 50,
-      "I": 32,
-      "Zw": 38,
-      "Zr": 0,
-      "Int": 14,
-      "SW": 50,
-      "Ogd": 0,
-      "Sz": 8,
-      "NaturalArmor": 1,
-      "Bestial": true
-    },
-    {
-      "Race": "Straszna Paszcza",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 5
-        },
-        {
-          "Key": "Penetrating",
-          "Value": true
-        }
-      ],
-      "WW": 45,
-      "US": 30,
-      "S": 55,
-      "Wt": 55,
-      "I": 15,
-      "Zw": 20,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 35,
-      "Ogd": 0,
-      "Sz": 3,
-      "NaturalArmor": 3,
-      "Bestial": true,
-      "Belligerent": true,
-      "Notebook": "Może zionąć śluzem o obrażeniach +5. Jak jej obrażenia przekroczą bWT x2 ofiary to może ją połknąć (pochwycenie). Wtedy przeciwstawny test siły (jednostka mniejsza rozmiarem musi rzucić fuksa aby wygrać). Pochwycona postać w każdej turze dostaje 10 obrażeń (odejmujemy zbroje i bWT). Aby się wydostać do przeciwstawny test siły, jak się nie uda, ofiara trafia do przełyku. Wydostanie się z przełyku wymaga zadania 20 ran. Można to zrobić tylko krótką bronią i ma się +20 do trafienia. Co rundę w przełyku dostaje się 10 obrażeń bez uwzględnienia zbroi. Obrażenia Strasznej Paszczy ignorują zbroję i pokrywają przeciwników śluzem. Wymagany jest test Zwinności +20 aby wykonać wysiłek fizyczny będąc pokrytym śluzem, albo się postać otrzymuje stan powalenia. Straszna Paszcza może ryć w ziemi poruszając się z szybkością 15."
-    },
-    {
-      "Race": "Syrena",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 3
-        }
-      ],
-      "WW": 35,
-      "US": 0,
-      "S": 49,
-      "Wt": 33,
-      "I": 42,
-      "Zw": 49,
-      "Zr": 35,
-      "Int": 30,
-      "SW": 52,
-      "Ogd": 35,
-      "Sz": 2,
-      "Notebook": "Jej szybkość w wodzie wynosi 8.\n\nKażdy kto słyszy syreni śpiew musi zdać test SW -10 albo jest traktowany jako bezbronny (utrata przytomności). Zatkanie uszu ułatwia ten test do +40"
-    },
-    {
-      "Race": "Szary jastrząb górski",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 35,
-      "US": 0,
-      "S": 35,
-      "Wt": 40,
-      "I": 45,
-      "Zw": 50,
-      "Zr": 0,
-      "Int": 20,
-      "SW": 55,
-      "Ogd": 0,
-      "Sz": 2,
-      "Bestial": true,
-      "Flight": 50
-    },
-    {
-      "Race": "Szczurogr",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 35,
-      "US": 10,
-      "S": 55,
-      "Wt": 45,
-      "I": 35,
-      "Zw": 45,
-      "Zr": 25,
-      "Int": 10,
-      "SW": 25,
-      "Ogd": 15,
-      "Sz": 5,
-      "NaturalArmor": 1
-    },
-    {
-      "Race": "Szczurogr łamignat",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 40,
-      "US": 10,
-      "S": 75,
-      "Wt": 55,
-      "I": 35,
-      "Zw": 40,
-      "Zr": 20,
-      "Int": 10,
-      "SW": 20,
-      "Ogd": 10,
-      "Sz": 5,
-      "NaturalArmor": 2,
-      "Stride": true
-    },
-    {
-      "Race": "Szczurowilk",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 3
-        },
-        {
-          "Key": "Penetrating",
-          "Value": true
-        }
-      ],
-      "WW": 45,
-      "US": 0,
-      "S": 35,
-      "Wt": 32,
-      "I": 35,
-      "Zw": 35,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 15,
-      "Ogd": 0,
-      "Sz": 6,
-      "Stride": true,
-      "Bestial": true
-    },
-    {
-      "Race": "Szkielet",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Włócznia", "Bułat", "Łuk", "Krótki łuk", "Puklerz", "Tarcza", "Miecz", "Topór" ],
-      "WW": 25,
-      "US": 25,
-      "S": 30,
-      "Wt": 30,
-      "I": 20,
-      "Zw": 25,
-      "Zr": 25,
-      "Int": 0,
-      "SW": 0,
-      "Ogd": 0,
-      "Sz": 4,
-      "NaturalArmor": 2,
-      "Fear": 2,
-      "Undead": true,
-      "Unstable": true,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Szturmoszczur",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Włócznia", "Nadziak", "Topór drzewcowy", "Bułat", "Tarcza", "Miecz", "Topór", "Młot jednoręczny", "Glewia", "Halabarda" ],
-      "WW": 45,
-      "US": 35,
-      "S": 35,
-      "Wt": 35,
-      "I": 55,
-      "Zw": 50,
-      "Zr": 30,
-      "Int": 30,
-      "SW": 25,
-      "Ogd": 20,
-      "Sz": 5,
-      "NaturalArmor": 4,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Troll",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 30,
-      "US": 15,
-      "S": 55,
-      "Wt": 45,
-      "I": 10,
-      "Zw": 15,
-      "Zr": 15,
-      "Int": 10,
-      "SW": 20,
-      "Ogd": 5,
-      "Sz": 6,
-      "Regeneration": true,
-      "NaturalArmor": 2
-    },
-    {
-      "Race": "Ungor",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Włócznia", "Łuk", "Puklerz", "Tarcza", "Miecz", "Pałka", "Nadziak" ],
-      "WW": 35,
-      "US": 30,
-      "S": 30,
-      "Wt": 35,
-      "I": 30,
-      "Zw": 35,
-      "Zr": 25,
-      "Int": 25,
-      "SW": 35,
-      "Ogd": 25,
-      "Sz": 4,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ],
-      "RangedSerialized": [
-        {
-          "Key": "Bow",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Upiorny wilk",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 3
-        }
-      ],
-      "WW": 30,
-      "US": 0,
-      "S": 35,
-      "Wt": 35,
-      "I": 30,
-      "Zw": 30,
-      "Zr": 0,
-      "Int": 0,
-      "SW": 0,
-      "Ogd": 0,
-      "Sz": 9,
-      "NaturalArmor": 1,
-      "Stride": true,
-      "Undead": true,
-      "Fear": 2,
-      "Unstable": true
-    },
-    {
-      "Race": "Varghulf",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 55,
-      "US": 0,
-      "S": 55,
-      "Wt": 55,
-      "I": 30,
-      "Zw": 50,
-      "Zr": 20,
-      "Int": 10,
-      "SW": 60,
-      "Ogd": 0,
-      "Sz": 8,
-      "Terror": 3,
-      "NaturalArmor": 1,
-      "Undead": true,
-      "Regeneration": true,
-      "Bestial": true,
-      "Vampiric": true,
-      "Hungry": true
-    },
-    {
-      "Race": "Wężożmij",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 62,
-      "US": 0,
-      "S": 65,
-      "Wt": 60,
-      "I": 45,
-      "Zw": 26,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 38,
-      "Ogd": 10,
-      "Sz": 6,
-      "ImmunityToPsychology": true,
-      "Regenerate": true,
-      "Hungry": true,
-      "NaturalArmor": 3,
-      "StrikeMightyBlow": 1,
-      "Venom": true,
-      "VenomModifier": -10
-    },
-    {
-      "Race": "Widmo z kurhanu",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Wielki topór", "Miecz dwuręczny" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "Quality",
-          "Value": "Magiczna"
-        }
-      ],
-      "WW": 35,
-      "US": 0,
-      "S": 35,
-      "Wt": 30,
-      "I": 15,
-      "Zw": 30,
-      "Zr": 25,
-      "Int": 25,
-      "SW": 50,
-      "Ogd": 15,
-      "Sz": 6,
-      "Terror": 3,
-      "Ethereal": true,
-      "Undead": true,
-      "Unstable": true
-    },
-    {
-      "Race": "Wielki jeleń",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "Penetrating",
-          "Value": true
-        },
-        {
-          "Key": "Impale",
-          "Value": true
-        }
-      ],
-      "WW": 55,
-      "US": 0,
-      "S": 45,
-      "Wt": 40,
-      "I": 30,
-      "Zw": 30,
-      "Zr": 0,
-      "Int": 20,
-      "SW": 40,
-      "Ogd": 0,
-      "Sz": 7,
-      "Stride": true,
-      "Bestial": true
-    },
-    {
-      "Race": "Wielki orzeł",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "Penetrating",
-          "Value": true
-        },
-        {
-          "Key": "Fast",
-          "Value": true
-        }
-      ],
-      "WW": 65,
-      "US": 0,
-      "S": 55,
-      "Wt": 43,
-      "I": 35,
-      "Zw": 40,
-      "Zr": 0,
-      "Int": 45,
-      "SW": 45,
-      "Ogd": 25,
-      "Sz": 2,
-      "NaturalArmor": 1,
-      "Flight": 60
-    },
-    {
-      "Race": "Wielki wilk",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "S",
-          "Value": 3
-        }
-      ],
-      "WW": 35,
-      "US": 0,
-      "S": 45,
-      "Wt": 40,
-      "I": 35,
-      "Zw": 25,
-      "Zr": 0,
-      "Int": 15,
-      "SW": 15,
-      "Ogd": 0,
-      "Sz": 4,
-      "NaturalArmor": 1,
-      "Bestial": true,
-      "Stride": true,
-      "Notebook": "Olbrzymie wilki otrzymują +10 do przewagi liczebnej. Czyli w przewadze 2:1 mają +30 zamiast +20."
-    },
-    {
-      "Race": "Wilk",
+      "Race": "Złodziej Myśli",
       "Type": "Beast",
-      "Size": 3,
+      "Size": 1,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
       "PrimaryWeaponAttributes": [
         {
-          "Key": "S",
-          "Value": 3
+          "Key": "Damage",
+          "Value": -2
         }
       ],
-      "WW": 35,
-      "US": 0,
-      "S": 35,
-      "Wt": 30,
-      "I": 35,
-      "Zw": 30,
+      "S": -3,
+      "K": 0,
+      "Zw": 4,
       "Zr": 0,
-      "Int": 15,
-      "SW": 15,
-      "Ogd": 0,
-      "Sz": 4,
-      "NaturalArmor": 1,
-      "Bestial": true,
-      "Stride": true
-    },
-    {
-      "Race": "Wilkoskóry",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "PrimaryWeaponAttributes": [
-        {
-          "Key": "Quality",
-          "Value": "Magiczna"
-        }
-      ],
-      "WW": 60,
-      "US": 0,
-      "S": 54,
-      "Wt": 58,
-      "I": 55,
-      "Zw": 48,
-      "Zr": 30,
-      "Int": 35,
-      "SW": 50,
-      "Ogd": 30,
-      "Sz": 7,
-      "NaturalArmor": 1,
-      "StrikeMightyBlow": 1,
-      "Regeneration": true,
-      "Hardy": 1,
-      "Frenzy": true,
-      "Stride": true,
-      "Fear": 2,
-      "Notebook": "Wilkoskóry jest zawsze w szale bojowym"
-    },
-    {
-      "Race": "Wojownik Chaosu",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Topór", "Miecz", "Buzdygan", "Tarcza", "Korbacz", "Kiścień", "Wielki topór", "Półtorak", "Miecz dwuręczny", "Tarcza duża", "Glewia" ],
-      "WW": 55,
-      "US": 30,
-      "S": 45,
-      "Wt": 45,
-      "I": 45,
-      "Zw": 55,
-      "Zr": 30,
-      "Int": 35,
-      "SW": 55,
-      "Ogd": 25,
-      "Sz": 4,
-      "NaturalArmor": 5,
-      "Champion": true,
-      "MeleeSerialized": [
-        {
-          "Key": "TwoHanded",
-          "Value": 1
-        },
-        {
-          "Key": "Polearm",
-          "Value": 1
-        }
-      ]
-    },
-    {
-      "Race": "Wywerna",
-      "Size": 5,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 55,
-      "US": 0,
-      "S": 60,
-      "Wt": 55,
-      "I": 15,
-      "Zw": 45,
-      "Zr": 0,
-      "Int": 10,
-      "SW": 50,
-      "Ogd": 0,
-      "Sz": 4,
-      "Bestial": true,
-      "Venom": true,
-      "NaturalArmor": 2,
-      "Flight": 45
-    },
-    {
-      "Race": "Zębacz jaskiniowy",
-      "Size": 4,
-      "PrimaryWeaponNames": [ "Broń naturalna" ],
-      "WW": 45,
-      "US": 0,
-      "S": 50,
-      "Wt": 30,
-      "I": 10,
-      "Zw": 40,
-      "Zr": 0,
-      "Int": 5,
-      "SW": 15,
-      "Ogd": 0,
-      "Sz": 4,
-      "Bestial": true,
-      "Bounce": true
+      "Int": 7,
+      "P": 5,
+      "Ch": 7,
+      "SW": 5,
+      "Sz": 3,
+      "Flight": 8,
+      "Reflex": 3
     },
     {
       "Race": "Zombie",
-      "Size": 3,
-      "PrimaryWeaponNames": [ "Bułat", "Młot jednoręczny", "Buzdygan", "Pałka", "Miecz", "Topór" ],
-      "WW": 15,
-      "US": 0,
-      "S": 30,
-      "Wt": 30,
-      "I": 5,
-      "Zw": 10,
-      "Zr": 15,
-      "Int": 0,
+      "Type": "Undead",
+      "Size": 2,
+      "PrimaryWeaponNames": [ "Broń naturalna", "Nóż", "Miecz", "Topór", "Pałka" ],
+      "S": 0,
+      "K": 0,
+      "Zw": -2,
+      "Zr": -2,
+      "Int": -5,
+      "P": -3,
+      "Ch": -5,
       "SW": 0,
-      "Ogd": 0,
-      "Sz": 4,
-      "Fear": 2,
+      "Sz": 3,
       "Undead": true,
-      "Unstable": true
+      "Scary": 12,
+      "Slow": true,
+      "Stink": true,
+      "Unmeaning": true
+    },
+    {
+      "Race": "Żmijorośl",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": 3
+        },
+        {
+          "Key": "AttackRange",
+          "Value": 8
+        },
+        {
+          "Key": "Entangling",
+          "Value": true
+        },
+        {
+          "Key": "Poisonous",
+          "Value": 1
+        }
+      ],
+      "S": 2,
+      "K": 0,
+      "Zw": -3,
+      "Zr": 0,
+      "Int": -5,
+      "P": 3,
+      "Ch": -2,
+      "SW": 0,
+      "Sz": 0,
+      "Reflex": 2,
+      "Unmeaning": true,
+      "Slow": true,
+      "Stink": true,
+      "Resistance": [ "Poison" ]
+    },
+    {
+      "Race": "Żywiołak",
+      "Size": 3,
+      "PrimaryWeaponNames": [ "Broń naturalna" ],
+      "PrimaryWeaponAttributes": [
+        {
+          "Key": "Damage",
+          "Value": -2
+        }
+      ],
+      "S": 2,
+      "K": 4,
+      "Zw": 2,
+      "Zr": 0,
+      "Int": -5,
+      "P": 0,
+      "Ch": -3,
+      "SW": 3,
+      "Sz": 4,
+      "Undead": true,
+      "Spellcasting": 1,
+      "Magic": [ "Fire", "Ice", "Earth", "Water", "Air" ],
+      "Resistance": [ "Fire", "Ice", "Earth", "Water", "Air" ],
+      "Unmeaning": true
     }
   ]
 }

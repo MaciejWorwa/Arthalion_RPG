@@ -642,14 +642,14 @@ public class InventoryManager : MonoBehaviour
     }
     private bool CheckWeaponRequirements(Weapon weapon, Stats stats)
     {
-        if (stats.S < weapon.S)
+        if (stats.S < weapon.S && weapon.S != 0)
         {
-            Debug.Log($"{stats.Name} nie spełnia wymagania Siły ({weapon.S}).");
+            if(!SaveAndLoadManager.Instance.IsLoading) Debug.Log($"{stats.Name} nie spełnia wymagania Siły ({weapon.S}), aby używać tego przedmiotu.");
             return false;
         }
-        if (stats.Zr < weapon.Zr)
+        if (stats.Zr < weapon.Zr && weapon.Zr != 0)
         {
-            Debug.Log($"{stats.Name} nie spełnia wymagania Zręczności ({weapon.Zr}).");
+            if (!SaveAndLoadManager.Instance.IsLoading) Debug.Log($"{stats.Name} nie spełnia wymagania Zręczności ({weapon.Zr}), aby używać tego przedmiotu.");
             return false;
         }
         return true;

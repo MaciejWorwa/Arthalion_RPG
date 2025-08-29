@@ -1,3 +1,4 @@
+using NUnit.Framework.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using static UnityEngine.GraphicsBuffer;
 using static UnityEngine.Rendering.DebugUI;
 
 public class UnitsManager : MonoBehaviour
@@ -542,6 +544,12 @@ public class UnitsManager : MonoBehaviour
                 unit.LastAttackerStats.StrongestDefeatedOpponentOverall = stats.Overall;
                 unit.LastAttackerStats.StrongestDefeatedOpponent = stats.Name;
             }
+
+            // Uwzględnia cechę Żarłoczny
+            if (unit.LastAttackerStats.Hungry)
+            {
+                StartCoroutine(HungryTrait(unit.LastAttackerStats, stats));
+            }
         }
 
         Destroy(unitObject);
@@ -606,26 +614,38 @@ public class UnitsManager : MonoBehaviour
         }
     }
 
-    //private IEnumerator HungryTrait(Stats stats, Stats deadBodyStats)
-    //{
-    //    int rollResult = 0;
-    //    // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi
-    //    if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
-    //    {
-    //        yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(stats, "siłę woli", result => rollResult = result));
-    //        if (rollResult == 0) yield break;
-    //    }
-    //    else
-    //    {
-    //        rollResult = UnityEngine.Random.Range(1, 101);
-    //    }
+    private IEnumerator HungryTrait(Stats stats, Stats deadBodyStats)
+    {
 
-    //    int rollResults = DiceRollManager.Instance.TestSkill("SW", stats, null, 20, rollResult)[2];
-    //    if (rollResults < 0)
-    //    {
-    //        Debug.Log($"<color=red>{stats.Name} traci następną turę, ucztując na martwym ciele {deadBodyStats.Name}. Pamiętaj, aby to uwzględnić.</color>");
-    //    }
-    //}
+        int[] test = null;
+        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(
+                stats: stats,
+                rollContext: $"Siłę Woli w związku z cechą Żarłoczny",
+                attributeName: "SW",
+                difficultyLevel: 12,
+                callback: res => test = res
+            ));
+            if (test == null) yield break; // anulowano panel
+        }
+        else
+        {
+            test = DiceRollManager.Instance.TestSkill(
+                stats: stats,
+                rollContext: $"Siłę Woli w związku z cechą Żarłoczny",
+                attributeName: "SW",
+                difficultyLevel: 12
+            );
+        }
+
+        int finalScore = test[3];
+
+        if (finalScore < 12)
+        {
+            Debug.Log($"<color=red>{stats.Name} traci następną turę, ucztując na martwym ciele {deadBodyStats.Name}. Pamiętaj, aby to uwzględnić.</color>");
+        }
+    }
 
     public void RemoveUnitFromList(GameObject confirmPanel)
     {
@@ -903,7 +923,17 @@ public class UnitsManager : MonoBehaviour
             }
             return; // nie wchodzimy w refleksję
         }
-        if (HandleTalentListEdit("Resistance", attributeName, textInput, stats, ToResistanceKey))
+        if (HandleTalentListEdit("Resistance", attributeName, textInput, stats, ToResistanceKey, slots: 5))
+        {
+            UpdateUnitPanel(Unit.SelectedUnit);
+            if (!SaveAndLoadManager.Instance.IsLoading)
+            {
+                int newOverall = stats.CalculateOverall();
+                InitiativeQueueManager.Instance.CalculateDominance();
+            }
+            return; // nie wchodzimy w refleksję
+        }
+        if (HandleTalentListEdit("Magic", attributeName, textInput, stats, ToMagicKey, slots: 6))
         {
             UpdateUnitPanel(Unit.SelectedUnit);
             if (!SaveAndLoadManager.Instance.IsLoading)
@@ -1155,7 +1185,9 @@ public class UnitsManager : MonoBehaviour
                     continue;
                 if (HandleTalentListLoad("Slayer", attributeName, inputField, stats, ToPolishSlayer))
                     continue;
-                if (HandleTalentListLoad("Resistance", attributeName, inputField, stats, ToPolishResistance))
+                if (HandleTalentListLoad("Resistance", attributeName, inputField, stats, ToPolishResistance, slots: 5))
+                    continue;
+                if (HandleTalentListLoad("Magic", attributeName, inputField, stats, ToPolishMagic, slots: 6))
                     continue;
 
                 FieldInfo field = stats.GetType().GetField(attributeName);
@@ -1373,6 +1405,33 @@ public class UnitsManager : MonoBehaviour
             : englishKey;
     }
 
+    // === FUNKCJE POMOCNICZE DO MAGII ===
+    // PL -> EN (uzupełnij wg swoich ścieżek magii; brak w słowniku = przepuszczamy)
+    public static readonly Dictionary<string, string> MagicPlToEn = new()
+    {
+         { "Lód", "Ice" },
+         { "Ogień", "Fire" },
+         { "Powietrze", "Air" },
+         { "Śmierć", "Death" },
+         { "Woda", "Water" },
+         { "Ziemia", "Earth" },
+    };
+    public static readonly Dictionary<string, string> MagicEnToPl =
+        MagicPlToEn.ToDictionary(kv => kv.Value, kv => kv.Key);
+
+    private string ToMagicKey(string label) // PL -> EN (fallback: surowy tekst bez spacji)
+    {
+        if (string.IsNullOrWhiteSpace(label)) return null;
+        label = label.Trim();
+        return MagicPlToEn.TryGetValue(label, out var en) ? en : label.Replace(" ", "");
+    }
+
+    private string ToPolishMagic(string englishKey) // EN -> PL (fallback: klucz)
+    {
+        return MagicEnToPl.TryGetValue(englishKey, out var pl) ? pl : englishKey;
+    }
+
+
 
 
 
@@ -1393,9 +1452,16 @@ public class UnitsManager : MonoBehaviour
         }
 
         var arr = arrField.GetValue(stats) as string[];
-        if (arr == null || arr.Length != slots)
+        if (arr == null)
         {
             arr = new string[slots];
+            arrField.SetValue(stats, arr);
+        }
+        else if (arr.Length != slots)
+        {
+            var newArr = new string[slots];
+            Array.Copy(arr, newArr, Math.Min(arr.Length, slots)); // zachowaj to, co było
+            arr = newArr;
             arrField.SetValue(stats, arr);
         }
 
@@ -1450,9 +1516,16 @@ public class UnitsManager : MonoBehaviour
         if (arrField == null) return true;
 
         var arr = arrField.GetValue(stats) as string[];
-        if (arr == null || arr.Length != slots)
+        if (arr == null)
         {
             arr = new string[slots];
+            arrField.SetValue(stats, arr);
+        }
+        else if (arr.Length != slots)
+        {
+            var newArr = new string[slots];
+            Array.Copy(arr, newArr, Math.Min(arr.Length, slots)); // zachowaj to, co było
+            arr = newArr;
             arrField.SetValue(stats, arr);
         }
 

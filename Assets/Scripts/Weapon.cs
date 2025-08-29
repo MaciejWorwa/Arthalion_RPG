@@ -49,6 +49,7 @@ public class Weapon : MonoBehaviour
     public bool Pummel; // Ogłuszająca
     public bool Slow; // Powolna
     public bool Magical; // Magiczna
+    public int Poisonous; // Zatruta, np. kły jadowe Hasai
 
     [Header("Cechy pancerza")]
     public int Armor;

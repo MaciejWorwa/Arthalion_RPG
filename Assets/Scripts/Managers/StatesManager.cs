@@ -35,8 +35,6 @@ public class StatesManager : MonoBehaviour
     {
         StartCoroutine(Ablaze(unit)); // Podpalenie
         StartCoroutine(Bleeding(unit)); // Krwawienie
-        Blinded(unit); // Oślepienie
-        Scared(unit); // Strach
         StartCoroutine(Poison(unit)); // Zatrucie
     }
 
@@ -44,6 +42,13 @@ public class StatesManager : MonoBehaviour
     {
         if (!unit.Ablaze) yield break; // jeśli nie płonie, nic nie robimy
         Stats stats = unit.GetComponent<Stats>();
+
+        if (stats.Resistance != null && stats.Resistance.Contains("Fire"))
+        {
+            unit.Ablaze = false; // od razu gasimy, bo ogień nie działa
+            Debug.Log($"<color=#FF7F50>{stats.Name} jest odporny na ogień – ignoruje stan Podpalenia.</color>");
+            yield break;
+        }
 
         // 1) Próba ugaszenia: wymagający (14+) test Atletyki (*Zwinność*)
         int difficulty = 14;
@@ -155,16 +160,18 @@ public class StatesManager : MonoBehaviour
         }
     }
 
-    private void Blinded(Unit unit)
-    {
-        if (!unit.Blinded) unit.Blinded = true;
-    }
-
     private IEnumerator Poison(Unit unit)
     {
         if (unit.Poison <= 0) yield break;
 
         Stats stats = unit.GetComponent<Stats>();
+
+        if ((stats.Resistance != null && stats.Resistance.Contains("Poison")) || stats.Undead)
+        {
+            unit.Poison = 0;
+            Debug.Log($"<color=#FF7F50>{stats.Name} jest odporny na truciznę – ignoruje stan Zatrucia.</color>");
+            yield break;
+        }
 
         // Rzut na Odporność zależny od poziomu zatrucia
         int[] test = null;
@@ -220,7 +227,7 @@ public class StatesManager : MonoBehaviour
         {
             if (finalScore < difficulty)
             {
-                Debug.Log($"<color=#FF7F50>{stats.Name} nie zdaje testu Odporności i umiera z powodu zatrucia.</color>");
+                Debug.Log($"<color=#FF7F50>{stats.Name} nie zdaje testu Odporności i <color=red>umiera</color> z powodu zatrucia.</color>");
                 if (GameManager.IsAutoKillMode)
                     UnitsManager.Instance.DestroyUnit(unit.gameObject);
             }
@@ -281,11 +288,6 @@ public class StatesManager : MonoBehaviour
             MovementManager.Instance.SetCanMoveToggle(false);
             Debug.Log($"<color=green>{unit.GetComponent<Stats>().Name} podnosi się z ziemi.</color>");
         }
-    }
-
-    private void Scared(Unit unit)
-    {
-        if (!unit.Scared) unit.Scared = true;
     }
 
     public void Unconscious(Unit unit, bool value = true)
@@ -433,7 +435,7 @@ public class StatesManager : MonoBehaviour
     #region Fear
     public IEnumerator FearTest(Unit target)
     {
-        if (target == null) yield break;
+        if (target == null || target.GetComponent<Stats>().Undead || target.GetComponent<Stats>().Unmeaning) yield break;
 
         // znajdź najstraszniejszego przeciwnika (inny tag, aktywny, Scary > 0)
         string otherTag = target.CompareTag("PlayerUnit") ? "EnemyUnit" : "PlayerUnit";
@@ -510,4 +512,83 @@ public class StatesManager : MonoBehaviour
         }
     }
     #endregion
+
+    #region Stink trait
+    public IEnumerator HandleStink(Unit unit)
+    {
+        if (unit == null) yield break;
+
+        Stats stats = unit.GetComponent<Stats>();
+        if (stats == null || stats.Stink) yield break;
+        Stats stinkSource = null;
+
+        Vector2 center = unit.transform.position;
+
+        Vector2[] positions = {
+            center,
+            center + Vector2.right,
+            center + Vector2.left,
+            center + Vector2.up,
+            center + Vector2.down,
+            center + new Vector2(1, 1),
+            center + new Vector2(-1, -1),
+            center + new Vector2(-1, 1),
+            center + new Vector2(1, -1)
+        };
+
+        foreach (var pos in positions)
+        {
+            Collider2D collider = Physics2D.OverlapPoint(pos);
+            if (collider == null || collider.GetComponent<Stats>() == null) continue;
+
+            if (!collider.CompareTag(unit.tag) && collider.GetComponent<Stats>().Stink)
+            {
+                stinkSource = collider.GetComponent<Stats>();
+                break;
+            }
+        }
+
+        if (stinkSource == null) yield break; // nic nie śmierdzi w zasięgu
+
+        // Test Odporności (10+)
+        int difficulty = 10;
+        int[] test = null;
+
+        if (!GameManager.IsAutoDiceRollingMode && stats.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(
+                stats: stats,
+                rollContext: "Odporność na smród",
+                attributeName: "K",
+                skillName: "Endurance",
+                difficultyLevel: difficulty,
+                callback: res => test = res
+            ));
+            if (test == null) yield break; // anulowano panel
+        }
+        else
+        {
+            test = DiceRollManager.Instance.TestSkill(
+                stats: stats,
+                rollContext: "Odporność na smród",
+                attributeName: "K",
+                skillName: "Endurance",
+                difficultyLevel: difficulty
+            );
+        }
+
+        int finalScore = test[3];
+        if (finalScore < difficulty)
+        {
+            unit.CanDoAction = false;
+            RoundsManager.Instance.SetCanDoActionToggle(false);
+            Debug.Log($"<color=#FF7F50>{stats.Name} nie zdaje testu Odporności i traci swoją akcję w związku ze smrodem {stinkSource.Name}.</color>");
+        }
+        else
+        {
+            Debug.Log($"<color=#FF7F50>{stats.Name} zdaje test Odporności na smród {stinkSource.Name}.</color>");
+        }
+    }
+    #endregion
+
 }

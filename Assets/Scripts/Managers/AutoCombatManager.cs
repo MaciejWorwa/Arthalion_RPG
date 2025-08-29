@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 
 public class AutoCombatManager : MonoBehaviour
@@ -66,7 +67,6 @@ public class AutoCombatManager : MonoBehaviour
                         // Jeśli broń nie wymaga naladowania to wykonuje atak, w przeciwnym razie wykonuje przeładowanie
                         if (weapon.ReloadLeft == 0)
                         {
-                            Debug.Log($"<color=#4dd2ff>{unit.GetComponent<Stats>().Name} atakuje {closestOpponent.GetComponent<Stats>().Name}.</color>");
                             StartCoroutine(ExecuteAttack(unit, closestOpponent, weapon, distance));
                         }
                         else
@@ -127,12 +127,13 @@ public class AutoCombatManager : MonoBehaviour
                 // Sprawdzenie, czy jednostka posiada więcej niż jedną broń
                 if (InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons.Count > 1)
                 {
+                    SaveAndLoadManager.Instance.IsLoading = true;
                     int selectedIndex = 1;
 
                     //  Zmienia bronie dopóki nie znajdzie takiej, którą może walczyć w zwarciu
                     for (int i = 0; i < InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons.Count; i++)
                     {
-                        if (weapon.Type.Contains("melee")) break;
+                        if (weapon.Type.Contains("melee") && weapon.Id != 0) break;
 
                         InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().SetSelectedIndex(selectedIndex);
                         InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().SelectedButton = InventoryManager.Instance.InventoryScrollViewContent.GetComponent<CustomDropdown>().Buttons[selectedIndex - 1];
@@ -142,6 +143,9 @@ public class AutoCombatManager : MonoBehaviour
 
                         selectedIndex++;
                     }
+
+                    Debug.Log($"{unit.GetComponent<Stats>().Name} dobył/a {weapon.Name}.");
+                    SaveAndLoadManager.Instance.IsLoading = false;
                 }
                 else // Oddala się od przeciwnika
                 {

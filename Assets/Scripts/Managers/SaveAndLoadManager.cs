@@ -545,8 +545,8 @@ public class SaveAndLoadManager : MonoBehaviour
             unitGameObject.tag = unitData.Tag;
             unitGameObject.GetComponent<Unit>().ChangeUnitColor(unitGameObject);
 
-            //Ustawia rozmiar dużych jednostek
-            if ((int)statsData.Size > 3)
+            //Ustawia rozmiar jednostek
+            if ((int)statsData.Size != 2)
             {
                 unitGameObject.GetComponent<Stats>().ChangeTokenSize((int)statsData.Size);
             }

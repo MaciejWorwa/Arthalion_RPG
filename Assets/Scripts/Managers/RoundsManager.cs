@@ -61,6 +61,13 @@ public class RoundsManager : MonoBehaviour
 
         Debug.Log($"<color=#4dd2ff>------------------------------------------------------------------------------------ RUNDA {RoundNumber} ------------------------------------------------------------------------------------</color>");
 
+        // Sprawdzenie istnieje jakakolwiek jednostka ze Smrodem
+        bool stinkUnitExist = UnitsManager.Instance.AllUnits.Any(u =>
+        {
+            var s = u.GetComponent<Stats>();
+            return s != null && s.Stink;
+        });
+
         //Resetuje ilość dostępnych akcji dla wszystkich jednostek
         foreach (Unit unit in UnitsManager.Instance.AllUnits)
         {
@@ -86,6 +93,8 @@ public class RoundsManager : MonoBehaviour
             {
                 unit.CanCastSpell = true;
             }
+
+            if (stinkUnitExist) StartCoroutine(StatesManager.Instance.HandleStink(unit));
 
             //if (unit.SpellDuration > 0)
             //{
@@ -141,19 +150,20 @@ public class RoundsManager : MonoBehaviour
                 .DefaultIfEmpty(0).Max();
 
             // jeśli nikt nie jest straszny – pomija dalszy kod
-            if (maxScaryEnemies == 0 && maxScaryPlayers == 0) return;
-
-            foreach (var pair in queue)
+            if (maxScaryEnemies > 0 || maxScaryPlayers > 0)
             {
-                var unit = pair.Key;
-                if (unit == null) continue;
+                foreach (var pair in queue)
+                {
+                    var unit = pair.Key;
+                    if (unit == null) continue;
 
-                // wybierz odpowiedni max poziom Strachu przeciwnika
-                int requiredLevel = unit.CompareTag("PlayerUnit") ? maxScaryEnemies : maxScaryPlayers;
-                if (requiredLevel <= unit.FearTestedLevel) continue;           // test już się odbył na tym lub wyższym poziomie Starchu
+                    // wybierz odpowiedni max poziom Strachu przeciwnika
+                    int requiredLevel = unit.CompareTag("PlayerUnit") ? maxScaryEnemies : maxScaryPlayers;
+                    if (requiredLevel <= unit.FearTestedLevel) continue;           // test już się odbył na tym lub wyższym poziomie Starchu
 
-                unit.FearTestedLevel = requiredLevel;                          
-                StartCoroutine(StatesManager.Instance.FearTest(unit));         // korutyna sama zrobi test na aktualne warunki
+                    unit.FearTestedLevel = requiredLevel;
+                    StartCoroutine(StatesManager.Instance.FearTest(unit));         // korutyna sama zrobi test na aktualne warunki
+                }
             }
         }
 

@@ -156,16 +156,13 @@ public class MagicManager : MonoBehaviour
         string selectedSpellName = _spellbookDropdown.SelectedButton.GetComponentInChildren<TextMeshProUGUI>().text;
         DataManager.Instance.LoadAndUpdateSpells(selectedSpellName);
 
-        if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction && (!Unit.SelectedUnit.GetComponent<Stats>().WarWizard || Unit.SelectedUnit.GetComponent<Spell>().CastingNumber > 5))
+        if (!Unit.SelectedUnit.GetComponent<Unit>().CanDoAction)
         {
             Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
             return;
         }
 
-        if (!Unit.SelectedUnit.GetComponent<Stats>().WarWizard || Unit.SelectedUnit.GetComponent<Spell>().CastingNumber > 5)
-        {
-            RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
-        }
+        RoundsManager.Instance.DoAction(Unit.SelectedUnit.GetComponent<Unit>());
 
         StartCoroutine(CastSpell());
     }
@@ -358,23 +355,7 @@ public class MagicManager : MonoBehaviour
             // Wywołanie efektu zaklęcia
             foreach (var collider in allTargets)
             {
-                // Uwzględnienie talentu Odporność na magię
-                if(collider.GetComponent<Stats>().MagicResistance != 0)
-                {
-                    finalSuccessLevel -= collider.GetComponent<Stats>().MagicResistance * 2;
-                    Debug.Log($"{collider.GetComponent<Stats>().Name} posiada talent \"Odporność na magię\" o wartości {collider.GetComponent<Stats>().MagicResistance}. PS zaklęcia został pomniejszony o {collider.GetComponent<Stats>().MagicResistance * 2}.");
-                    if (finalSuccessLevel < 0 && _criticalCastingString != "force_cast")
-                    {
-                        Debug.Log($"Zaklęcie nie wywołuje wpływu na {collider.GetComponent<Stats>().Name}.");
-                        continue;
-                    }
-
-                    StartCoroutine(HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell, rollResult, finalSuccessLevel));
-                }
-                else
-                {
-                    StartCoroutine(HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell, rollResult, 0));
-                }
+                StartCoroutine(HandleSpellEffect(stats, collider.GetComponent<Stats>(), spell, rollResult, 0));
             }
         }  
 
@@ -589,13 +570,6 @@ public class MagicManager : MonoBehaviour
 
         string hitLocation = CombatManager.Instance.NormalizeHitLocation(unnormalizedHitLocation);
 
-        // === TALENT / MODYFIKATORY CUDÓW ===
-        if (spell.Arcane == "Cuda" && spellcasterStats.HolyHatred > 0)
-        {
-            damage += spellcasterStats.HolyHatred;
-            Debug.Log($"Obrażenia +{spellcasterStats.HolyHatred} za talent \"Święta Nienawiść\".");
-        }
-
         // === PANCERZ CELU (bezpiecznie) ===
         int metalArmorValue = 0;
         int armor = CombatManager.Instance.CalculateArmor(targetStats, hitLocation, null, out metalArmorValue);
@@ -645,7 +619,7 @@ public class MagicManager : MonoBehaviour
             }
             else
             {
-                yield return StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation, null, rollResult));
+                yield return StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation));
             }
         }
 
@@ -678,7 +652,7 @@ public class MagicManager : MonoBehaviour
         // === KRYTYK Z RZUTU NA MAGIĘ ===
         if (_criticalCastingString == "critical_wound")
         {
-            yield return StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation, null, rollResult));
+            yield return StartCoroutine(CombatManager.Instance.CriticalWoundRoll(spellcasterStats, targetStats, unnormalizedHitLocation));
         }
     }
     #endregion
@@ -960,7 +934,7 @@ public class MagicManager : MonoBehaviour
                 Debug.Log($"<color=red>Występuje Gniew Boży!</color> Wynik rzutu: <color=red>{finalRoll}</color>.");
             }
         }
-        else if ((isSuccessful && hasDouble && !((stats.AethyricAttunement > 0 && skillName == "Channeling") || (stats.InstinctiveDiction > 0 && skillName == "MagicLanguage"))) || (!isSuccessful && (hasDouble || hasZeroOnes)) || value == true) // Pech na Splatanie lub Język magiczny
+        else if ((isSuccessful && hasDouble) || (!isSuccessful && (hasDouble || hasZeroOnes)) || value == true) // Pech na Splatanie lub Język magiczny
         {
             int roll = UnityEngine.Random.Range(1, 101);
             int modifier = Math.Max(Math.Max(0, (-successValue) * 10), Math.Max(0, castingNumberLeft * 10));

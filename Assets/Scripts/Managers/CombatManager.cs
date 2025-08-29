@@ -10,6 +10,8 @@ using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using static UnityEngine.GraphicsBuffer;
+using static UnityEngine.Rendering.DebugUI;
+using static UnityEngine.UI.CanvasScaler;
 
 public class CombatManager : MonoBehaviour
 {
@@ -67,9 +69,15 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button _riderButton;
     [SerializeField] private UnityEngine.UI.Button _mountButton;
 
-    [SerializeField] private GameObject _criticalDeflectionPanel;
-    private string _criticalDeflection;
-    [SerializeField] private UnityEngine.UI.Button _armorDamageButton;
+
+    [SerializeField] private GameObject _survivalInstinctPanel;
+    [SerializeField] private TMP_InputField _survivalInstinctInput;
+    [SerializeField] private UnityEngine.UI.Button _survivalInstinctButton;
+
+
+    //[SerializeField] private GameObject _criticalDeflectionPanel;
+    //private string _criticalDeflection;
+    //[SerializeField] private UnityEngine.UI.Button _armorDamageButton;
 
     public bool IsManualPlayerAttack;
 
@@ -87,8 +95,6 @@ public class CombatManager : MonoBehaviour
 
         _dodgeButton.onClick.AddListener(() => ParryOrDodgeButtonClick("dodge"));
         _parryButton.onClick.AddListener(() => ParryOrDodgeButtonClick("parry"));
-
-        _armorDamageButton.onClick.AddListener(() => CriticalDeflectionButtonClick("damage_armor"));
 
         _riderButton.onClick.AddListener(() => RiderOrMountButtonClick("rider"));
         _mountButton.onClick.AddListener(() => RiderOrMountButtonClick("mount"));
@@ -113,11 +119,6 @@ public class CombatManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape) && _grapplingActionPanel.activeSelf)
         {
             GrapplingActionButtonClick("");
-        }
-
-        if (Input.GetKeyDown(KeyCode.Escape) && _criticalDeflectionPanel.activeSelf)
-        {
-            CriticalDeflectionButtonClick("");
         }
     }
 
@@ -182,14 +183,6 @@ public class CombatManager : MonoBehaviour
 
             AttackTypes[attackTypeName] = true;
 
-            //Rozbrajanie jest dostępne tylko dla jednostek ze zdolnością rozbrajania
-            if (AttackTypes["Disarm"] == true && stats.Disarm == 0)
-            {
-                AttackTypes[attackTypeName] = false;
-                AttackTypes["StandardAttack"] = true;
-                Debug.Log("Rozbrajanie mogą wykonywać tylko jednostki posiadające ten talent.");
-            }
-
             //Ograniczenie finty, ogłuszania i rozbrajania do ataków w zwarciu
             if ((AttackTypes["Disarm"] || AttackTypes["Charge"]) == true && unit.GetComponent<Inventory>().EquippedWeapons[0] != null && unit.GetComponent<Inventory>().EquippedWeapons[0].Type.Contains("ranged"))
             {
@@ -245,7 +238,6 @@ public class CombatManager : MonoBehaviour
     public void SetActionsButtonsInteractable()
     {
         if (Unit.SelectedUnit == null) return;
-        _disarmButton.interactable = Unit.SelectedUnit.GetComponent<Stats>().Disarm > 0;
         _reloadButton.interactable = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons.Any(weapon => weapon != null && weapon.ReloadLeft > 0);
         _grapplingButton.gameObject.SetActive(!Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
         _mountAttackButton.gameObject.SetActive(Unit.SelectedUnit.GetComponent<Unit>().IsMounted);
@@ -460,13 +452,13 @@ public class CombatManager : MonoBehaviour
         if (IsManualPlayerAttack)
         {
             // Ręczne wpisanie 2–3 kości i natychmiastowy TestSkill po submit
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie", "Zr", skillName, callback: res => attackTest = res));
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "trafienie", "Zr", skillName, attackModifier, callback: res => attackTest = res));
             if (attackTest == null) yield break;
         }
         else
         {
             // Auto – TestSkill sam wylosuje kości
-            attackTest = DiceRollManager.Instance.TestSkill(attackerStats, "trafienie", "Zr", skillName);
+            attackTest = DiceRollManager.Instance.TestSkill(attackerStats, "trafienie", "Zr", skillName, attackModifier);
         }
         attackRollResult = attackTest[3];
 
@@ -519,15 +511,28 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        //Ustalamy miejsce trafienia
-        int lowerValue = attackTest[0] > attackTest[1] ? attackTest[1] : attackTest[0];
+        // --- Ustalamy miejsce trafienia ---
+        int roll1 = attackTest[0];
+        int roll2 = attackTest[1];
+        int chosenValue;
+
+        // domyślnie bierzemy niższą z kości
+        chosenValue = roll1 > roll2 ? roll2 : roll1;
+
+        if ((isRangedAttack && attackerStats.AccurateShot) ||      // Celny Strzał
+            (!isRangedAttack && attackerStats.Fencing))             // Szermierka
+        {
+            chosenValue = roll1 > roll2 ? roll1 : roll2;
+            Debug.Log($"{attackerStats.Name} używa talentu {(isRangedAttack ? "Celny Strzał" : "Szermierka")} i wybiera wyższą kość ({chosenValue}) do ustalenia lokacji trafienia.");
+        }
+
         string hitLocation = !string.IsNullOrEmpty(HitLocation) ? HitLocation : null;
 
         if (string.IsNullOrEmpty(hitLocation))
         {
             // uruchom korutynę wyboru lokacji; wynik przyjdzie w callbacku
             yield return StartCoroutine(DetermineHitLocationCoroutine(
-                lowerValue,
+                chosenValue,
                 targetStats,
                 location => hitLocation = location
             ));
@@ -578,7 +583,7 @@ public class CombatManager : MonoBehaviour
         bool hasShield = inventory.EquippedWeapons.Any(weapon => weapon != null && weapon.Type.Contains("shield"));
         bool bothUnarmed = attackerWeapon.Id == 0 && targetWeapon.Id == 0;
 
-        canParry = isMeleeAttack || hasShield;
+        canParry = (isMeleeAttack && hasMeleeWeapon) || hasShield;
 
         Weapon weaponUsedForParry = null;
         int parryModifier = 0;
@@ -619,6 +624,8 @@ public class CombatManager : MonoBehaviour
             {
                 Debug.Log($"{attackerStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
                 attackerStats.FortunateEvents++;
+
+                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation));
             }
             else
             {
@@ -633,6 +640,13 @@ public class CombatManager : MonoBehaviour
             {
                 Debug.Log($"{targetStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
                 targetStats.FortunateEvents++;
+
+                // domyślnie bierzemy niższą z kości
+                int parryLowerValue = DefenceResults[0] > DefenceResults[1] ? DefenceResults[1] : DefenceResults[0];
+
+                yield return StartCoroutine(DetermineHitLocationCoroutine(parryLowerValue, attackerStats, location => hitLocation = location));
+
+                StartCoroutine(CriticalWoundRoll(targetStats, attackerStats, hitLocation));
             }
             else
             {
@@ -749,14 +763,7 @@ public class CombatManager : MonoBehaviour
             }
             else
             {
-                if (targetStats.Daemonic > 0)
-                {
-                    Debug.Log($"<color=red>{targetStats.Name} zostaje odesłany do domeny Chaosu.</color>");
-                }
-                else
-                {
-                    StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation, attackerWeapon));
-                }
+                StartCoroutine(CriticalWoundRoll(attackerStats, targetStats, hitLocation));
             }
         }
 
@@ -859,12 +866,21 @@ public class CombatManager : MonoBehaviour
 
             StartCoroutine(AnimationManager.Instance.PlayAnimation("damage", null, target.gameObject, finalDamage));
 
-            // Uwzględnienie cechy "Jad"
-            if (attackerStats.Venom)
+            // Uwzględnienie cechy broni "Zatruta"
+            if (attackerWeapon.Poisonous > 0)
             {
-                target.Poison++;
+                // sprawdzamy odporności celu
+                bool immuneToPoison = (targetStats.Resistance != null && targetStats.Resistance.Contains("Poison")) || targetStats.Undead;
 
-                Debug.Log($"<color=#FF7F50>{targetStats.Name} zostaje zatruty/a. Modyfikator do testów przeciwko zatruciu: {target.Poison}</color>");
+                if (!immuneToPoison && target.Poison < attackerWeapon.Poisonous)
+                {
+                    target.Poison = attackerWeapon.Poisonous;
+                    Debug.Log($"<color=#FF7F50>{targetStats.Name} dostaje stan Zatrucia (poziom {target.Poison}).</color>");
+                }
+                else if (immuneToPoison)
+                {
+                    Debug.Log($"<color=#FF7F50>{targetStats.Name} jest odporny na zatrucie.</color>");
+                }
             }
         }
         else
@@ -993,14 +1009,6 @@ public class CombatManager : MonoBehaviour
 
     private IEnumerator Parry(Unit target, Stats targetStats, Weapon targetWeapon, int parryValue, int parryModifier)
     {
-        // Jeżeli jest ustawiony modyfikator w panelu jednostki
-        if (DiceRollManager.Instance.RollModifier != 0)
-        {
-            parryValue += DiceRollManager.Instance.RollModifier;
-            parryModifier += DiceRollManager.Instance.RollModifier;
-            DiceRollManager.Instance.ResetRollModifier();
-        }
-
         Debug.Log($"{targetStats.Name} próbuje parować przy użyciu {targetWeapon.Name}.");
 
         // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi i wybrana jednostka to sojusznik to czekamy na wynik rzutu
@@ -1012,7 +1020,7 @@ public class CombatManager : MonoBehaviour
         }
         else
         {
-            defenceTest = DiceRollManager.Instance.TestSkill(targetStats, "parowanie", "Zr", "MeleeCombat", targetWeapon.Defensive + parryValue + parryModifier);
+            defenceTest = DiceRollManager.Instance.TestSkill(targetStats, "parowanie", "Zr", "MeleeCombat", targetWeapon.Defensive + parryModifier);
         }
 
         DefenceResults = defenceTest;
@@ -1020,14 +1028,6 @@ public class CombatManager : MonoBehaviour
 
     public IEnumerator Dodge(Unit target, Stats targetStats, int dodgeValue, int dodgeModifier)
     {
-        // Jeżeli jest ustawiony modyfikator w panelu jednostki
-        if (DiceRollManager.Instance.RollModifier != 0)
-        {
-            dodgeValue += DiceRollManager.Instance.RollModifier;
-            dodgeModifier += DiceRollManager.Instance.RollModifier;
-            DiceRollManager.Instance.ResetRollModifier();
-        }
-
         // Jeżeli jesteśmy w trybie manualnych rzutów kośćmi i wybrana jednostka to sojusznik to czekamy na wynik rzutu
         int[] defenceTest = null;
         if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
@@ -1071,6 +1071,13 @@ public class CombatManager : MonoBehaviour
             return false;
         }
 
+        // Sprawdza, czy cel nie znajduje się zbyt blisko
+        if (attackDistance <= 1.5f)
+        {
+            Debug.Log($"{attacker.GetComponent<Stats>().Name} stoi zbyt blisko celu, aby wykonać atak dystansowy.");
+            return false;
+        }
+
         // Sprawdza, czy na linii strzału znajduje się przeszkoda
         RaycastHit2D[] raycastHits = Physics2D.RaycastAll(attacker.transform.position, target.transform.position - attacker.transform.position, attackDistance);
 
@@ -1100,8 +1107,9 @@ public class CombatManager : MonoBehaviour
     public int CalculateAttackModifier(Unit attackerUnit, Weapon attackerWeapon, Unit targetUnit, float attackDistance = 0)
     {
         if(attackerUnit == null) return 0;
-        int attackModifier = DiceRollManager.Instance.RollModifier;
-        DiceRollManager.Instance.ResetRollModifier();
+        int attackModifier = 0;
+        //int attackModifier = DiceRollManager.Instance.RollModifier;
+        //DiceRollManager.Instance.ResetRollModifier();
         Stats attackerStats = attackerUnit.GetComponent<Stats>();
         Stats targetStats = targetUnit.GetComponent<Stats>();
 
@@ -1123,7 +1131,7 @@ public class CombatManager : MonoBehaviour
             if (attackerWeapon.Id != 0)
             {
                 attackModifier -= 3;
-                Debug.Log($"Uwzględniono modyfikator za atak słabszą ręką. Łączny modyfikator: " + attackModifier);
+                Debug.Log($"Uwzględniono modyfikator -3 za atak słabszą ręką. Łączny modyfikator: " + attackModifier);
             }
         }
 
@@ -1313,7 +1321,7 @@ public class CombatManager : MonoBehaviour
     #endregion
 
     #region Critical wounds
-    public IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, string hitLocation, Weapon attackerWeapon = null, int rollOnAttack = 0)
+    public IEnumerator CriticalWoundRoll(Stats attackerStats, Stats targetStats, string hitLocation)
     {
         int rollResult = 0;
         int[] criticalWoundTest = null;
@@ -1330,13 +1338,143 @@ public class CombatManager : MonoBehaviour
 
 
         int modifier = targetStats.TempHealth < 0 ? Math.Abs(targetStats.TempHealth) : 0;
+
+        // --- Talent: Instynkt Przetrwania (redukcja k4/k6/k8)
+        int survivalDieSize = 0;
+        switch (Mathf.Clamp(targetStats.SurvivalInstinct, 0, 3))
+        {
+            case 1: survivalDieSize = 4; break;
+            case 2: survivalDieSize = 6; break;
+            case 3: survivalDieSize = 8; break;
+            default: survivalDieSize = 0; break;
+        }
+
+        if (survivalDieSize > 0)
+        {
+            if (!GameManager.IsAutoDiceRollingMode && targetStats.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(WaitForRoll());
+
+                IEnumerator WaitForRoll()
+                {
+                    int rollResult = 0;
+                    _survivalInstinctInput.text = "";
+                    _survivalInstinctPanel.SetActive(true);
+
+                    // podpinamy listener pod button
+                    _survivalInstinctButton.onClick.RemoveAllListeners();
+                    _survivalInstinctButton.onClick.AddListener(() =>
+                    {
+                        if (int.TryParse(_survivalInstinctInput.text, out int value))
+                        {
+                            rollResult = value;
+                        }
+                        else
+                        {
+                            Debug.Log("<color=red>Musisz wpisać liczbę!</color>");
+                        }
+                    });
+
+                    // czekamy aż gracz zatwierdzi
+                    while (rollResult == 0)
+                        yield return null;
+
+                    Debug.Log($"{targetStats.Name} korzysta z talentu Instynkt Przetrwania i obniża wartość trafienia krytycznego o {rollResult}.");
+                    modifier -= rollResult;
+                    _survivalInstinctPanel.SetActive(false);
+                }
+            }
+            else
+            {
+                int roll = UnityEngine.Random.Range(1, survivalDieSize + 1);
+                Debug.Log($"{targetStats.Name} korzysta z talentu Instynkt Przetrwania i obniża wartość trafienia krytycznego o {roll}.");
+                modifier -= roll;
+            }
+        }
+
         string modifierString = modifier != 0 ? $" Modyfikator: {modifier}." : "";
         Debug.Log($"Wynik rzutu na trafienie krytyczne: {rollResult}.{modifierString} {targetStats.Name} otrzymuje trafienie krytyczne w {TranslateHitLocation(hitLocation)} o wartości <color=red>{rollResult + modifier}</color>");
 
-        // Obsługa śmierci
-        if (targetStats.CriticalWounds > 2)
+        int value = rollResult + modifier;
+        Unit unit = targetStats.GetComponent<Unit>();
+        string loc = (hitLocation ?? "").ToLowerInvariant();
+
+        // Mały lokalny pomocnik do logów (krótko i jasno)
+        void Log(string text) =>
+            Debug.Log($"{text}");
+
+        // Uwzględniamy tylko krwawienie; CAŁĄ resztę MG/Gracz dopisuje ręcznie.
+        // GŁOWA
+        // GŁOWA
+        if (loc.Contains("głowa") || loc.Contains("glowa") || loc.Contains("head"))
         {
-            Debug.Log($"<color=red>Ilość ran krytycznych {targetStats.Name} przekroczyła limit. Jednostka umiera.</color>");
+            if (value <= 7) Log($"Zamroczenie – {targetStats.Name} traci następną turę. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value <= 9) { unit.Bleeding = Mathf.Max(unit.Bleeding, 1); Log("Rozcięcie skroni – Krwawienie (1)."); }
+            else if (value == 10) { unit.Bleeding = Mathf.Max(unit.Bleeding, 1); Log($"Rozcięcie łuku brwiowego – krew zalewa oczy (Percepcja -1 na 6 rund) + Krwawienie (1). <color=orange>Efekty poza Krwawieniem uwzględnij ręcznie</color>. ."); }
+            else if (value == 11) Log("Oszołomienie – -2 do wszystkich testów na 6 rund. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 12) { unit.Bleeding = Mathf.Max(unit.Bleeding, 2); Log("Ostry krwotok z nosa – Krwawienie (2)."); }
+            else if (value == 13) Log("Utrata 1k4 zębów. Charyzma -1 (na stałe). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 14) Log("Uszkodzenie nerwu wzrokowego – ślepota na 1 oko, Spostrzegawczość -3 (na stałe). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 15) Log("Uszkodzenie mózgu – Inteligencja -1k4 (na stałe). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value <= 17) { unit.Bleeding = Mathf.Max(unit.Bleeding, 1); Log("Utrata ucha – Słuch -3 (na stałe) + Krwawienie (1). <color=orange>Efekty poza Krwawieniem uwzględnij ręcznie</color>."); }
+            else if (value <= 19) { unit.Bleeding = Mathf.Max(unit.Bleeding, 2); Log("Pęknięcie czaszki – Krwawienie (2). Brak pomocy chirurgiczej w ciągu 6 rund = śmierć. <color=orange>Efekty poza Krwawieniem uwzględnij ręcznie</color>."); }
+            else Log("<color=red>Dekapitacja / Zmiażdżenie mózgu – natychmiastowa śmierć.</color>");
+        }
+
+        // RĘCE
+        if (loc.Contains("arm"))
+        {
+            if (value <= 7) Log("Stłuczenie nadgarstka – -1 do testów tą ręką do końca walki. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value <= 9) { unit.Bleeding = Mathf.Max(unit.Bleeding, 1); Log("Rozcięcie przedramienia – Krwawienie (1)."); }
+            else if (value == 10) Log("Porażenie nerwu – -2 do testów tą ręką do końca walki. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 11) { unit.Bleeding = Mathf.Max(unit.Bleeding, 2); Log("Otwarta rana – Krwawienie (2)."); }
+            else if (value == 12) Log("Zwichnięcie nadgarstka – testy z użyciej tej ręki z ujemnym modyfikatorem k8 (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 13) Log("Złamanie palca – Zręczność -1 i testy z użyciej tej ręki z ujemnym modyfikatorem k8 (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 14) Log("Uszkodzenie ścięgna – Siła -1 i Zręczność -1 (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 15) Log("Złamanie ręki – Zręczność -3 i testy z użyciej tej ręki z ujemnym modyfikatorem k8 (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value <= 17) { unit.Bleeding = Mathf.Max(unit.Bleeding, 3); Log("Odcięcie dłoni – Amputacja + Krwawienie (3). <color=orange>Efekty poza Krwawieniem uwzględnij ręcznie</color>."); }
+            else if (value <= 19) { unit.Bleeding = Mathf.Max(unit.Bleeding, 3); Log("Odcięcie/zmiażdżenie przedramienia – Amputacja + Krwawienie (3). Brak pomocy chirurgiczej w ciągu 6 rund = śmierć. <color=orange>Efekty poza Krwawieniem uwzględnij ręcznie</color>."); }
+            else Log("<color=red>Odcięcie/zmiażdżenie ramienia – natychmiastowa śmierć.</color>");
+        }
+
+        // TUŁÓW
+        if (loc.Contains("torso"))
+        {
+            if (value <= 7) Log("Stłuczone żebra – Siła -1 do końca walki. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value <= 9) { unit.Bleeding = Mathf.Max(unit.Bleeding, 1); Log("Płytkie rozcięcie brzucha – Krwawienie (1)."); }
+            else if (value == 10) Log("Wgniecenie przepony – traci następną turę. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 11) { unit.Bleeding = Mathf.Max(unit.Bleeding, 2); Log("Głębokie rozcięcie brzucha – Krwawienie (2)."); }
+            else if (value == 12) Log("Złamanie żebra – Siła -2 (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 13) Log("Uszkodzenie nerek – testy Odporności utrudnione o 3 (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 14) Log("Uszkodzenie płuca – Kondycja -3 (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 15) Log("Uszkodzenie kręgosłupa – Siła -2 i Zwinność -2 (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value <= 17) { unit.Bleeding = Mathf.Max(unit.Bleeding, 3); Log("Krwotok wewnętrzny – Krwawienie (3)."); }
+            else if (value <= 19) Log("Przebicie płuca – Brak pomocy chirurgiczej w ciągu 6 rund = śmierć. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else Log("<color=red>Przebicie serca / zmiażdżenie rdzenia – natychmiastowa śmierć.</color>");
+        }
+
+        // NOGI
+        if (loc.Contains("leg"))
+        {
+            if (value <= 7) Log("Stłuczenie kolana – zasięg ruchu zmniejszony dwukrotnie do końca walki. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value <= 9) { unit.Bleeding = Mathf.Max(unit.Bleeding, 1); Log("Rozcięcie łydki – Krwawienie (1)."); }
+            else if (value == 10) Log("Naderwane ścięgno – Zwinność -1 przez tydzień. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 11) Log("Zwichnięcie stawu skokowego – przez tydzień Szybkość zmniejszona dwukrotnie i Zwinność -1. <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 12) { unit.Bleeding = Mathf.Max(unit.Bleeding, 1); Log("Głębokie cięcie uda – Krwawienie (1)."); }
+            else if (value == 13) Log("Złamane palce – Szybkość zmniejszona dwukrotnie i Zwinność -2 (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 14) Log("Uszkodzenie więzadła w kolanie – Zwinność -2 oraz brak możliwości biegu i skoku (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value == 15) Log("Złamany piszczel – Szybkość zmniejszona dwukrotnie i Zwinność -3, potrzebny podpór aby się poruszać (do wyzdrowienia). <color=orange>Efekt uwzględnij ręcznie</color>.");
+            else if (value <= 17) { unit.Bleeding = Mathf.Max(unit.Bleeding, 3); Log("Odcięcie/zmiażdżenie stopy – Amputacja, potrzebny podpór aby się poruszać + Krwawienie (3). <color=orange>Efekty poza Krwawieniem uwzględnij ręcznie</color>."); }
+            else if (value <= 19) { unit.Bleeding = Mathf.Max(unit.Bleeding, 3); Log("Zmiażdżenie tętnicy udowej – Krwawienie (3). Brak pomocy chirurgiczej w ciągu 6 rund = śmierć. <color=orange>Efekty poza Krwawieniem uwzględnij ręcznie</color>."); }
+            else Log("<color=red>Oderwanie nogi – natychmiastowa śmierć.</color>");
+        }
+
+        targetStats.CriticalWounds++;
+
+        // Obsługa śmierci
+        if (targetStats.CriticalWounds > 2 || value >= 20)
+        {
+            if(targetStats.CriticalWounds > 2) Debug.Log($"<color=red>Ilość ran krytycznych {targetStats.Name} przekroczyła limit. Jednostka umiera.</color>");
 
             if (GameManager.IsAutoKillMode)
             {
@@ -1353,11 +1491,6 @@ public class CombatManager : MonoBehaviour
         {
             targetStats.GetComponent<Unit>().DisplayUnitHealthPoints();
         }
-    }
-
-    public void CriticalDeflectionButtonClick(string value)
-    {
-        _criticalDeflection = value;
     }
     #endregion
 
@@ -2201,4 +2334,5 @@ public class CombatManager : MonoBehaviour
         _groupOfTargetsPenalty = unitOrGroup == "unit";
     }
     #endregion
+
 }

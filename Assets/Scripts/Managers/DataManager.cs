@@ -703,83 +703,34 @@ public class StatsData
 
 
     [Header("Talenty")]
-    public bool CombatMaster; // Mistrz walki
+    public bool AccurateShot; // Celny strzał
+    public bool Chosen; //Wybraniec Boży
+    public bool CombatMaster; // Wojownik
     public bool Fast; // Szybki
+    public bool Fencing; // Szermierka
+    public bool Hardy; // Twardziel
     public int Pitiless; // Bezlitosny
+    public int Religious; // Pobożny
     public bool Sharpshooter; // Strzelec wyborowy
     public int SurvivalInstinct; // Instynkt Przetrwania
 
+    public string[] Magic = new string[5]; // ścieżki magii
     public string[] Resistance = new string[4]; // np. ["Fizyczne", "Ogień"]
     public string[] Slayer = new string[3];
-    public string[] Specialist = new string[3];
+    public string[] Specialist = new string[3]; // null/"" = pusty slot
 
-    public int AethyricAttunement; // Zmysł Magii
-    public int AccurateShot; // Celny strzał
-    public int Ambidextrous; // Oburęczność
-    public int CombatReflexes; // Bitewny refleks
-    public int DirtyFighting; // Cios poniżej pasa
-    public int Disarm; // Rozbrojenie
-    public int DualWielder; // Dwie bronie
-    public int FastHands; // Ruchliwe dłonie
-    public int Feint; // Finta
-    public bool Frenzy; // Szał bojowy
-    public int FrenzyAttacksLeft; // Pozostałe ataki w szale bojowym w obecnej rundzie
-    public int FuriousAssault; // Wściekły atak
-    public int Gunner; // Artylerzysta
-    public bool Hardy; // Wytrzymały
-    public int HolyHatred; // Święta nienawiść
-    public int Implacable; // Nieubłagany
-    public int InstinctiveDiction; // Precyzyjne inkantowanie
-    public int IronJaw; // Żelazna szczęka
-    public int MagicResistance; // Odporność na magię
-    public int RapidReload; // Szybkie przeładowanie
-    public int ReactionStrike; // Atak wyprzedzający
-    public int ReactionStrikesLeft; // Pozostałe ataki wyprzedzające w obecnej rundzie
-    public bool Relentless; // Nieustępliwy
-    public int Resolute; // Nieugięty
-    public int Riposte; // Riposta
-    public int RiposteAttacksLeft; // Pozostałe riposty w obecnej rundzie
-    public int Robust; // Krzepki
-    public int Shieldsman; // Tarczownik
-    public int Sniper; // Snajper
-    public int Sprinter; // Szybkobiegacz
-    public int StoutHearted; // Waleczne serce
-    public int StrikeMightyBlow; // Silny cios
-    public bool StrikeToInjure; // Morderczy Atak
-    public int StrikeToStun; // Ogłuszenie
-    public int StrongBack; // Mocne plecy
-    public int Sturdy; // Tragarz
-    public int SureShot; // Strzał przebijający
-    public int Unshakable; // Niewzruszony
-    public int Vaulting; // Woltyżerka
-    public bool WarWizard; // Mag bitewny
 
     [Header("Cechy stworzeń")]
-    public int Scary; // Straszny
-
-
-    public bool Belligerent; // Wojowniczy
-    public bool Bestial; // Zwierzęcy
-    public bool Bounce; // Skoczny
-    public bool Champion; // Czempion
-    public bool CorrosiveBlood; // Kwasowa krew
-    public int Daemonic; // Demoniczny
-    public bool Distracting; // Dekoncentrujący
-    public bool Ethereal; // Eteryczny
-    public int Fear; // Strach
-    public int Flight; // Latanie
+    public bool BlackMagic; // Czarna Magia
+    public int Flight; // Latający
     public bool Hungry; // Żarłoczny
-    public bool ImmunityToPsychology; // Niewrażliwość na psychologię
     public int NaturalArmor;
-    public bool Regeneration; // Regeneracja
-    public bool Stride; // Długi krok
-    public int Terror; // Groza
-    public bool Undead; // Ożywieniec
-    public bool Unstable; // Niestabilny
-    public bool Vampiric; // Wampiryczny
-    public bool Venom; // Jad
-    public int VenomModifier; // Siła jadu
-    public int Ward; // Ochrona
+    public int Scary; // Straszny
+    public bool Slow; // Powolny
+    public bool Stink; // Smród
+    public bool Tough; // Wytrzymały
+    public bool Undead; // Nieumarły
+    public bool Unmeaning; // Bezrozumny
 
     [Header("Statystyki")]
     public int HighestDamageDealt; // Największe zadane obrażenia
@@ -887,7 +838,8 @@ public class WeaponData
     public bool Penetrating; // Przebijająca
     public bool Pummel; // Ogłuszająca
     public bool Slow; // Powolna
-    public bool Magical;
+    public bool Magical; // Magiczna
+    public int Poisonous; // Zatruta, np. kły jadowe Hasai
 
     //PANCERZ
     public int Armor;
