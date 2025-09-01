@@ -577,7 +577,7 @@
       "Size": 4,
       "PrimaryWeaponNames": [ "Broń naturalna" ],
       "S": 9,
-      "K": 10,
+      "K": 9,
       "Zw": 2,
       "Zr": 0,
       "Int": 4,
@@ -811,7 +811,7 @@
           "Value": 8
         },
         {
-          "Key": "Entangling",
+          "Key": "Entangle",
           "Value": true
         },
         {

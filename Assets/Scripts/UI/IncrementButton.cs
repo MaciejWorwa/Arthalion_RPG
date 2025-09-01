@@ -45,14 +45,6 @@ public class IncrementButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
                 //Modyfikuje liczbę punktów żywotności jednostki
                 UnitsManager.Instance.ChangeTemporaryHealthPoints(_incrementValue);
             }
-            else if (_valueName == "PlayersAdvantage")
-            {
-                InitiativeQueueManager.Instance.CalculateAdvantage("PlayerUnit", _incrementValue);
-            }
-            else if (_valueName == "EnemiesAdvantage")
-            {
-                InitiativeQueueManager.Instance.CalculateAdvantage("EnemyUnit", _incrementValue);
-            }
             else if (_valueName == "ReloadLeft" && Unit.SelectedUnit != null)
             {
                 Weapon weapon = Unit.SelectedUnit.GetComponent<Inventory>().EquippedWeapons[0];

@@ -195,7 +195,7 @@ public class StatesManager : MonoBehaviour
             test = DiceRollManager.Instance.TestSkill(
                 stats: stats,
                 rollContext: "Odporność na zatrucie",
-                attributeName: "Wt",
+                attributeName: "K",
                 skillName: "Endurance",
                 difficultyLevel: difficulty
             );
@@ -392,6 +392,9 @@ public class StatesManager : MonoBehaviour
         {
             bool boolValue = textInput.GetComponent<UnityEngine.UI.Toggle>().isOn;
             field.SetValue(unit, boolValue);
+
+            // Przy usuwaniu Unieruchomienia związanego z pochwyceniem usuwamy również stan Grappled
+            if(field.Name == "Entangle" && boolValue == false) unit.Grappled = boolValue;
         }
         else
         {

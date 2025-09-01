@@ -59,7 +59,7 @@ public class CombatManager : MonoBehaviour
     private string _grapplingActionChoice = "";    // Zmienna do przechowywania wyboru akcji przy grapplingu
     [SerializeField] private GameObject _grapplingActionPanel;
     [SerializeField] private UnityEngine.UI.Button _grapplingAttackButton;
-    [SerializeField] private UnityEngine.UI.Button _improveGrappleButton;
+    [SerializeField] private UnityEngine.UI.Button _releaseGrappleButton;
     [SerializeField] private UnityEngine.UI.Button _escapeGrappleButton;
 
     public string HitLocation = null;    // Zmienna do przechowywania wyboru lokacji
@@ -74,10 +74,9 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private TMP_InputField _survivalInstinctInput;
     [SerializeField] private UnityEngine.UI.Button _survivalInstinctButton;
 
-
-    //[SerializeField] private GameObject _criticalDeflectionPanel;
-    //private string _criticalDeflection;
-    //[SerializeField] private UnityEngine.UI.Button _armorDamageButton;
+    [SerializeField] private GameObject _entaglingPanel;
+    [SerializeField] private UnityEngine.UI.Button _escapeYesButton;
+    [SerializeField] private UnityEngine.UI.Button _escapeNoButton;
 
     public bool IsManualPlayerAttack;
 
@@ -100,7 +99,7 @@ public class CombatManager : MonoBehaviour
         _mountButton.onClick.AddListener(() => RiderOrMountButtonClick("mount"));
 
         _grapplingAttackButton.onClick.AddListener(() => GrapplingActionButtonClick("attack"));
-        _improveGrappleButton.onClick.AddListener(() => GrapplingActionButtonClick("improve"));
+        _releaseGrappleButton.onClick.AddListener(() => GrapplingActionButtonClick("release"));
         _escapeGrappleButton.onClick.AddListener(() => GrapplingActionButtonClick("escape"));
     }
 
@@ -192,12 +191,12 @@ public class CombatManager : MonoBehaviour
             }
 
             // Podczas pochwycenia lub pochwytywania kogoś możemy tylko wykonywac atak typu Zapasy
-            if (attackTypeName != "Grappling" && (unit.Entangled || unit.EntangledUnitId != 0))
+            if (attackTypeName != "Grappling" && (unit.Grappled || unit.GrappledUnitId != 0))
             {
                 AttackTypes[attackTypeName] = false;
                 AttackTypes["Grappling"] = true;
 
-                Debug.Log("Ta jednostka w obecnej rundzie nie może wykonywać innej akcji ataku niż zapasy.");
+                //Debug.Log("Ta jednostka w obecnej rundzie nie może wykonywać innej akcji ataku niż zapasy.");
             }
 
             if (AttackTypes["Charge"] == true && !unit.IsCharging)
@@ -292,18 +291,14 @@ public class CombatManager : MonoBehaviour
             attackerStats.GetComponent<Weapon>().ResetWeapon();
             attackerWeapon = attackerStats.GetComponent<Weapon>();
 
-            if(AttackTypes["Grappling"])
-            {
-                targetStats.GetComponent<Weapon>().ResetWeapon();
-                targetWeapon = targetStats.GetComponent<Weapon>();
+            targetStats.GetComponent<Weapon>().ResetWeapon();
+            targetWeapon = targetStats.GetComponent<Weapon>();
 
-                if (attacker.Entangled && target.EntangledUnitId != attacker.UnitId)
-                {
-                    Debug.Log("Celem ataku musi być jednostka, z którą toczą się zapasy.");
-                    yield break;
-                }
+            if (attacker.GrappledUnitId != 0 && attacker.GrappledUnitId != target.UnitId)
+            {
+                Debug.Log("Celem ataku musi być jednostka, z którą toczą się zapasy.");
+                yield break;
             }
-            else targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
         }
         else // Zwykły atak bronią
         {
@@ -311,7 +306,7 @@ public class CombatManager : MonoBehaviour
             targetWeapon = InventoryManager.Instance.ChooseWeaponToAttack(target.gameObject);
 
             // Uwzględniamy typ amunicji
-            if (attackerWeapon.Type.Contains("ranged") && !attackerWeapon.Type.Contains("entangling") && !attackerWeapon.Type.Contains("throwing"))
+            if (attackerWeapon.Type.Contains("ranged") && !attackerWeapon.Type.Contains("throwing"))
             {
                 if (string.IsNullOrEmpty(attackerWeapon.AmmoType) || attackerWeapon.AmmoType == "Brak")
                 {
@@ -329,14 +324,6 @@ public class CombatManager : MonoBehaviour
             Debug.Log("Jednostki będące w stanie Oślepienia nie mogą wykonywać ataków dystansowych.");
             yield break;
         }
-
-        // ZAMIENIĆ NA ODPORNOŚĆ NA OBRAŻENIA FIZYCZNE
-        //// Uwzględnienie cechy Eteryczny
-        //if (targetStats.Ethereal && attackerWeapon.Quality != "Magiczna")
-        //{
-        //    Debug.Log($"{targetStats.Name} jest eteryczny/a i może zostać zraniony/a tylko magiczną bronią lub zaklęciem.");
-        //    yield break;
-        //}
 
         // 3) Sprawdź zasięg i ewentualnie wykonaj szarżę
         bool isOutOfRange = attackDistance > attackerWeapon.AttackRange;
@@ -394,7 +381,7 @@ public class CombatManager : MonoBehaviour
         // ==================================================================
         // 7) *** RZUT ATAKU *** (manualny lub automatyczny)
         // ==================================================================
-        
+
         // Sprawdzenie, czy strzelamy do pojedynczego wroga, czy do grupy
         if (isRangedAttack)
         {
@@ -410,6 +397,7 @@ public class CombatManager : MonoBehaviour
         }
 
         int attackModifier = CalculateAttackModifier(attacker, attackerWeapon, target, attackDistance);
+        Debug.Log($"{attackerStats.Name} atakuje przy użyciu {attackerWeapon.Name}.");
 
         // Jeżeli w wyniku ataku dystansowego w grupę została trafiona przypadkowo inna jednostka, aktualizujemy cel
         if(_newTargetUnit != null)
@@ -433,16 +421,6 @@ public class CombatManager : MonoBehaviour
         {
             attacker.AimingBonus = 0;
             UpdateAimButtonColor();
-        }
-
-
-        if (AttackTypes["Grappling"] == true && attacker.EntangledUnitId != target.UnitId)
-        {
-            Debug.Log($"{attackerStats.Name} próbuje pochwycić przeciwnika");
-        }
-        else
-        {
-            Debug.Log($"{attackerStats.Name} atakuje przy użyciu {attackerWeapon.Name}.");
         }
 
         int attackRollResult = 0;
@@ -678,62 +656,22 @@ public class CombatManager : MonoBehaviour
         //    StartCoroutine(Stun(attackerStats, targetStats));
         //}
 
-       
-        //// Udana próba pochwycenia przeciwnika
-        if ((AttackTypes["Grappling"] == true || attackerWeapon.Entangle) && attacker.EntangledUnitId != target.UnitId)
-        {
-            attacker.EntangledUnitId = target.UnitId;
-            target.Entangled = true;
-            target.CanMove = false;
+        // ========= UNIERUCHOMIENIE ==========
 
-
-            attacker.CanMove = false;
-
-            MovementManager.Instance.SetCanMoveToggle(false);
-            RoundsManager.Instance.FinishTurn();
-
-            if(AttackTypes["Grappling"] == true)
-            {
-                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name}.");
-                yield break;
-            }
-            else if (attackerWeapon.Entangle)
-            {
-                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
-            }
-        }
-
-        // Udana próba pochwycenia/unieruchomienia
         bool isThrowing = attackerWeapon.Type != null && attackerWeapon.Type.Contains("throwing");
-
-        // 1) Grappling lub broń Entangle w walce wręcz (nie-throwing):
-        if ((AttackTypes["Grappling"] == true || (attackerWeapon.Entangle && !isThrowing)) && attacker.EntangledUnitId != target.UnitId)
-        {
-            attacker.EntangledUnitId = target.UnitId;
-            target.Entangled = true;
-            target.CanMove = false;
-            attacker.CanMove = false;
-
-            MovementManager.Instance.SetCanMoveToggle(false);
-            RoundsManager.Instance.FinishTurn();
-
-            if (AttackTypes["Grappling"] == true)
-            {
-                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name}.");
-                yield break;
-            }
-            else // Entangle melee
-            {
-                Debug.Log($"{attackerStats.Name} pochwycił/a {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
-            }
-        }
-        // 2) Broń unieruchamiająca rzucana (np. sieć) – tylko cel unieruchomiony, atakujący pozostaje mobilny
-        else if (attackerWeapon.Entangle && isThrowing && attacker.EntangledUnitId != target.UnitId)
+        if (attackerWeapon.Entangle && attacker.EntangledUnitId != target.UnitId && !target.Entangled)
         {
             target.Entangled = true;
             target.CanMove = false;
 
             Debug.Log($"{attackerStats.Name} unieruchomił/a {targetStats.Name} przy użyciu {attackerWeapon.Name}.");
+
+            if (!isThrowing)
+            {
+                attacker.CanMove = false;
+                attacker.EntangledUnitId = target.UnitId;
+                MovementManager.Instance.SetCanMoveToggle(false);
+            }
         }
 
         if (attackerWeapon.Type.Contains("no-damage")) yield break; //Jeśli broń nie powoduje obrażeń, np. sieć, to pomijamy dalszą część kodu
@@ -1032,12 +970,12 @@ public class CombatManager : MonoBehaviour
         int[] defenceTest = null;
         if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
         {
-            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "unik", "Zw", "Dodge", callback: result => defenceTest = result));
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "unik", "Zw", "Dodge", dodgeModifier, callback: result => defenceTest = result));
             if (defenceTest == null) yield break;
         }
         else
         {
-            defenceTest = DiceRollManager.Instance.TestSkill(targetStats, "unik", "Zw", "Dodge");
+            defenceTest = DiceRollManager.Instance.TestSkill(targetStats, "unik", "Zw", "Dodge", dodgeModifier);
         }
 
         DefenceResults = defenceTest;
@@ -1823,100 +1761,236 @@ public class CombatManager : MonoBehaviour
             return;
         }
 
-        // Sprawdzamy, czy mamy sytuację grapplingu (czy jedna z jednostek już jest w kontakcie)
-        if (attacker.EntangledUnitId == target.UnitId || attacker.UnitId == target.EntangledUnitId)
-        {
-            StartCoroutine(GrapplingActionCoroutine(attacker, target));
-        }
-        else
-        {
-            // Jeśli nie ma grapplingu, wykonujemy zwykły atak
-            Attack(attacker, target);
-        }
+        StartCoroutine(GrapplingActionCoroutine(attacker, target));
     }
 
     private IEnumerator GrapplingActionCoroutine(Unit attacker, Unit target)
     {
-        // Ustalamy role:
-        // Jeśli attacker.EntangledUnitId == target.UnitId => attacker jest chwytającym (grappler)
-        // Jeśli attacker.UnitId == target.EntangledUnitId => attacker jest pochwyconym (grappled)
-        bool isGrappler = (attacker.EntangledUnitId == target.UnitId);
-        bool isGrappled = (attacker.UnitId == target.EntangledUnitId);
+        //bool isGrappler = (attacker.EntangledUnitId == target.UnitId);
+        //bool isGrappled = (attacker.UnitId == target.EntangledUnitId);
 
-        //// Jeśli obie relacje są prawdziwe, traktujemy jednostkę jako pochwyconą.
-        //if (isGrappler && isGrappled)
+        //// Jeśli żadna z relacji nie występuje – wychodzimy i wykonujemy atak
+        //if (!isGrappler && !isGrappled)
         //{
-        //    isGrappler = false;
+        //    Attack(attacker, target);
+        //    yield break;
         //}
-
-        // Jeśli żadna z relacji nie występuje – wychodzimy i wykonujemy atak
-        if (!isGrappler && !isGrappled)
-        {
-            Attack(attacker, target);
-            yield break;
-        }
 
         // Pobieramy statystyki obu jednostek
         Stats attackerStats = attacker.Stats;
         Stats targetStats = target.Stats;
 
-        if (targetStats.Size - attackerStats.Size > 1)
-        {
-            Debug.Log($"<color=#FF7F50>{attackerStats.Name} nie jest w stanie pochwycić {targetStats.Name}. Cel jest zbyt duży.</color>");
-            yield break;
-        }
 
-        // Ustawiamy widoczność przycisków w panelu wyboru akcji:
-        // Załóżmy, że masz osobne przyciski: _attackGrappleButton, _improveGrappleButton, _escapeGrappleButton
-        if (isGrappler)
-        {
-            // Jako chwytający, attacker może:
-            // - Atakować (próba przejęcia kontroli nad celem, jeśli jeszcze go nie trzyma)
-            // - Poprawić chwyt
-            // - Uciec – opcja dostępna tylko, gdy attacker sam ma Entangled > 0
-            _improveGrappleButton.interactable = true;
-            _escapeGrappleButton.interactable = attacker.Entangled;
-        }
-        else if (isGrappled)
-        {
-            // Jako pochwycony, attacker może:
-            // - Atakować (próbując odwrócić sytuację, czyli „pochwycić” osobę chwytającą)
-            // - Uciekać (opcję escape pokazujemy zawsze)
-            _improveGrappleButton.interactable = false;
-            _escapeGrappleButton.interactable = true;
-        }
 
-        // Wyświetlenie panelu akcji i oczekiwanie na wybór gracza
-        _grapplingActionChoice = "";
-        _grapplingActionPanel.SetActive(true);
-        yield return new WaitUntil(() => !_grapplingActionPanel.activeSelf);
+        //// Ustawiamy widoczność przycisków w panelu wyboru akcji:
+        //if (isGrappler)
+        //{
+        //    _escapeGrappleButton.gameObject.SetActive(false);
+        //    _releaseGrappleButton.gameObject.SetActive(true);
+        //}
+        //else if (isGrappled)
+        //{
+        //    _escapeGrappleButton.gameObject.SetActive(true);
+        //    _releaseGrappleButton.gameObject.SetActive(false);
+        //}
 
-        switch (_grapplingActionChoice)
+
+        // Walka w pochwyceniu
+        if (AttackTypes["Grappling"] == true && attacker.GrappledUnitId == target.UnitId)
         {
-            case "attack":
-                Debug.Log($"{attackerStats.Name} decyduje się na atak (w ramach zapasów).");
+            // Pokaż panel
+            _grapplingActionChoice = "";
+            _grapplingActionPanel.SetActive(true);
+            _escapeGrappleButton.gameObject.SetActive(false);
+            _releaseGrappleButton.gameObject.SetActive(true);
+
+            yield return new WaitUntil(() => !_grapplingActionPanel.activeSelf);
+
+            if (_grapplingActionChoice == "release")
+            {
+                // Rozluźnij chwyt
+                target.Grappled = false;
+                if (attacker.GrappledUnitId == target.UnitId) attacker.GrappledUnitId = 0;
+
+                attacker.CanMove = true;
+                target.CanMove = true;
+
+                Debug.Log($"{attackerStats.Name} rozluźnia chwyt i puszcza {targetStats.Name} (koniec Grapple).");
+                ChangeAttackType(); // wróć do StandardAttack
+                yield break;
+            }
+            else if (_grapplingActionChoice == "attack")
+            {
                 Attack(attacker, target);
-                break;
+                yield break;
+            }
+        }
+        else if (AttackTypes["Grappling"] == true && target.GrappledUnitId == attacker.UnitId)
+        {
+            // Pokaż panel
+            _grapplingActionChoice = "";
+            _grapplingActionPanel.SetActive(true);
+            _escapeGrappleButton.gameObject.SetActive(true);
+            _releaseGrappleButton.gameObject.SetActive(false);
 
-            case "escape":
-                Debug.Log($"{attackerStats.Name} próbuje uciec z pochwycenia.");
+            yield return new WaitUntil(() => !_grapplingActionPanel.activeSelf);
+
+            if (_grapplingActionChoice == "escape")
+            {
+                int[] attackerTest = null;
+                int bestStat = Mathf.Max(attackerStats.S, attackerStats.Zw);
+                string statName = (bestStat == attackerStats.S) ? "Siłę" : "Zwinność";
+                string statKey = (bestStat == attackerStats.S) ? "S" : "Zw";
+
+                // 1) Rzut atakującego (czyli pochwyconego): Siła lub Zwinność
+                if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
+                {
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, statName, statKey, callback: result => attackerTest = result));
+                    if (attackerTest == null) yield break;
+                }
+                else
+                {
+                    attackerTest = DiceRollManager.Instance.TestSkill(attackerStats, statName, statKey);
+                }
+                int attackerRoll = attackerTest[3];
+
+                // 2) Rzut celu (czyli pochwytującego)
+                int[] targetTest = null;
+                if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
+                {
+                    yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, "Siłę", "S", callback: result => targetTest = result));
+                    if (targetTest == null) yield break;
+                }
+                else
+                {
+                    targetTest = DiceRollManager.Instance.TestSkill(targetStats, "Siłę", "S");
+                }
+                int targetRoll = targetTest[3];
+
+                //Wykonuje akcję
                 RoundsManager.Instance.DoAction(attacker);
 
-                // W przypadku ucieczki priorytetowo traktujemy jednostkę jako pochwyconą, jeśli taka relacja występuje
-                if (isGrappled)
+                // 3) Rozstrzygnięcie
+                if (attackerRoll >= targetRoll)
                 {
-                    // attacker jest pochwycony – więc przekazujemy: entanglingUnit = target, entangledUnit = attacker
-                    yield return StartCoroutine(EscapeFromEntanglement(targetStats, attackerStats));
-                }
-                else if (isGrappler)
-                {
-                    // attacker jest chwytający – przekazujemy: entanglingUnit = attacker, entangledUnit = target
-                    yield return StartCoroutine(EscapeFromEntanglement(attackerStats, targetStats));
-                }
-                break;
+                    target.GrappledUnitId = 0;
+                    attacker.Grappled = false;
+                    attacker.Entangled = false;
 
-            default:
+                    attacker.CanMove = true;
+                    target.CanMove = true;
+
+                    MovementManager.Instance.SetCanMoveToggle(true);
+
+                    Debug.Log($"<color=#FF7F50>{attackerStats.Name} uwolnił/a się z pochwycenia przez {targetStats.Name}.</color>");
+                }
+                else
+                {
+                    Debug.Log($"<color=#FF7F50>{attackerStats.Name} nie udaje się uwolnić z pochwycenia przez {targetStats.Name}.</color>");
+                }
+
+                //Szczęście i pech
+                if (DiceRollManager.Instance.IsDoubleDigit(targetTest[0], targetTest[1]))
+                {
+                    if (attackerRoll < targetRoll)
+                    {
+                        Debug.Log($"{targetStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
+                        targetStats.FortunateEvents++;
+                    }
+                    else
+                    {
+                        Debug.Log($"{targetStats.Name} wyrzucił <color=red>PECHA</color>!");
+                        targetStats.UnfortunateEvents++;
+                    }
+                }
+
+                if (DiceRollManager.Instance.IsDoubleDigit(attackerTest[0], attackerTest[1]))
+                {
+                    if (attackerRoll >= targetRoll)
+                    {
+                        Debug.Log($"{attackerStats.Name} wyrzucił <color=green>SZCZĘŚCIE</color>!");
+                        attackerStats.FortunateEvents++;
+                    }
+                    else
+                    {
+                        Debug.Log($"{attackerStats.Name} wyrzucił <color=red>PECHA</color>!");
+                        attackerStats.UnfortunateEvents++;
+                    }
+                }
+
                 yield break;
+            }
+            else if (_grapplingActionChoice == "attack")
+            {
+                Attack(attacker, target);
+                yield break;
+            }
+        }
+
+        // Próba pochwycenia
+        if (AttackTypes["Grappling"] && attacker.GrappledUnitId != target.UnitId && !target.Grappled)
+        {
+            if (targetStats.Size - attackerStats.Size > 1)
+            {
+                Debug.Log($"<color=#FF7F50>{attackerStats.Name} nie jest w stanie pochwycić {targetStats.Name}. Cel jest zbyt duży.</color>");
+                yield break;
+            }
+
+            // 1) Rzut atakującego: Siła
+            int attackerRoll = 0;
+            int[] attackerTest = null;
+            if (!GameManager.IsAutoDiceRollingMode && attacker.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(attackerStats, "Siłę", "S", callback: result => attackerTest = result));
+                if (attackerTest == null) yield break;
+            }
+            else
+            {
+                attackerTest = DiceRollManager.Instance.TestSkill(attackerStats, "Siłę", "S");
+            }
+            attackerRoll = attackerTest[3];
+
+            // 2) Rzut celu: wybieramy wyższą cechę z S / Zw
+            int[] targetTest = null;
+            int bestStat = Mathf.Max(targetStats.S, targetStats.Zw);
+            string statName = (bestStat == targetStats.S) ? "Siłę" : "Zwinność";
+            string statKey = (bestStat == targetStats.S) ? "S" : "Zw";
+
+            if (!GameManager.IsAutoDiceRollingMode && target.CompareTag("PlayerUnit"))
+            {
+                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(targetStats, statName, statKey, callback: result => targetTest = result));
+                if (targetTest == null) yield break;
+            }
+            else
+            {
+                targetTest = DiceRollManager.Instance.TestSkill(targetStats, statName, statKey);
+            }
+            int targetRoll = targetTest[3];
+
+            //Wykonuje akcję
+            RoundsManager.Instance.DoAction(attacker);
+
+            // 3) Rozstrzygnięcie
+            if (attackerRoll >= targetRoll)
+            {
+                attacker.GrappledUnitId = target.UnitId;
+                target.Grappled = true;
+                target.Entangled = true;
+
+                attacker.CanMove = false;
+                target.CanMove = false;
+
+                MovementManager.Instance.SetCanMoveToggle(false);
+
+                Debug.Log($"<color=#FF7F50>{attackerStats.Name} pochwycił/a {targetStats.Name}.</color>");
+                RoundsManager.Instance.FinishTurn();
+            }
+            else
+            {
+                Debug.Log($"<color=#FF7F50> {attackerStats.Name} bezskutecznie próbuje pochwycić {targetStats.Name}.</color>");
+                RoundsManager.Instance.FinishTurn();
+            }
+            yield break;
         }
     }
 
@@ -1924,73 +1998,91 @@ public class CombatManager : MonoBehaviour
     {
         _grapplingActionChoice = action;
     }
+
     public IEnumerator EscapeFromEntanglement(Stats entanglingUnitStats, Stats entangledUnitStats)
     {
         Unit entangledUnit = entangledUnitStats.GetComponent<Unit>();
         Unit entanglingUnit = entanglingUnitStats.GetComponent<Unit>();
 
-        if (entangledUnit.Entangled && entangledUnit.CanDoAction)
-        {
-            Debug.Log($"{entangledUnitStats.Name} próbuje uwolnić się z pochwycenia przez {entanglingUnitStats.Name}.");
-            RoundsManager.Instance.DoAction(entangledUnit);
+        if (!entangledUnit.Entangled)
+            yield break;
 
-            // Każda jednostka wykonuje swój oddzielny rzut
-            int attackerRoll = 0;
-            int[] attackerTest = null;
-            if (!GameManager.IsAutoDiceRollingMode && entanglingUnit.CompareTag("PlayerUnit"))
-            {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entanglingUnitStats, "Siłę", "S", callback: result => attackerTest = result));
-                if (attackerTest == null) yield break;
-            }
-            else
-            {
-                attackerTest = DiceRollManager.Instance.TestSkill(entanglingUnitStats, "Siłę", "S");
-            }
-
-            int targetRoll = 0;
-            int[] targetTest = null;
-            if (!GameManager.IsAutoDiceRollingMode && entangledUnit.CompareTag("PlayerUnit"))
-            {
-                yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entanglingUnitStats, "Siłę", "S", callback: result => targetTest = result));
-                if (targetTest == null) yield break;
-            }
-            else
-            {
-                targetTest = DiceRollManager.Instance.TestSkill(entanglingUnitStats, "Siłę", "S");
-            }
-            targetRoll = targetTest[3];
-
-
-            if (attackerRoll < targetRoll)
-            {
-                entangledUnit.Entangled = false;
-                Debug.Log($"<color=#FF7F50>{entangledUnitStats.Name} uwolnił się z pochwycenia przez {entanglingUnitStats.Name}.</color>");
-            }
-            else
-            {
-                Debug.Log($"<color=#FF7F50>{entangledUnitStats.Name} bezskutecznie próbuje się uwolnić z pochwycenia przez {entanglingUnitStats.Name}.</color>");
-            }
-        }
-        else if (entangledUnit.Entangled)
+        if (!entangledUnitStats.GetComponent<Unit>().CanDoAction)
         {
             Debug.Log("Ta jednostka nie może w tej rundzie wykonać więcej akcji.");
+            yield break;
+        }
+
+        // Dezycja, czy chce próbować się uwolnić
+        if (!GameManager.IsAutoDiceRollingMode)
+        {
+            bool attempt = false;
+            bool decided = false;
+
+            _entaglingPanel.SetActive(true);
+            _escapeYesButton.onClick.RemoveAllListeners();
+            _escapeNoButton.onClick.RemoveAllListeners();
+
+            _escapeYesButton.onClick.AddListener(() => { attempt = true; decided = true; });
+            _escapeNoButton.onClick.AddListener(() => { attempt = false; decided = true; });
+
+            while (!decided) yield return null;
+
+            _entaglingPanel.SetActive(false);
+
+            if (!attempt) yield break;
+        }
+
+        //Wykonuje akcję
+        RoundsManager.Instance.DoAction(entangledUnitStats.GetComponent<Unit>());
+
+        int targetRoll = 0;
+        int[] targetTest = null;
+        int difficultyLevel = 12;
+        if (!GameManager.IsAutoDiceRollingMode && entangledUnit.CompareTag("PlayerUnit"))
+        {
+            yield return StartCoroutine(DiceRollManager.Instance.WaitForRollValue(entangledUnitStats, "Zwinność", "Zw", difficultyLevel: difficultyLevel, callback: result => targetTest = result));
+            if (targetTest == null) yield break;
+        }
+        else
+        {
+            targetTest = DiceRollManager.Instance.TestSkill(entangledUnitStats, "Zwinność", "Zw", difficultyLevel: difficultyLevel);
+        }
+
+        targetRoll = targetTest[3];
+
+        if (targetRoll > difficultyLevel)
+        {
+            entangledUnit.Entangled = false;
+            entanglingUnit.EntangledUnitId = 0;
+            entangledUnit.CanMove = true;
+            MovementManager.Instance.SetCanMoveToggle(true);
+
+            Debug.Log($"<color=#FF7F50>{entangledUnitStats.Name} uwolnił się z Unieruchomienia przez {entanglingUnitStats.Name}.</color>");
+        }
+        else
+        {
+            Debug.Log($"<color=#FF7F50>{entangledUnitStats.Name} bezskutecznie próbuje się uwolnić z Unieruchomienia przez {entanglingUnitStats.Name}.</color>");
         }
     }
 
     public void ReleaseEntangledUnit(Unit attacker, Unit target, Weapon weapon = null)
     {
-        target.Entangled = false;
         target.CanMove = true;
-        attacker.EntangledUnitId = 0;
+
         ChangeAttackType();
         UnitsManager.Instance.UpdateUnitPanel(attacker.gameObject);
 
         if(weapon)
         {
+            target.Entangled = false;
+            attacker.EntangledUnitId = 0;
             Debug.Log($"<color=#FF7F50>{attacker.Stats.Name} oddala się poza zasięg {weapon.Name} i pozwala {target.Stats.Name} uwolnić się z pochwycenia.</color>");
         }
         else
         {
+            target.Grappled = false;
+            attacker.GrappledUnitId = 0;
             Debug.Log($"<color=#FF7F50>{attacker.Stats.Name} rozluźnia chwyt i pozwala {target.Stats.Name} uwolnić się.</color>");
         }
     }

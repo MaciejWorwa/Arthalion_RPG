@@ -173,7 +173,7 @@ public class Stats : MonoBehaviour
         else if (Size == SizeCategory.Big)
             MaxHealth = 18 + S + K;
         else if (Size == SizeCategory.Large)
-            MaxHealth = 2 * (18 + S + K);
+            MaxHealth = 2 * (12 + S + K);
 
         // Uwzględnienie cechy specjalnej Wytrzymały
         if (Tough == true) MaxHealth *= 2;
@@ -222,7 +222,7 @@ public class Stats : MonoBehaviour
             float tokenSizeModifier = 1f + (size - 2) * 0.25f;
             transform.localScale = new Vector3(tokenSizeModifier, tokenSizeModifier, 1f);
         }
-        else if (size < 2)
+        else if (size < 1)
         {
             transform.localScale = new Vector3(0.8f, 0.8f, 1f);
         }

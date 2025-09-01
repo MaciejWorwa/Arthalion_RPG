@@ -248,6 +248,10 @@ public class DiceRollManager : MonoBehaviour
             }
         }
 
+        // --- ZAPAMIĘTAJ PIERWOTNE WYNIKI K10 (przed Twardzielem)
+        int rawRoll1 = roll1;
+        int rawRoll2 = roll2;
+
         // Modyfikator z panelu jednostki
         if (RollModifier != 0)
             modifier += RollModifier;
@@ -265,6 +269,7 @@ public class DiceRollManager : MonoBehaviour
         }
 
         int finalScore = roll1 + roll2 + skillRoll + attributeValue2 + modifier;
+        if (finalScore < 0) finalScore = 0;
 
         // ===== Cecha Bezrozumny =====
         if (stats.Unmeaning && (attributeName == "SW" || attributeName == "Ch" || attributeName == "Int"))
@@ -375,7 +380,7 @@ public class DiceRollManager : MonoBehaviour
 
         Debug.Log($"{stats.Name} rzuca na {rollContext}: {roll1Str} + {roll2Str}{skillRollStr} = <color=#4dd2ff>{roll1 + roll2 + skillRoll}</color>." + $"{attrString}{modifierString} Łączny wynik: <color={color}>{finalScore}{difficultyLevelString}</color>.");
 
-        if (difficultyLevel != 0 && IsDoubleDigit(roll1, roll2))
+        if (difficultyLevel != 0 && IsDoubleDigit(rawRoll1, rawRoll2))
         {
             if (finalScore >= difficultyLevel)
             {

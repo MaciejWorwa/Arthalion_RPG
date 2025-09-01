@@ -136,6 +136,16 @@
       "AmmoType": "Bełt"
     },
     {
+      "Name": "Łapacz",
+      "Type": [
+        "melee",
+        "no-damage"
+      ],
+      "TwoHanded": true,
+      "AttackRange": 2.0,
+      "Entangle": true
+    },
+    {
       "Name": "Łuk",
       "Type": [
         "ranged"

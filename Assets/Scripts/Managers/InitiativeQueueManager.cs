@@ -38,20 +38,7 @@ public class InitiativeQueueManager : MonoBehaviour
     private Color _activeColor = new Color(0.15f, 1f, 0.45f, 0.2f); // Kolor aktywnego przycisku (jednostka, której tura obecnie trwa)
     private Color _selectedActiveColor = new Color(0.08f, 0.5f, 0.22f, 0.5f); // Kolor wybranego przycisku, gdy jednocześnie jest to aktywna jednostka
     public UnityEngine.UI.Slider DominanceBar; // Pasek przewagi sił w bitwie
-    public int PlayersAdvantage;
-    public int EnemiesAdvantage;
-    [SerializeField] private TMP_InputField _playersAdvantageInput;
-    [SerializeField] private TMP_InputField _enemiesAdvantageInput;
-    [SerializeField] private TMP_InputField _playersView_playersAdvantageInput;
-    [SerializeField] private TMP_InputField _playersView_enemiesAdvantageInput;
 
-    private void Start()
-    {
-        _playersAdvantageInput.text = "0";
-        _enemiesAdvantageInput.text = "0";
-        _playersView_playersAdvantageInput.text = "0";
-        _playersView_enemiesAdvantageInput.text = "0";
-    }
 
     #region Initiative queue
     public void AddUnitToInitiativeQueue(Unit unit)
@@ -182,6 +169,9 @@ public class InitiativeQueueManager : MonoBehaviour
             }
             else if (GameManager.IsAutoSelectUnitMode && ActiveUnit == null && (!GameManager.IsAutoCombatMode || GameManager.IsStatsHidingMode))
             {
+                while (DiceRollManager.Instance.IsWaitingForRoll) yield return null; // Czekaj na następną klatkę
+                yield return new WaitForSeconds(0.05f);
+
                 RoundsManager.Instance.NextRound();
             }
         }
@@ -222,57 +212,4 @@ public class InitiativeQueueManager : MonoBehaviour
             DominanceBar.gameObject.SetActive(true);
         }
     }
-
-    public void CalculateAdvantage(string unitTag, int value)
-    {
-        if (unitTag == "PlayerUnit")
-        {
-            if (PlayersAdvantage == 0 && value < 0) return; // Jeśli przewaga wynosi 0 i ma zostać zmniejszona, kończymy funkcję
-            PlayersAdvantage += value;
-            _playersAdvantageInput.text = PlayersAdvantage.ToString();
-            _playersView_playersAdvantageInput.text = PlayersAdvantage.ToString();
-        }
-        else if (unitTag == "EnemyUnit")
-        {
-            if (EnemiesAdvantage == 0 && value < 0) return; // Jeśli przewaga wynosi 0 i ma zostać zmniejszona, kończymy funkcję
-            EnemiesAdvantage += value;
-            _enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
-            _playersView_enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
-        }
-
-        string group = unitTag == "PlayerUnit" ? "sojuszników" : "przeciwników";
-
-        if (value > 0)
-        {
-            Debug.Log($"Przewaga {group} została zwiększona o <color=#4dd2ff>{value}</color>.");
-        }
-        else if (value < 0)
-        {
-            Debug.Log($"Przewaga {group} została zmniejszona o <color=#ff4d4d>{Mathf.Abs(value)}</color>.");
-        }
-    }
-
-    public void SetAdvantageByInput(TMP_InputField inputField)
-    {
-        if (inputField == _playersAdvantageInput || inputField == _playersView_playersAdvantageInput)
-        {
-            PlayersAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
-        }
-        else if (inputField == _enemiesAdvantageInput || inputField == _playersView_enemiesAdvantageInput)
-        {
-            EnemiesAdvantage = int.TryParse(inputField.text, out int inputValue) ? inputValue : 0;
-        }
-    }
-
-    public void LoadInitiativeQueueManagerData(InitiativeQueueManagerData data)
-    {
-        PlayersAdvantage = data.PlayersAdvantage;
-        EnemiesAdvantage = data.EnemiesAdvantage;
-
-        _playersAdvantageInput.text = PlayersAdvantage.ToString();
-        _enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
-        _playersView_playersAdvantageInput.text = PlayersAdvantage.ToString();
-        _playersView_enemiesAdvantageInput.text = EnemiesAdvantage.ToString();
-    }
-
 }

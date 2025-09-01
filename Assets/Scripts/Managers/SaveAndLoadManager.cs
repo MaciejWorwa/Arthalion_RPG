@@ -102,7 +102,6 @@ public class SaveAndLoadManager : MonoBehaviour
         SaveUnits(allUnits);
 
         SaveRoundsManager(_saveNameInput.text);
-        SaveInitiativeQueueManager(_saveNameInput.text);
 
         //Zapisanie wszystkich elementów mapy
         SaveMap();
@@ -204,19 +203,6 @@ public class SaveAndLoadManager : MonoBehaviour
 
         // Zapisanie danych do pliku
         File.WriteAllText(roundsManagerPath, roundsManagerJsonData);
-    }
-
-    private void SaveInitiativeQueueManager(string savesFolderName)
-    {
-        string initiativeQueueManagerPath = Path.Combine(Application.persistentDataPath, savesFolderName, "InitiativeQueueManager.json");
-
-        InitiativeQueueManagerData initiativeQueueManagerData = new InitiativeQueueManagerData();
-
-
-        string initiativeQueueManagerJsonData = JsonUtility.ToJson(initiativeQueueManagerData, true);
-
-        // Zapisanie danych do pliku
-        File.WriteAllText(initiativeQueueManagerPath, initiativeQueueManagerJsonData);
     }
 
     private void SaveGridManager(string savesFolderName)
@@ -680,7 +666,6 @@ public class SaveAndLoadManager : MonoBehaviour
             }
 
             LoadRoundsManager(saveFolderPath);
-            LoadInitiativeQueueManager(saveFolderPath);
         }
 
         GridManager.Instance.CheckTileOccupancy();
@@ -749,26 +734,6 @@ public class SaveAndLoadManager : MonoBehaviour
 
             // Załaduj wczytane dane do istniejącego obiektu RoundsManager
             RoundsManager.Instance.LoadRoundsManagerData(data);
-        }
-        else
-        {
-            Debug.LogError("Pliku nie znaleziono.");
-        }
-    }
-
-    private void LoadInitiativeQueueManager(string savesFolderPath)
-    {
-        string filePath = Path.Combine(savesFolderPath, "InitiativeQueueManager.json");
-
-        // Sprawdź, czy plik istnieje
-        if (File.Exists(filePath))
-        {
-            // Deserializuj dane z pliku JSON do obiektu InitiativeQueueManagerData
-            string jsonData = File.ReadAllText(filePath);
-            InitiativeQueueManagerData data = JsonUtility.FromJson<InitiativeQueueManagerData>(jsonData);
-
-            // Załaduj wczytane dane do istniejącego obiektu InitiativeQueueManager
-            InitiativeQueueManager.Instance.LoadInitiativeQueueManagerData(data);
         }
         else
         {

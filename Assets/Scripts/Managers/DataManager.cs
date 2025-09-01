@@ -583,12 +583,14 @@ public class UnitData
     public bool Ablaze; // Podpalenie
     public int Bleeding; // Krwawienie
     public bool Blinded; // Oślepienie
-    public bool Entangled; // Pochwycenie
+    public bool Entangled; // Unierumomienie
     public int Poison; // Zatrucie
     public bool Prone; // Powalenie
     public bool Scared; // Strach
     public bool Unconscious; // Utrata Przytomności
 
+    public bool Grappled; // Pochwycenie
+    public int GrappledUnitId; // Cel pochwycenia
     public int EntangledUnitId; // Cel unieruchomienia
 
     public int FearTestedLevel; // max poziom strachu, przeciw któremu ta jednostka już testowała Opanowanie (0 = brak)
@@ -1038,13 +1040,6 @@ public class RoundsManagerData
     {
         RoundNumber = RoundsManager.RoundNumber;
     }
-}
-
-[System.Serializable]
-public class InitiativeQueueManagerData
-{
-    public int PlayersAdvantage;
-    public int EnemiesAdvantage;
 }
 
 [System.Serializable]

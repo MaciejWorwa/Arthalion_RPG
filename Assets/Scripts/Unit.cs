@@ -1,6 +1,8 @@
 using NUnit.Framework;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 
 public class Unit : MonoBehaviour
@@ -25,12 +27,14 @@ public class Unit : MonoBehaviour
     public bool Ablaze; // Podpalenie
     public int Bleeding; // Krwawienie
     public bool Blinded; // Oślepienie
-    public bool Entangled; // Pochwycenie
+    public bool Entangled; // Unierumomienie
     public int Poison; // Zatrucie
     public bool Prone; // Powalenie
     public bool Scared; // Strach
     public bool Unconscious; // Utrata Przytomności
 
+    public bool Grappled; // Pochwycenie
+    public int GrappledUnitId; // Cel pochwycenia
     public int EntangledUnitId; // Cel unieruchomienia
 
     public int FearTestedLevel; // max poziom strachu, przeciw któremu ta jednostka już testowała Opanowanie (0 = brak)
@@ -165,6 +169,66 @@ public class Unit : MonoBehaviour
         IsSelected = !IsSelected;
         ChangeUnitColor(this.gameObject);
 
+        if(IsSelected && Entangled && !Grappled && CanDoAction)
+        {
+            Stats entanglingUnitStats = null;
+            foreach (var u in UnitsManager.Instance.AllUnits)
+            {
+                if (u.EntangledUnitId == UnitId)
+                {
+                    entanglingUnitStats = u.GetComponent<Stats>();
+                }
+            }
+
+            if(entanglingUnitStats != null) StartCoroutine(CombatManager.Instance.EscapeFromEntanglement(entanglingUnitStats, Stats));
+        }
+
+        if(IsSelected && (EntangledUnitId != 0))
+        {
+            bool entangledUnitExist = false;
+
+            foreach (var u in UnitsManager.Instance.AllUnits)
+            {
+                if (u.UnitId == EntangledUnitId && u.Entangled)
+                {
+                    entangledUnitExist = true;
+                }
+            }
+
+            if (!entangledUnitExist)
+            {
+                EntangledUnitId = 0;
+            }
+        }
+
+        if (IsSelected && (GrappledUnitId != 0))
+        {
+            bool grappledUnitExist = false;
+
+            foreach (var u in UnitsManager.Instance.AllUnits)
+            {
+                if (u.UnitId == GrappledUnitId && u.Grappled)
+                {
+                    grappledUnitExist = true;
+                }
+            }
+
+            if (!grappledUnitExist)
+            {
+                GrappledUnitId = 0;
+            }
+        }
+
+        // Dla jednostek z Szybkością 0 wyłącza możliwość poruszania się
+        if(IsSelected)
+        {
+            if (GetComponent<Stats>().Sz == 0)
+            {
+                CanMove = false;
+                MovementManager.Instance.SetCanMoveToggle(false);
+            }
+        }
+
         //// Jeżeli MountId nie jest puste, ale Mount tak, znajduje wierzchowca na podstawie Id
         //if (MountId != 0 && Mount == null)
         //{
@@ -193,22 +257,6 @@ public class Unit : MonoBehaviour
         //Zresetowanie rzucania zaklęć
         MagicManager.Instance.ResetSpellCasting();
     }
-
-    //public void ChangeUnitColor(GameObject unit)
-    //{
-    //    Renderer renderer = unit.GetComponent<Renderer>();
-
-    //    //Ustawia wartość HighlightColor na jaśniejszą wersję DefaultColor. Trzeci parametr określa ilość koloru białego w całości.
-    //    HighlightColor = Color.Lerp(DefaultColor, Color.yellow, 0.3f);
-
-    //    renderer.material.color = IsSelected ? unit.GetComponent<Unit>().HighlightColor : unit.GetComponent<Unit>().DefaultColor;
-
-    //    //Aktualizuje kolor tokena, jeśli nie jest wgrany żaden obraz
-    //    if (unit.GetComponent<Unit>().TokenFilePath.Length < 1)
-    //    {
-    //        unit.transform.Find("Token").GetComponent<SpriteRenderer>().material.color = IsSelected ? unit.GetComponent<Unit>().HighlightColor : unit.GetComponent<Unit>().DefaultColor;
-    //    }
-    //}
 
     public void ChangeUnitColor(GameObject unit)
     {
